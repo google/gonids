@@ -16,9 +16,10 @@ limitations under the License.
 package gonids
 
 import (
-	"github.com/davecgh/go-spew/spew"
 	"reflect"
 	"testing"
+
+	"github.com/davecgh/go-spew/spew"
 )
 
 func TestParseContent(t *testing.T) {
@@ -319,9 +320,9 @@ func TestParseRule(t *testing.T) {
 		// Errors
 		//TODO: Fix lexer with invalid direction. This test causes an infinite loop.
 		//{
-		//	name:    "invalid direction",
-		//	rule:    `alert udp $HOME_NET any *# $EXTERNAL_NET any (sid:2; msg:"foo"; content:"A");`,
-		//	wantErr: true,
+			//name:    "invalid direction",
+			//rule:    `alert udp $HOME_NET any *# $EXTERNAL_NET any (sid:2; msg:"foo"; content:"A");`,
+			//wantErr: true,
 		//},
 		{
 			name:    "invalid sid",

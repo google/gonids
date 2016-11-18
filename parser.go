@@ -17,7 +17,6 @@ limitations under the License.
 //
 // For now the parser is very basic and it only parses a subset of fields.
 // We intentionally omit http_encode as it doesn't seem to be used in practice.
-
 package gonids
 
 import (
@@ -60,6 +59,7 @@ type Rule struct {
 }
 
 // TODO: Ensure all values either begin with $ (variable) or they are valid IPNet/int.
+
 // Network describes the IP addresses and port numbers used in a rule.
 type Network struct {
 	Nets  []string // Currently just []string because these can be variables $HOME_NET, not a valid IPNet.

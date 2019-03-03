@@ -96,7 +96,7 @@ func (l *lexer) next() rune {
 	return r
 }
 
-// skip skips over the next rune in the input.
+// skipNext skips over the next rune in the input.
 func (l *lexer) skipNext() {
 	l.next()
 	l.ignore()

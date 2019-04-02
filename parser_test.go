@@ -314,6 +314,35 @@ func TestParseRule(t *testing.T) {
 					&Content{Pattern: []byte{0x2f, 0x74, 0x6f, 0x6e, 0x67, 0x6a, 0x69, 0x2e, 0x6a, 0x73}, Options: []*ContentOption{&ContentOption{"http_uri", 0}}, FastPattern: FastPattern{Enabled: true, Only: true}},
 					&Content{Pattern: []byte{0x48, 0x6f, 0x73, 0x74, 0x3a, 0x20}, Options: []*ContentOption{&ContentOption{"http_header", 0}}},
 				},
+				PCREs: []*PCRE{
+					&PCRE{
+						Pattern: []byte{0x48, 0x6f, 0x73, 0x74, 0x5c, 0x78, 0x33, 0x61, 0x5b, 0x5e, 0x5c, 0x72, 0x5c, 0x6e, 0x5d, 0x2a, 0x3f, 0x5c, 0x2e, 0x74, 0x6f, 0x6e, 0x67, 0x6a, 0x69},
+						Options: []byte{0x48, 0x69},
+					},
+				},
+				Tags: map[string]string{"flow": "to_server,established", "classtype": "trojan-activity"},
+			},
+		},
+		{
+			name: "content and PCRE",
+			rule: `alert tcp $HOME_NET any -> $EXTERNAL_NET $HTTP_PORTS (msg:"Foo msg"; flow:to_server,established; content:"blah"; http_uri; pcre:"/foo.*bar/Ui"; reference:url,www.google.com; classtype:trojan-activity; sid:12345; rev:1;)`,
+			want: &Rule{
+				Action:      "alert",
+				Protocol:    "tcp",
+				Source:      Network{Nets: []string{"$HOME_NET"}, Ports: []string{"any"}},
+				Destination: Network{Nets: []string{"$EXTERNAL_NET"}, Ports: []string{"$HTTP_PORTS"}},
+				SID:         12345,
+				Revision:    1,
+				Description: "Foo msg",
+				References:  []*Reference{&Reference{Type: "url", Value: "www.google.com"}},
+				Contents: []*Content{
+					&Content{Pattern: []byte{0x62, 0x6c, 0x61, 0x68}, Options: []*ContentOption{&ContentOption{"http_uri", 0}}},
+				},
+				PCREs: []*PCRE{
+					&PCRE{
+						Pattern: []byte{0x66, 0x6f, 0x6f, 0x2e, 0x2a, 0x62, 0x61, 0x72},
+						Options: []byte{0x55, 0x69}},
+				},
 				Tags: map[string]string{"flow": "to_server,established", "classtype": "trojan-activity"},
 			},
 		},

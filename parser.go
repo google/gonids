@@ -54,6 +54,8 @@ type Rule struct {
 	// places to live.
 	// Contents are all the decoded content matches.
 	Contents []*Content
+	// PCREs is a slice of PCRE structs that represent the regular expressions in a rule
+	PCREs []*PCRE
 	// Tags is a map of tag names to tag values (e.g. classtype:trojan).
 	Tags map[string]string
 }
@@ -87,6 +89,11 @@ type Content struct {
 	Negate bool
 	// Options are the option associated to the content (e.g. http_header).
 	Options []*ContentOption
+}
+
+type PCRE struct {
+	Pattern []byte
+	Options []byte
 }
 
 // FastPattern describes various properties of a fast_pattern value for a content.
@@ -132,6 +139,29 @@ func parseContent(content string) ([]byte, error) {
 			return string(r)
 		})
 	return []byte(b), nil
+}
+
+// parsePCRE parses the components of a PCRE. Returns PCRE struct.
+func parsePCRE(s string) (*PCRE, error) {
+	c := strings.Count(s, "/")
+	if c < 2 {
+		return nil, fmt.Errorf("All pcre patterns must contain at least 2 '/', found: %d", c)
+	}
+
+	l := strings.LastIndex(s, "/")
+	if l < 0 {
+		return nil, fmt.Errorf("Couldn't find options in PCRE.")
+	}
+
+	i := strings.Index(s,"/")
+	if l < 0 {
+		return nil, fmt.Errorf("Couldn't find start of pattern.")
+	}
+
+	return &PCRE{
+		Pattern: []byte(s[i+1:l]),
+		Options: []byte(s[l+1:]),
+	}, nil
 }
 
 // escape escapes special char used in regexp.
@@ -409,6 +439,17 @@ func (r *Rule) option(key item, l *lexer) error {
 		}
 		lastContent := r.Contents[len(r.Contents)-1]
 		lastContent.FastPattern = FastPattern{true, only, offset, length}
+	case "pcre":
+		nextItem := l.nextItem()
+		if nextItem.typ == itemOptionValueString {
+			p, err := parsePCRE(nextItem.value)
+			if err != nil {
+				return err
+			}
+			r.PCREs = append(r.PCREs, p)
+		} else {
+			return fmt.Errorf("invalid type %q for option content", nextItem.typ)
+		}
 	}
 	return nil
 }

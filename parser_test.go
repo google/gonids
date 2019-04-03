@@ -346,6 +346,26 @@ func TestParseRule(t *testing.T) {
 				Tags: map[string]string{"flow": "to_server,established", "classtype": "trojan-activity"},
 			},
 		},
+		{
+			name: "Metadata",
+			rule: `alert tcp any any -> any any (msg:"ET SHELLCODE Berlin Shellcode"; flow:established; content:"|31 c9 b1 fc 80 73 0c|"; content:"|43 e2 8b 9f|"; distance:0; reference:url,doc.emergingthreats.net/2009256; classtype:shellcode-detect; sid:2009256; rev:3; metadata:created_at 2010_07_30, updated_at 2010_07_30;)`,
+			want: &Rule{
+				Action:      "alert",
+				Protocol:    "tcp",
+				Source:      Network{Nets: []string{"any"}, Ports: []string{"any"}},
+				Destination: Network{Nets: []string{"any"}, Ports: []string{"any"}},
+				SID:         2009256,
+				Revision:    3,
+				Description: "ET SHELLCODE Berlin Shellcode",
+				References:  []*Reference{&Reference{Type: "url", Value: "doc.emergingthreats.net/2009256"}},
+				Contents: []*Content{
+					&Content{Pattern: []byte{0x31, 0xc9, 0xb1, 0xfc, 0x80, 0x73, 0x0c}}, 
+					&Content{Pattern: []byte{0x43, 0xe2, 0x8b, 0x9f},Options: []*ContentOption{ &ContentOption{"distance", 0}}},
+				},
+				Tags: map[string]string{"flow": "established", "classtype": "shellcode-detect"},
+				Metas: map[string]string{"created_at":"2010_07_30", "updated_at":"2010_07_30"},
+			},
+		},
 		// Errors
 		//TODO: Fix lexer with invalid direction. This test causes an infinite loop.
 		//{

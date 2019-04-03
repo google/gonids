@@ -346,6 +346,25 @@ func TestParseRule(t *testing.T) {
 				Tags: map[string]string{"flow": "to_server,established", "classtype": "trojan-activity"},
 			},
 		},
+		{
+			name: "Negated PCRE",
+			rule: `alert tcp $HOME_NET any -> $EXTERNAL_NET $HTTP_PORTS (msg:"Negated PCRE"; pcre:!"/foo.*bar/Ui"; sid:12345; rev:1;)`,
+			want: &Rule{
+				Action:      "alert",
+				Protocol:    "tcp",
+				Source:      Network{Nets: []string{"$HOME_NET"}, Ports: []string{"any"}},
+				Destination: Network{Nets: []string{"$EXTERNAL_NET"}, Ports: []string{"$HTTP_PORTS"}},
+				SID:         12345,
+				Revision:    1,
+				Description: "Negated PCRE",
+				PCREs: []*PCRE{
+					&PCRE{
+						Pattern: []byte{0x66, 0x6f, 0x6f, 0x2e, 0x2a, 0x62, 0x61, 0x72},
+						Negate: true,
+						Options: []byte{0x55, 0x69}},
+				},
+			},
+		},
 		// Errors
 		//TODO: Fix lexer with invalid direction. This test causes an infinite loop.
 		//{

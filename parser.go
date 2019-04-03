@@ -93,6 +93,7 @@ type Content struct {
 
 type PCRE struct {
 	Pattern []byte
+	Negate bool
 	Options []byte
 }
 
@@ -441,11 +442,17 @@ func (r *Rule) option(key item, l *lexer) error {
 		lastContent.FastPattern = FastPattern{true, only, offset, length}
 	case "pcre":
 		nextItem := l.nextItem()
+		negate := false
+		if nextItem.typ == itemNot {
+			nextItem = l.nextItem()
+			negate = true
+		}
 		if nextItem.typ == itemOptionValueString {
 			p, err := parsePCRE(nextItem.value)
 			if err != nil {
 				return err
 			}
+			p.Negate = negate
 			r.PCREs = append(r.PCREs, p)
 		} else {
 			return fmt.Errorf("invalid type %q for option content", nextItem.typ)

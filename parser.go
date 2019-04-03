@@ -341,7 +341,7 @@ func (r *Rule) option(key item, l *lexer) error {
 		for _,kv := range metas{
 			meta_tmp := strings.SplitN(kv, " ", 2)
 			if len(meta_tmp) != 2 {
-				return fmt.Errorf("invalid metadata definition: %s", metas)
+				return fmt.Errorf("invalid metadata definition: %s", meta_tmp)
 			}
 			r.Metas[meta_tmp[0]] = meta_tmp[1]	
 		}

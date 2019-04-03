@@ -58,6 +58,8 @@ type Rule struct {
 	PCREs []*PCRE
 	// Tags is a map of tag names to tag values (e.g. classtype:trojan).
 	Tags map[string]string
+	//parse metadata
+	Metas  map[string]string
 }
 
 // TODO: Ensure all values either begin with $ (variable) or they are valid IPNet/int.
@@ -329,6 +331,20 @@ func (r *Rule) option(key item, l *lexer) error {
 			return fmt.Errorf("invalid reference definition: %s", refs)
 		}
 		r.References = append(r.References, &Reference{Type: refs[0], Value: refs[1]})
+	case "metadata":
+		nextItem := l.nextItem()
+		if nextItem.typ != itemOptionValue {
+			return errors.New("no valid value for metadata")
+		}
+		metas := strings.Split(nextItem.value, ", ")
+		r.Metas = make(map[string]string)
+		for _,kv := range metas{
+			meta_tmp := strings.SplitN(kv, " ", 2)
+			if len(meta_tmp) != 2 {
+				return fmt.Errorf("invalid metadata definition: %s", metas)
+			}
+			r.Metas[meta_tmp[0]] = meta_tmp[1]	
+		}
 	case "sid":
 		nextItem := l.nextItem()
 		if nextItem.typ != itemOptionValue {

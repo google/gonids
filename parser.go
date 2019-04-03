@@ -128,6 +128,9 @@ var hexRE = regexp.MustCompile(`(?i)(\|(?:\s*[a-f0-9]{2}\s*)+\|)`)
 // escapeRE matches char that needs to escaped in regexp.
 var escapeRE = regexp.MustCompile(`([()+.'\\])`)
 
+// metaSplitRE matches string in metadata
+var metaSplitRE = regexp.MustCompile(`,\s*`) //global
+
 // parseContent decodes rule content match. For now it only takes care of escaped and hex
 // encoded content.
 func parseContent(content string) ([]byte, error) {
@@ -336,14 +339,13 @@ func (r *Rule) option(key item, l *lexer) error {
 		if nextItem.typ != itemOptionValue {
 			return errors.New("no valid value for metadata")
 		}
-		metas := strings.Split(nextItem.value, ", ")
-		r.Metas = make(map[string]string)
+		metas := metaSplitRE.Split(nextItem.value, -1)
 		for _,kv := range metas{
 			meta_tmp := strings.SplitN(kv, " ", 2)
 			if len(meta_tmp) != 2 {
 				return fmt.Errorf("invalid metadata definition: %s", meta_tmp)
 			}
-			r.Metas[meta_tmp[0]] = meta_tmp[1]	
+			r.Metas[strings.TrimSpace(meta_tmp[0])] = strings.TrimSpace(meta_tmp[1])	
 		}
 	case "sid":
 		nextItem := l.nextItem()
@@ -476,7 +478,7 @@ func ParseRule(rule string) (*Rule, error) {
 	if err != nil {
 		return nil, err
 	}
-	r := &Rule{}
+	r := &Rule{Metas:make(map[string]string)}
 	for item := l.nextItem(); item.typ != itemEOR && item.typ != itemEOF && err == nil; item = l.nextItem() {
 		switch item.typ {
 		case itemAction:

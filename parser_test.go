@@ -321,7 +321,7 @@ func TestParseRule(t *testing.T) {
 					},
 				},
 				Tags: map[string]string{"flow": "to_server,established", "classtype": "trojan-activity"},
-				Metas: map[string]string{"policy":"security-ips drop", "ruleset":"community" ,"service":"http", "impact_flag":"red"},
+				Metas: map[string]string{"policy":"balanced-ips drop,security-ips drop", "ruleset":"community" ,"service":"http", "impact_flag":"red"},
 			},
 		},
 		{

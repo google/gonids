@@ -129,7 +129,7 @@ var hexRE = regexp.MustCompile(`(?i)(\|(?:\s*[a-f0-9]{2}\s*)+\|)`)
 var escapeRE = regexp.MustCompile(`([()+.'\\])`)
 
 // metaSplitRE matches string in metadata
-var metaSplitRE = regexp.MustCompile(`,\s*`) //global
+var metaSplitRE = regexp.MustCompile(`,\s*`)
 
 // parseContent decodes rule content match. For now it only takes care of escaped and hex
 // encoded content.
@@ -339,6 +339,9 @@ func (r *Rule) option(key item, l *lexer) error {
 		if nextItem.typ != itemOptionValue {
 			return errors.New("no valid value for metadata")
 		}
+		if r.Metas == nil{
+			r.Metas = make(map[string]string)
+		}
 		metas := metaSplitRE.Split(nextItem.value, -1)
 		for _,kv := range metas{
 			meta_tmp := strings.SplitN(kv, " ", 2)
@@ -478,7 +481,7 @@ func ParseRule(rule string) (*Rule, error) {
 	if err != nil {
 		return nil, err
 	}
-	r := &Rule{Metas:make(map[string]string)}
+	r := &Rule{}
 	for item := l.nextItem(); item.typ != itemEOR && item.typ != itemEOF && err == nil; item = l.nextItem() {
 		switch item.typ {
 		case itemAction:

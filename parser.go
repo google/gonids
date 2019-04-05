@@ -58,11 +58,17 @@ type Rule struct {
 	PCREs []*PCRE
 	// Tags is a map of tag names to tag values (e.g. classtype:trojan).
 	Tags map[string]string
-	//parse metadata
-	Metas  map[string]string
+	//Metas is a slice of Metadata 
+	Metas  []*Metadata
 }
 
 // TODO: Ensure all values either begin with $ (variable) or they are valid IPNet/int.
+
+//Metadata describe metadata in  key-value struct
+type Metadata struct{
+	Key 	string 
+	Value	string
+}
 
 // Network describes the IP addresses and port numbers used in a rule.
 type Network struct {
@@ -339,21 +345,13 @@ func (r *Rule) option(key item, l *lexer) error {
 		if nextItem.typ != itemOptionValue {
 			return errors.New("no valid value for metadata")
 		}
-		if r.Metas == nil{
-			r.Metas = make(map[string]string)
-		}
 		metas := metaSplitRE.Split(nextItem.value, -1)
 		for _,kv := range metas{
 			meta_tmp := strings.SplitN(kv, " ", 2)
 			if len(meta_tmp) != 2 {
 				return fmt.Errorf("invalid metadata definition: %s", meta_tmp)
 			}
-			// append same key's content
-			if _,ok := r.Metas[strings.TrimSpace(meta_tmp[0])]; ok{
-				r.Metas[strings.TrimSpace(meta_tmp[0])] = r.Metas[strings.TrimSpace(meta_tmp[0])] + "," + strings.TrimSpace(meta_tmp[1])
-			}else{
-				r.Metas[strings.TrimSpace(meta_tmp[0])] = strings.TrimSpace(meta_tmp[1])	
-			}	
+			r.Metas = append(r.Metas, &Metadata{Key: meta_tmp[0], Value: meta_tmp[1]})
 		}
 	case "sid":
 		nextItem := l.nextItem()

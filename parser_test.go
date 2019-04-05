@@ -321,7 +321,13 @@ func TestParseRule(t *testing.T) {
 					},
 				},
 				Tags: map[string]string{"flow": "to_server,established", "classtype": "trojan-activity"},
-				Metas: map[string]string{"policy":"balanced-ips drop,security-ips drop", "ruleset":"community" ,"service":"http", "impact_flag":"red"},
+				Metas: []*Metadata{
+					&Metadata{Key: "impact_flag", Value: "red"},
+					&Metadata{Key: "policy", Value: "balanced-ips drop"},
+					&Metadata{Key: "policy", Value: "security-ips drop"},
+					&Metadata{Key: "ruleset", Value: "community"},
+					&Metadata{Key: "service", Value: "http"},
+				},
 			},
 		},
 		{
@@ -364,7 +370,10 @@ func TestParseRule(t *testing.T) {
 					&Content{Pattern: []byte{0x43, 0xe2, 0x8b, 0x9f},Options: []*ContentOption{ &ContentOption{"distance", 0}}},
 				},
 				Tags: map[string]string{"flow": "established", "classtype": "shellcode-detect"},
-				Metas: map[string]string{"created_at":"2010_07_30", "updated_at":"2010_07_30"},
+				Metas: []*Metadata{
+					&Metadata{Key: "created_at", Value: "2010_07_30"},
+					&Metadata{Key: "updated_at", Value: "2010_07_30"},
+				},
 			},
 		},
 		{
@@ -385,7 +394,11 @@ func TestParseRule(t *testing.T) {
 					&Content{Pattern: []byte{0x72, 0x65, 0x71, 0x75, 0x69, 0x72, 0x65, 0x64, 0x20, 0x74, 0x69, 0x74, 0x6c, 0x65, 0x3d, 0x22, 0x50, 0x6c, 0x65, 0x61, 0x73, 0x65, 0x20, 0x45, 0x6e, 0x74, 0x65, 0x72, 0x20, 0x52, 0x69, 0x67, 0x68, 0x74, 0x20, 0x56, 0x61, 0x6c, 0x75, 0x65, 0x22}, DataPosition:1, Options: []*ContentOption{ &ContentOption{"nocase", 0},&ContentOption{"distance", 0} }, FastPattern: FastPattern{Enabled:false, Length:0, Offset:0}, Negate:false},
 				},
 				Tags: map[string]string{"flow": "established,from_server", "classtype": "trojan-activity"},
-				Metas: map[string]string{"former_category":"CURRENT_EVENTS", "created_at":"2015_10_22", "updated_at":"2018_07_12"},
+				Metas: []*Metadata{
+					&Metadata{Key: "former_category", Value: "CURRENT_EVENTS"},
+					&Metadata{Key: "created_at", Value: "2015_10_22"},
+					&Metadata{Key: "updated_at", Value: "2018_07_12"},
+				},
 			},
 		},
 		// Errors

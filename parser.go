@@ -351,7 +351,7 @@ func (r *Rule) option(key item, l *lexer) error {
 			if len(meta_tmp) != 2 {
 				return fmt.Errorf("invalid metadata definition: %s", meta_tmp)
 			}
-			r.Metas = append(r.Metas, &Metadata{Key: meta_tmp[0], Value: meta_tmp[1]})
+			r.Metas = append(r.Metas, &Metadata{Key: strings.TrimSpace(meta_tmp[0]), Value: strings.TrimSpace(meta_tmp[1])})
 		}
 	case "sid":
 		nextItem := l.nextItem()

@@ -321,6 +321,13 @@ func TestParseRule(t *testing.T) {
 					},
 				},
 				Tags: map[string]string{"flow": "to_server,established", "classtype": "trojan-activity"},
+				Metas: []*Metadata{
+					&Metadata{Key: "impact_flag", Value: "red"},
+					&Metadata{Key: "policy", Value: "balanced-ips drop"},
+					&Metadata{Key: "policy", Value: "security-ips drop"},
+					&Metadata{Key: "ruleset", Value: "community"},
+					&Metadata{Key: "service", Value: "http"},
+				},
 			},
 		},
 		{
@@ -347,6 +354,50 @@ func TestParseRule(t *testing.T) {
 			},
 		},
 		{
+			name: "Metadata",
+			rule: `alert tcp any any -> any any (msg:"ET SHELLCODE Berlin Shellcode"; flow:established; content:"|31 c9 b1 fc 80 73 0c|"; content:"|43 e2 8b 9f|"; distance:0; reference:url,doc.emergingthreats.net/2009256; classtype:shellcode-detect; sid:2009256; rev:3; metadata:created_at 2010_07_30, updated_at 2010_07_30;)`,
+			want: &Rule{
+				Action:      "alert",
+				Protocol:    "tcp",
+				Source:      Network{Nets: []string{"any"}, Ports: []string{"any"}},
+				Destination: Network{Nets: []string{"any"}, Ports: []string{"any"}},
+				SID:         2009256,
+				Revision:    3,
+				Description: "ET SHELLCODE Berlin Shellcode",
+				References:  []*Reference{&Reference{Type: "url", Value: "doc.emergingthreats.net/2009256"}},
+				Contents: []*Content{
+					&Content{Pattern: []byte{0x31, 0xc9, 0xb1, 0xfc, 0x80, 0x73, 0x0c}}, 
+					&Content{Pattern: []byte{0x43, 0xe2, 0x8b, 0x9f},Options: []*ContentOption{ &ContentOption{"distance", 0}}},
+				},
+				Tags: map[string]string{"flow": "established", "classtype": "shellcode-detect"},
+				Metas: []*Metadata{
+					&Metadata{Key: "created_at", Value: "2010_07_30"},
+					&Metadata{Key: "updated_at", Value: "2010_07_30"},
+				},
+			},
+		},
+		{
+			name: "Multi Metadata",
+			rule: `alert http $EXTERNAL_NET any -> $HOME_NET any (msg:"ET CURRENT_EVENTS Chase Account Phish Landing Oct 22"; flow:established,from_server; file_data; content:"<title>Sign in</title>"; content:"name=chalbhai"; fast_pattern; nocase; distance:0; content:"required title=|22|Please Enter Right Value|22|"; nocase; distance:0; content:"required title=|22|Please Enter Right Value|22|"; nocase; distance:0; metadata: former_category CURRENT_EVENTS; classtype:trojan-activity; sid:2025692; rev:2; metadata:created_at 2015_10_22, updated_at 2018_07_12;)`,
+			want: &Rule{
+				Action:      "alert",
+				Protocol:    "http",
+				Source:      Network{Nets: []string{"$EXTERNAL_NET"}, Ports: []string{"any"}},
+				Destination: Network{Nets: []string{"$HOME_NET"}, Ports: []string{"any"}},
+				SID:         2025692,
+				Revision:    2,
+				Description: "ET CURRENT_EVENTS Chase Account Phish Landing Oct 22",
+				Contents: []*Content{
+					&Content{Pattern: []byte{0x3c, 0x74, 0x69, 0x74, 0x6c, 0x65, 0x3e, 0x53, 0x69, 0x67, 0x6e, 0x20, 0x69, 0x6e, 0x3c, 0x2f, 0x74, 0x69, 0x74, 0x6c, 0x65, 0x3e}, DataPosition:1, FastPattern: FastPattern{Enabled:false, Length:0, Offset:0}, Negate:false}, 
+					&Content{Pattern: []byte{0x6e, 0x61, 0x6d, 0x65, 0x3d, 0x63, 0x68, 0x61, 0x6c, 0x62, 0x68, 0x61, 0x69}, DataPosition:1, Options: []*ContentOption{ &ContentOption{"nocase", 0}, &ContentOption{"distance", 0} }, FastPattern: FastPattern{Enabled:true, Length:0, Offset:0}, Negate:false},
+					&Content{Pattern: []byte{0x72, 0x65, 0x71, 0x75, 0x69, 0x72, 0x65, 0x64, 0x20, 0x74, 0x69, 0x74, 0x6c, 0x65, 0x3d, 0x22, 0x50, 0x6c, 0x65, 0x61, 0x73, 0x65, 0x20, 0x45, 0x6e, 0x74, 0x65, 0x72, 0x20, 0x52, 0x69, 0x67, 0x68, 0x74, 0x20, 0x56, 0x61, 0x6c, 0x75, 0x65, 0x22}, DataPosition:1, Options: []*ContentOption{ &ContentOption{"nocase", 0},&ContentOption{"distance", 0} }, FastPattern: FastPattern{Enabled:false, Length:0, Offset:0}, Negate:false},
+					&Content{Pattern: []byte{0x72, 0x65, 0x71, 0x75, 0x69, 0x72, 0x65, 0x64, 0x20, 0x74, 0x69, 0x74, 0x6c, 0x65, 0x3d, 0x22, 0x50, 0x6c, 0x65, 0x61, 0x73, 0x65, 0x20, 0x45, 0x6e, 0x74, 0x65, 0x72, 0x20, 0x52, 0x69, 0x67, 0x68, 0x74, 0x20, 0x56, 0x61, 0x6c, 0x75, 0x65, 0x22}, DataPosition:1, Options: []*ContentOption{ &ContentOption{"nocase", 0},&ContentOption{"distance", 0} }, FastPattern: FastPattern{Enabled:false, Length:0, Offset:0}, Negate:false},
+				},
+				Tags: map[string]string{"flow": "established,from_server", "classtype": "trojan-activity"},
+				Metas: []*Metadata{
+					&Metadata{Key: "former_category", Value: "CURRENT_EVENTS"},
+					&Metadata{Key: "created_at", Value: "2015_10_22"},
+					&Metadata{Key: "updated_at", Value: "2018_07_12"},
 			name: "Negated PCRE",
 			rule: `alert tcp $HOME_NET any -> $EXTERNAL_NET $HTTP_PORTS (msg:"Negated PCRE"; pcre:!"/foo.*bar/Ui"; sid:12345; rev:1;)`,
 			want: &Rule{

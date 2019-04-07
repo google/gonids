@@ -58,9 +58,17 @@ type Rule struct {
 	PCREs []*PCRE
 	// Tags is a map of tag names to tag values (e.g. classtype:trojan).
 	Tags map[string]string
+	//Metas is a slice of Metadata 
+	Metas  []*Metadata
 }
 
 // TODO: Ensure all values either begin with $ (variable) or they are valid IPNet/int.
+
+//Metadata describe metadata in  key-value struct
+type Metadata struct{
+	Key 	string 
+	Value	string
+}
 
 // Network describes the IP addresses and port numbers used in a rule.
 type Network struct {
@@ -126,6 +134,9 @@ var hexRE = regexp.MustCompile(`(?i)(\|(?:\s*[a-f0-9]{2}\s*)+\|)`)
 
 // escapeRE matches char that needs to escaped in regexp.
 var escapeRE = regexp.MustCompile(`([()+.'\\])`)
+
+// metaSplitRE matches string in metadata
+var metaSplitRE = regexp.MustCompile(`,\s*`)
 
 // parseContent decodes rule content match. For now it only takes care of escaped and hex
 // encoded content.
@@ -330,6 +341,19 @@ func (r *Rule) option(key item, l *lexer) error {
 			return fmt.Errorf("invalid reference definition: %s", refs)
 		}
 		r.References = append(r.References, &Reference{Type: refs[0], Value: refs[1]})
+	case "metadata":
+		nextItem := l.nextItem()
+		if nextItem.typ != itemOptionValue {
+			return errors.New("no valid value for metadata")
+		}
+		metas := metaSplitRE.Split(nextItem.value, -1)
+		for _,kv := range metas{
+			meta_tmp := strings.SplitN(kv, " ", 2)
+			if len(meta_tmp) != 2 {
+				return fmt.Errorf("invalid metadata definition: %s", meta_tmp)
+			}
+			r.Metas = append(r.Metas, &Metadata{Key: strings.TrimSpace(meta_tmp[0]), Value: strings.TrimSpace(meta_tmp[1])})
+		}
 	case "sid":
 		nextItem := l.nextItem()
 		if nextItem.typ != itemOptionValue {

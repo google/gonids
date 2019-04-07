@@ -398,6 +398,10 @@ func TestParseRule(t *testing.T) {
 					&Metadata{Key: "former_category", Value: "CURRENT_EVENTS"},
 					&Metadata{Key: "created_at", Value: "2015_10_22"},
 					&Metadata{Key: "updated_at", Value: "2018_07_12"},
+				},
+			},
+		},
+		{
 			name: "Negated PCRE",
 			rule: `alert tcp $HOME_NET any -> $EXTERNAL_NET $HTTP_PORTS (msg:"Negated PCRE"; pcre:!"/foo.*bar/Ui"; sid:12345; rev:1;)`,
 			want: &Rule{

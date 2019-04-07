@@ -64,7 +64,7 @@ type Rule struct {
 
 // TODO: Ensure all values either begin with $ (variable) or they are valid IPNet/int.
 
-//Metadata describe metadata in  key-value struct
+//Metadata describes metadata tags in key-value struct
 type Metadata struct{
 	Key 	string 
 	Value	string
@@ -99,6 +99,7 @@ type Content struct {
 	Options []*ContentOption
 }
 
+// PCRE describes a PCRE item of a rule.
 type PCRE struct {
 	Pattern []byte
 	Negate bool
@@ -157,17 +158,17 @@ func parseContent(content string) ([]byte, error) {
 func parsePCRE(s string) (*PCRE, error) {
 	c := strings.Count(s, "/")
 	if c < 2 {
-		return nil, fmt.Errorf("All pcre patterns must contain at least 2 '/', found: %d", c)
+		return nil, fmt.Errorf("all pcre patterns must contain at least 2 '/', found: %d", c)
 	}
 
 	l := strings.LastIndex(s, "/")
 	if l < 0 {
-		return nil, fmt.Errorf("Couldn't find options in PCRE.")
+		return nil, fmt.Errorf("couldn't find options in PCRE")
 	}
 
 	i := strings.Index(s,"/")
 	if l < 0 {
-		return nil, fmt.Errorf("Couldn't find start of pattern.")
+		return nil, fmt.Errorf("couldn't find start of pattern")
 	}
 
 	return &PCRE{
@@ -348,11 +349,11 @@ func (r *Rule) option(key item, l *lexer) error {
 		}
 		metas := metaSplitRE.Split(nextItem.value, -1)
 		for _,kv := range metas{
-			meta_tmp := strings.SplitN(kv, " ", 2)
-			if len(meta_tmp) != 2 {
-				return fmt.Errorf("invalid metadata definition: %s", meta_tmp)
+			metaTmp := strings.SplitN(kv, " ", 2)
+			if len(metaTmp) != 2 {
+				return fmt.Errorf("invalid metadata definition: %s", metaTmp)
 			}
-			r.Metas = append(r.Metas, &Metadata{Key: strings.TrimSpace(meta_tmp[0]), Value: strings.TrimSpace(meta_tmp[1])})
+			r.Metas = append(r.Metas, &Metadata{Key: strings.TrimSpace(metaTmp[0]), Value: strings.TrimSpace(metaTmp[1])})
 		}
 	case "sid":
 		nextItem := l.nextItem()

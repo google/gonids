@@ -120,8 +120,8 @@ func TestParseRule(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "non-rule comment",
-			rule: `# Foo header, this describes a file.`,
+			name:    "non-rule comment",
+			rule:    `# Foo header, this describes a file.`,
 			wantErr: true,
 		},
 		{
@@ -142,7 +142,7 @@ func TestParseRule(t *testing.T) {
 			name: "commented rule content",
 			rule: `#alert udp $HOME_NET any -> $EXTERNAL_NET any (sid:1337; msg:"foo"; content:"AA"; rev:2);`,
 			want: &Rule{
-				Disabled: 	 true,
+				Disabled:    true,
 				Action:      "alert",
 				Protocol:    "udp",
 				Source:      Network{Nets: []string{"$HOME_NET"}, Ports: []string{"any"}},

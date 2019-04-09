@@ -120,9 +120,29 @@ func TestParseRule(t *testing.T) {
 		wantErr bool
 	}{
 		{
+			name:    "non-rule comment",
+			rule:    `# Foo header, this describes a file.`,
+			wantErr: true,
+		},
+		{
 			name: "simple content",
 			rule: `alert udp $HOME_NET any -> $EXTERNAL_NET any (sid:1337; msg:"foo"; content:"AA"; rev:2);`,
 			want: &Rule{
+				Action:      "alert",
+				Protocol:    "udp",
+				Source:      Network{Nets: []string{"$HOME_NET"}, Ports: []string{"any"}},
+				Destination: Network{Nets: []string{"$EXTERNAL_NET"}, Ports: []string{"any"}},
+				SID:         1337,
+				Revision:    2,
+				Description: "foo",
+				Contents:    []*Content{&Content{Pattern: []byte{0x41, 0x41}}},
+			},
+		},
+		{
+			name: "commented rule content",
+			rule: `#alert udp $HOME_NET any -> $EXTERNAL_NET any (sid:1337; msg:"foo"; content:"AA"; rev:2);`,
+			want: &Rule{
+				Disabled:    true,
 				Action:      "alert",
 				Protocol:    "udp",
 				Source:      Network{Nets: []string{"$HOME_NET"}, Ports: []string{"any"}},
@@ -421,12 +441,11 @@ func TestParseRule(t *testing.T) {
 			},
 		},
 		// Errors
-		//TODO: Fix lexer with invalid direction. This test causes an infinite loop.
-		//{
-			//name:    "invalid direction",
-			//rule:    `alert udp $HOME_NET any *# $EXTERNAL_NET any (sid:2; msg:"foo"; content:"A");`,
-			//wantErr: true,
-		//},
+		{
+			name:    "invalid direction",
+			rule:    `alert udp $HOME_NET any *# $EXTERNAL_NET any (sid:2; msg:"foo"; content:"A");`,
+			wantErr: true,
+		},
 		{
 			name:    "invalid sid",
 			rule:    `alert udp $HOME_NET any -> $EXTERNAL_NET any (sid:"a");`,

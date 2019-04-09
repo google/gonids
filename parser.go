@@ -31,6 +31,8 @@ import (
 
 // Rule describes an IDS rule.
 type Rule struct {
+	// Disbled identifies if the rule is disabled/commented out.
+	Disabled bool
 	// Action is the action the rule will take (alert, pass, drop, etc.).
 	Action string
 	// Protocol is the protocol the rule looks at.
@@ -258,6 +260,27 @@ func (c *Content) FormatPattern() string {
 		buffer.WriteByte('|')
 	}
 	return buffer.String()
+}
+
+// comment decodes a comment (commented rule, or just a comment.)
+func (r *Rule) comment(key item, l *lexer) error {
+	if key.typ != itemComment {
+		panic ("item is not a comment")
+	}
+	// Pop off all leading # and space, try to parse as rule
+	rule, err := ParseRule(strings.TrimLeft(key.value, "# "))
+	
+	// If there was an error this means the comment is not a rule.
+	if err != nil {
+		return fmt.Errorf("this is not a rule: %s", err)
+	}
+
+	// We parsed a rule, this was a comment so set the rule to disabled.
+	rule.Disabled = true
+
+	// Overwrite the rule we're working on with the recently parsed, disabled rule.
+	*r = *rule
+	return nil
 }
 
 // action decodes an IDS rule option based on its key.
@@ -495,6 +518,15 @@ func ParseRule(rule string) (*Rule, error) {
 	r := &Rule{}
 	for item := l.nextItem(); item.typ != itemEOR && item.typ != itemEOF && err == nil; item = l.nextItem() {
 		switch item.typ {
+		case itemComment:
+			err = r.comment(item, l)
+			// Error here means that the comment was not a commented rule.
+			// So we're not parsing a rule and we need to break out.
+			if err != nil {
+				break
+			}
+			// This line was a commented rule.
+			return r, nil
 		case itemAction:
 			err = r.action(item, l)
 		case itemProtocol:
@@ -508,9 +540,10 @@ func ParseRule(rule string) (*Rule, error) {
 		case itemError:
 			err = errors.New(item.value)
 		}
+		if err != nil {
+			return nil, err
+		}
 	}
-	if err != nil {
-		return nil, err
-	}
+	
 	return r, nil
 }

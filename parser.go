@@ -81,40 +81,41 @@ type Network struct {
 type dataPos int
 
 const (
-	PktData dataPos = iota
-	FileData
-	Base64Data
-	HTTPAcceptEnc
-	HTTPAccept
-	HTTPAcceptLang
-	HTTPConnection
-	HTTPContentLen
-	HTTPContentType
-	HTTPHeaderNames
-	HTTPProtocol
-	HTTPReferer
-	HTTPRequestLine
-	HTTPResponseLine
-	HTTPStart
+	pktData dataPos = iota
+	fileData
+	base64Data
+	// HTTP Sticky buffers
+	httpAcceptEnc
+	httpAccept
+	httpAcceptLang
+	httpConnection
+	httpContentLen
+	httpContentType
+	httpHeaderNames
+	httpProtocol
+	httpReferer
+	httpRequestLine
+	httpResponseLine
+	httpStart
 )
 
 var stickyBuffers = map[dataPos]string{
-	PktData:    "pkt_data",
-	FileData:   "file_data",
-	Base64Data: "base64_data",
-	// HTTP Related Sticky Buffers
-	HTTPAcceptEnc:    "http_accept_enc",
-	HTTPAccept:       "http_accept",
-	HTTPAcceptLang:   "http_accept_lang",
-	HTTPConnection:   "http_connection",
-	HTTPContentLen:   "http_content_len",
-	HTTPContentType:  "http_content_type",
-	HTTPHeaderNames:  "http_header_names",
-	HTTPProtocol:     "http_protocol",
-	HTTPReferer:      "http_referer",
-	HTTPRequestLine:  "http_request_line",
-	HTTPResponseLine: "http_response_line",
-	HTTPStart:        "http_start",
+	pktData:    "pkt_data",
+	fileData:   "file_data",
+	base64Data: "base64_data",
+	// HTTP Sticky Buffers
+	httpAcceptEnc:    "http_accept_enc",
+	httpAccept:       "http_accept",
+	httpAcceptLang:   "http_accept_lang",
+	httpConnection:   "http_connection",
+	httpContentLen:   "http_content_len",
+	httpContentType:  "http_content_type",
+	httpHeaderNames:  "http_header_names",
+	httpProtocol:     "http_protocol",
+	httpReferer:      "http_referer",
+	httpRequestLine:  "http_request_line",
+	httpResponseLine: "http_response_line",
+	httpStart:        "http_start",
 }
 
 func (d dataPos) String() string {
@@ -382,7 +383,7 @@ func (r *Rule) direction(key item, l *lexer) error {
 	return nil
 }
 
-var dataPosition = PktData
+var dataPosition = pktData
 
 // option decodes an IDS rule option based on its key.
 func (r *Rule) option(key item, l *lexer) error {
@@ -451,13 +452,13 @@ func (r *Rule) option(key item, l *lexer) error {
 	//case isStickyBuffer(key.value):
 	// dataPosition = (reverse string method.)
 	case "file_data":
-		dataPosition = FileData
+		dataPosition = fileData
 	case "pkt_data":
-		dataPosition = PktData
+		dataPosition = pktData
 	case "base64_data":
-		dataPosition = Base64Data
+		dataPosition = base64Data
 	case "http_request_line":
-		dataPosition = HTTPRequestLine
+		dataPosition = httpRequestLine
 	case "content", "uricontent":
 		nextItem := l.nextItem()
 		negate := false

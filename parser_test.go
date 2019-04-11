@@ -296,8 +296,8 @@ func TestParseRule(t *testing.T) {
 				SID:         1,
 				Description: "a",
 				Contents: []*Content{
-					&Content{DataPosition: 1, Pattern: []byte{0x41}, Options: []*ContentOption{&ContentOption{"http_header", 0}, &ContentOption{"nocase", 0}}},
-					&Content{DataPosition: 1, Pattern: []byte{0x42}, Options: []*ContentOption{&ContentOption{"http_uri", 0}}},
+					&Content{DataPosition: fileData, Pattern: []byte{0x41}, Options: []*ContentOption{&ContentOption{"http_header", 0}, &ContentOption{"nocase", 0}}},
+					&Content{DataPosition: fileData, Pattern: []byte{0x42}, Options: []*ContentOption{&ContentOption{"http_uri", 0}}},
 				},
 			},
 		},
@@ -312,9 +312,9 @@ func TestParseRule(t *testing.T) {
 				SID:         1,
 				Description: "a",
 				Contents: []*Content{
-					&Content{DataPosition: FileData, Pattern: []byte{0x41}, Options: []*ContentOption{&ContentOption{"http_header", 0}, &ContentOption{"nocase", 0}}},
-					&Content{DataPosition: FileData, Pattern: []byte{0x42}, Options: []*ContentOption{&ContentOption{"http_uri", 0}}},
-					&Content{DataPosition: PktData, Pattern: []byte{0x43}, Options: []*ContentOption{&ContentOption{"http_uri", 0}}},
+					&Content{DataPosition: fileData, Pattern: []byte{0x41}, Options: []*ContentOption{&ContentOption{"http_header", 0}, &ContentOption{"nocase", 0}}},
+					&Content{DataPosition: fileData, Pattern: []byte{0x42}, Options: []*ContentOption{&ContentOption{"http_uri", 0}}},
+					&Content{DataPosition: pktData, Pattern: []byte{0x43}, Options: []*ContentOption{&ContentOption{"http_uri", 0}}},
 				},
 			},
 		},
@@ -329,9 +329,9 @@ func TestParseRule(t *testing.T) {
 				SID:         1,
 				Description: "a",
 				Contents: []*Content{
-					&Content{DataPosition: HTTPRequestLine, Pattern: []byte{0x41}, Options: nil},
-					&Content{DataPosition: HTTPRequestLine, Pattern: []byte{0x42}, Options: nil},
-					&Content{DataPosition: PktData, Pattern: []byte{0x43}, Options: []*ContentOption{&ContentOption{"http_uri", 0}}},
+					&Content{DataPosition: httpRequestLine, Pattern: []byte{0x41}, Options: nil},
+					&Content{DataPosition: httpRequestLine, Pattern: []byte{0x42}, Options: nil},
+					&Content{DataPosition: pktData, Pattern: []byte{0x43}, Options: []*ContentOption{&ContentOption{"http_uri", 0}}},
 				},
 			},
 		},
@@ -426,9 +426,9 @@ func TestParseRule(t *testing.T) {
 				Description: "ET CURRENT_EVENTS Chase Account Phish Landing Oct 22",
 				Contents: []*Content{
 					&Content{Pattern: []byte{0x3c, 0x74, 0x69, 0x74, 0x6c, 0x65, 0x3e, 0x53, 0x69, 0x67, 0x6e, 0x20, 0x69, 0x6e, 0x3c, 0x2f, 0x74, 0x69, 0x74, 0x6c, 0x65, 0x3e}, DataPosition: 1, FastPattern: FastPattern{Enabled: false, Length: 0, Offset: 0}, Negate: false},
-					&Content{Pattern: []byte{0x6e, 0x61, 0x6d, 0x65, 0x3d, 0x63, 0x68, 0x61, 0x6c, 0x62, 0x68, 0x61, 0x69}, DataPosition: FileData, Options: []*ContentOption{&ContentOption{"nocase", 0}, &ContentOption{"distance", 0}}, FastPattern: FastPattern{Enabled: true, Length: 0, Offset: 0}, Negate: false},
-					&Content{Pattern: []byte{0x72, 0x65, 0x71, 0x75, 0x69, 0x72, 0x65, 0x64, 0x20, 0x74, 0x69, 0x74, 0x6c, 0x65, 0x3d, 0x22, 0x50, 0x6c, 0x65, 0x61, 0x73, 0x65, 0x20, 0x45, 0x6e, 0x74, 0x65, 0x72, 0x20, 0x52, 0x69, 0x67, 0x68, 0x74, 0x20, 0x56, 0x61, 0x6c, 0x75, 0x65, 0x22}, DataPosition: 1, Options: []*ContentOption{&ContentOption{"nocase", 0}, &ContentOption{"distance", 0}}, FastPattern: FastPattern{Enabled: false, Length: 0, Offset: 0}, Negate: false},
-					&Content{Pattern: []byte{0x72, 0x65, 0x71, 0x75, 0x69, 0x72, 0x65, 0x64, 0x20, 0x74, 0x69, 0x74, 0x6c, 0x65, 0x3d, 0x22, 0x50, 0x6c, 0x65, 0x61, 0x73, 0x65, 0x20, 0x45, 0x6e, 0x74, 0x65, 0x72, 0x20, 0x52, 0x69, 0x67, 0x68, 0x74, 0x20, 0x56, 0x61, 0x6c, 0x75, 0x65, 0x22}, DataPosition: 1, Options: []*ContentOption{&ContentOption{"nocase", 0}, &ContentOption{"distance", 0}}, FastPattern: FastPattern{Enabled: false, Length: 0, Offset: 0}, Negate: false},
+					&Content{Pattern: []byte{0x6e, 0x61, 0x6d, 0x65, 0x3d, 0x63, 0x68, 0x61, 0x6c, 0x62, 0x68, 0x61, 0x69}, DataPosition: fileData, Options: []*ContentOption{&ContentOption{"nocase", 0}, &ContentOption{"distance", 0}}, FastPattern: FastPattern{Enabled: true, Length: 0, Offset: 0}, Negate: false},
+					&Content{Pattern: []byte{0x72, 0x65, 0x71, 0x75, 0x69, 0x72, 0x65, 0x64, 0x20, 0x74, 0x69, 0x74, 0x6c, 0x65, 0x3d, 0x22, 0x50, 0x6c, 0x65, 0x61, 0x73, 0x65, 0x20, 0x45, 0x6e, 0x74, 0x65, 0x72, 0x20, 0x52, 0x69, 0x67, 0x68, 0x74, 0x20, 0x56, 0x61, 0x6c, 0x75, 0x65, 0x22}, DataPosition: fileData, Options: []*ContentOption{&ContentOption{"nocase", 0}, &ContentOption{"distance", 0}}, FastPattern: FastPattern{Enabled: false, Length: 0, Offset: 0}, Negate: false},
+					&Content{Pattern: []byte{0x72, 0x65, 0x71, 0x75, 0x69, 0x72, 0x65, 0x64, 0x20, 0x74, 0x69, 0x74, 0x6c, 0x65, 0x3d, 0x22, 0x50, 0x6c, 0x65, 0x61, 0x73, 0x65, 0x20, 0x45, 0x6e, 0x74, 0x65, 0x72, 0x20, 0x52, 0x69, 0x67, 0x68, 0x74, 0x20, 0x56, 0x61, 0x6c, 0x75, 0x65, 0x22}, DataPosition: fileData, Options: []*ContentOption{&ContentOption{"nocase", 0}, &ContentOption{"distance", 0}}, FastPattern: FastPattern{Enabled: false, Length: 0, Offset: 0}, Negate: false},
 				},
 				Tags: map[string]string{"flow": "established,from_server", "classtype": "trojan-activity"},
 				Metas: []*Metadata{
@@ -517,15 +517,15 @@ func TestDataPosString(t *testing.T) {
 		want string
 	}{
 		{
-			val:  PktData,
+			val:  pktData,
 			want: "pkt_data",
 		},
 		{
-			val:  Base64Data,
+			val:  base64Data,
 			want: "base64_data",
 		},
 		{
-			val:  HTTPRequestLine,
+			val:  httpRequestLine,
 			want: "http_request_line",
 		},
 	} {

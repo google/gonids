@@ -556,7 +556,7 @@ func TestIsStickyBuffer(t *testing.T) {
 			want: true,
 		},
 	} {
-		got := IsStickyBuffer(tt.buf)
+		got := isStickyBuffer(tt.buf)
 		if got != tt.want {
 			t.Fatalf("got=%v; want=%v", got, tt.want)
 		}

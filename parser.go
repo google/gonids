@@ -121,7 +121,7 @@ func (d dataPos) String() string {
 	return stickyBuffers[d]
 }
 
-func IsStickyBuffer(s string) bool {
+func isStickyBuffer(s string) bool {
 	for _, v := range stickyBuffers {
 		if s == v {
 			return true
@@ -448,8 +448,8 @@ func (r *Rule) option(key item, l *lexer) error {
 			return errors.New("no value for option msg")
 		}
 		r.Description = nextItem.value
-	case IsStickyBuffer(key.value):
-		// dataPosition = (reverse string method.)
+	//case isStickyBuffer(key.value):
+	// dataPosition = (reverse string method.)
 	case "file_data":
 		dataPosition = FileData
 	case "pkt_data":

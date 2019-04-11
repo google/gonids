@@ -60,16 +60,16 @@ type Rule struct {
 	PCREs []*PCRE
 	// Tags is a map of tag names to tag values (e.g. classtype:trojan).
 	Tags map[string]string
-	//Metas is a slice of Metadata 
-	Metas  []*Metadata
+	//Metas is a slice of Metadata
+	Metas []*Metadata
 }
 
 // TODO: Ensure all values either begin with $ (variable) or they are valid IPNet/int.
 
 //Metadata describes metadata tags in key-value struct
-type Metadata struct{
-	Key 	string 
-	Value	string
+type Metadata struct {
+	Key   string
+	Value string
 }
 
 // Network describes the IP addresses and port numbers used in a rule.
@@ -81,10 +81,54 @@ type Network struct {
 type dataPos int
 
 const (
-	pktData dataPos = iota
-	fileData
-	base64Data
+	PktData dataPos = iota
+	FileData
+	Base64Data
+	HTTPAcceptEnc
+	HTTPAccept
+	HTTPAcceptLang
+	HTTPConnection
+	HTTPContentLen
+	HTTPContentType
+	HTTPHeaderNames
+	HTTPProtocol
+	HTTPReferer
+	HTTPRequestLine
+	HTTPResponseLine
+	HTTPStart
 )
+
+var stickyBuffers = map[dataPos]string{
+	PktData:    "pkt_data",
+	FileData:   "file_data",
+	Base64Data: "base64_data",
+	// HTTP Related Sticky Buffers
+	HTTPAcceptEnc:    "http_accept_enc",
+	HTTPAccept:       "http_accept",
+	HTTPAcceptLang:   "http_accept_lang",
+	HTTPConnection:   "http_connection",
+	HTTPContentLen:   "http_content_len",
+	HTTPContentType:  "http_content_type",
+	HTTPHeaderNames:  "http_header_names",
+	HTTPProtocol:     "http_protocol",
+	HTTPReferer:      "http_referer",
+	HTTPRequestLine:  "http_request_line",
+	HTTPResponseLine: "http_response_line",
+	HTTPStart:        "http_start",
+}
+
+func (d dataPos) String() string {
+	return stickyBuffers[d]
+}
+
+func IsStickyBuffer(s string) bool {
+	for _, v := range stickyBuffers {
+		if s == v {
+			return true
+		}
+	}
+	return false
+}
 
 // Content describes a rule content. A content is composed of a pattern followed by options.
 type Content struct {
@@ -104,7 +148,7 @@ type Content struct {
 // PCRE describes a PCRE item of a rule.
 type PCRE struct {
 	Pattern []byte
-	Negate bool
+	Negate  bool
 	Options []byte
 }
 
@@ -168,13 +212,13 @@ func parsePCRE(s string) (*PCRE, error) {
 		return nil, fmt.Errorf("couldn't find options in PCRE")
 	}
 
-	i := strings.Index(s,"/")
+	i := strings.Index(s, "/")
 	if l < 0 {
 		return nil, fmt.Errorf("couldn't find start of pattern")
 	}
 
 	return &PCRE{
-		Pattern: []byte(s[i+1:l]),
+		Pattern: []byte(s[i+1 : l]),
 		Options: []byte(s[l+1:]),
 	}, nil
 }
@@ -265,11 +309,11 @@ func (c *Content) FormatPattern() string {
 // comment decodes a comment (commented rule, or just a comment.)
 func (r *Rule) comment(key item, l *lexer) error {
 	if key.typ != itemComment {
-		panic ("item is not a comment")
+		panic("item is not a comment")
 	}
 	// Pop off all leading # and space, try to parse as rule
 	rule, err := ParseRule(strings.TrimLeft(key.value, "# "))
-	
+
 	// If there was an error this means the comment is not a rule.
 	if err != nil {
 		return fmt.Errorf("this is not a rule: %s", err)
@@ -338,7 +382,7 @@ func (r *Rule) direction(key item, l *lexer) error {
 	return nil
 }
 
-var dataPosition = pktData
+var dataPosition = PktData
 
 // option decodes an IDS rule option based on its key.
 func (r *Rule) option(key item, l *lexer) error {
@@ -371,7 +415,7 @@ func (r *Rule) option(key item, l *lexer) error {
 			return errors.New("no valid value for metadata")
 		}
 		metas := metaSplitRE.Split(nextItem.value, -1)
-		for _,kv := range metas{
+		for _, kv := range metas {
 			metaTmp := strings.SplitN(kv, " ", 2)
 			if len(metaTmp) != 2 {
 				return fmt.Errorf("invalid metadata definition: %s", metaTmp)
@@ -404,12 +448,16 @@ func (r *Rule) option(key item, l *lexer) error {
 			return errors.New("no value for option msg")
 		}
 		r.Description = nextItem.value
+	case IsStickyBuffer(key.value):
+		// dataPosition = (reverse string method.)
 	case "file_data":
-		dataPosition = fileData
+		dataPosition = FileData
 	case "pkt_data":
-		dataPosition = pktData
+		dataPosition = PktData
 	case "base64_data":
-		dataPosition = base64Data
+		dataPosition = Base64Data
+	case "http_request_line":
+		dataPosition = HTTPRequestLine
 	case "content", "uricontent":
 		nextItem := l.nextItem()
 		negate := false
@@ -544,6 +592,5 @@ func ParseRule(rule string) (*Rule, error) {
 			return nil, err
 		}
 	}
-	
 	return r, nil
 }

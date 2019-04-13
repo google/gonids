@@ -15,10 +15,6 @@ limitations under the License.
 
 package gonids
 
-// TODO:
-//	Format long datas
-//	Make "byte" patterns more readable
-
 import (
 	"reflect"
 	"testing"

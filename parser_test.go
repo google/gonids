@@ -296,8 +296,8 @@ func TestParseRule(t *testing.T) {
 				SID:         1,
 				Description: "a",
 				Contents: []*Content{
-					&Content{DataPosition: 1, Pattern: []byte{0x41}, Options: []*ContentOption{&ContentOption{"http_header", 0}, &ContentOption{"nocase", 0}}},
-					&Content{DataPosition: 1, Pattern: []byte{0x42}, Options: []*ContentOption{&ContentOption{"http_uri", 0}}},
+					&Content{DataPosition: fileData, Pattern: []byte{0x41}, Options: []*ContentOption{&ContentOption{"http_header", 0}, &ContentOption{"nocase", 0}}},
+					&Content{DataPosition: fileData, Pattern: []byte{0x42}, Options: []*ContentOption{&ContentOption{"http_uri", 0}}},
 				},
 			},
 		},
@@ -312,9 +312,26 @@ func TestParseRule(t *testing.T) {
 				SID:         1,
 				Description: "a",
 				Contents: []*Content{
-					&Content{DataPosition: 1, Pattern: []byte{0x41}, Options: []*ContentOption{&ContentOption{"http_header", 0}, &ContentOption{"nocase", 0}}},
-					&Content{DataPosition: 1, Pattern: []byte{0x42}, Options: []*ContentOption{&ContentOption{"http_uri", 0}}},
-					&Content{DataPosition: 0, Pattern: []byte{0x43}, Options: []*ContentOption{&ContentOption{"http_uri", 0}}},
+					&Content{DataPosition: fileData, Pattern: []byte{0x41}, Options: []*ContentOption{&ContentOption{"http_header", 0}, &ContentOption{"nocase", 0}}},
+					&Content{DataPosition: fileData, Pattern: []byte{0x42}, Options: []*ContentOption{&ContentOption{"http_uri", 0}}},
+					&Content{DataPosition: pktData, Pattern: []byte{0x43}, Options: []*ContentOption{&ContentOption{"http_uri", 0}}},
+				},
+			},
+		},
+		{
+			name: "http sticky buffer",
+			rule: `alert http $HOME_NET any -> $EXTERNAL_NET any (sid:1; msg:"a"; http_request_line; content:"A"; content:"B"; pkt_data; content:"C"; http_uri;)`,
+			want: &Rule{
+				Action:      "alert",
+				Protocol:    "http",
+				Source:      Network{Nets: []string{"$HOME_NET"}, Ports: []string{"any"}},
+				Destination: Network{Nets: []string{"$EXTERNAL_NET"}, Ports: []string{"any"}},
+				SID:         1,
+				Description: "a",
+				Contents: []*Content{
+					&Content{DataPosition: httpRequestLine, Pattern: []byte{0x41}, Options: nil},
+					&Content{DataPosition: httpRequestLine, Pattern: []byte{0x42}, Options: nil},
+					&Content{DataPosition: pktData, Pattern: []byte{0x43}, Options: []*ContentOption{&ContentOption{"http_uri", 0}}},
 				},
 			},
 		},
@@ -386,8 +403,8 @@ func TestParseRule(t *testing.T) {
 				Description: "ET SHELLCODE Berlin Shellcode",
 				References:  []*Reference{&Reference{Type: "url", Value: "doc.emergingthreats.net/2009256"}},
 				Contents: []*Content{
-					&Content{Pattern: []byte{0x31, 0xc9, 0xb1, 0xfc, 0x80, 0x73, 0x0c}}, 
-					&Content{Pattern: []byte{0x43, 0xe2, 0x8b, 0x9f},Options: []*ContentOption{ &ContentOption{"distance", 0}}},
+					&Content{Pattern: []byte{0x31, 0xc9, 0xb1, 0xfc, 0x80, 0x73, 0x0c}},
+					&Content{Pattern: []byte{0x43, 0xe2, 0x8b, 0x9f}, Options: []*ContentOption{&ContentOption{"distance", 0}}},
 				},
 				Tags: map[string]string{"flow": "established", "classtype": "shellcode-detect"},
 				Metas: []*Metadata{
@@ -408,10 +425,10 @@ func TestParseRule(t *testing.T) {
 				Revision:    2,
 				Description: "ET CURRENT_EVENTS Chase Account Phish Landing Oct 22",
 				Contents: []*Content{
-					&Content{Pattern: []byte{0x3c, 0x74, 0x69, 0x74, 0x6c, 0x65, 0x3e, 0x53, 0x69, 0x67, 0x6e, 0x20, 0x69, 0x6e, 0x3c, 0x2f, 0x74, 0x69, 0x74, 0x6c, 0x65, 0x3e}, DataPosition:1, FastPattern: FastPattern{Enabled:false, Length:0, Offset:0}, Negate:false}, 
-					&Content{Pattern: []byte{0x6e, 0x61, 0x6d, 0x65, 0x3d, 0x63, 0x68, 0x61, 0x6c, 0x62, 0x68, 0x61, 0x69}, DataPosition:1, Options: []*ContentOption{ &ContentOption{"nocase", 0}, &ContentOption{"distance", 0} }, FastPattern: FastPattern{Enabled:true, Length:0, Offset:0}, Negate:false},
-					&Content{Pattern: []byte{0x72, 0x65, 0x71, 0x75, 0x69, 0x72, 0x65, 0x64, 0x20, 0x74, 0x69, 0x74, 0x6c, 0x65, 0x3d, 0x22, 0x50, 0x6c, 0x65, 0x61, 0x73, 0x65, 0x20, 0x45, 0x6e, 0x74, 0x65, 0x72, 0x20, 0x52, 0x69, 0x67, 0x68, 0x74, 0x20, 0x56, 0x61, 0x6c, 0x75, 0x65, 0x22}, DataPosition:1, Options: []*ContentOption{ &ContentOption{"nocase", 0},&ContentOption{"distance", 0} }, FastPattern: FastPattern{Enabled:false, Length:0, Offset:0}, Negate:false},
-					&Content{Pattern: []byte{0x72, 0x65, 0x71, 0x75, 0x69, 0x72, 0x65, 0x64, 0x20, 0x74, 0x69, 0x74, 0x6c, 0x65, 0x3d, 0x22, 0x50, 0x6c, 0x65, 0x61, 0x73, 0x65, 0x20, 0x45, 0x6e, 0x74, 0x65, 0x72, 0x20, 0x52, 0x69, 0x67, 0x68, 0x74, 0x20, 0x56, 0x61, 0x6c, 0x75, 0x65, 0x22}, DataPosition:1, Options: []*ContentOption{ &ContentOption{"nocase", 0},&ContentOption{"distance", 0} }, FastPattern: FastPattern{Enabled:false, Length:0, Offset:0}, Negate:false},
+					&Content{Pattern: []byte{0x3c, 0x74, 0x69, 0x74, 0x6c, 0x65, 0x3e, 0x53, 0x69, 0x67, 0x6e, 0x20, 0x69, 0x6e, 0x3c, 0x2f, 0x74, 0x69, 0x74, 0x6c, 0x65, 0x3e}, DataPosition: 1, FastPattern: FastPattern{Enabled: false, Length: 0, Offset: 0}, Negate: false},
+					&Content{Pattern: []byte{0x6e, 0x61, 0x6d, 0x65, 0x3d, 0x63, 0x68, 0x61, 0x6c, 0x62, 0x68, 0x61, 0x69}, DataPosition: fileData, Options: []*ContentOption{&ContentOption{"nocase", 0}, &ContentOption{"distance", 0}}, FastPattern: FastPattern{Enabled: true, Length: 0, Offset: 0}, Negate: false},
+					&Content{Pattern: []byte{0x72, 0x65, 0x71, 0x75, 0x69, 0x72, 0x65, 0x64, 0x20, 0x74, 0x69, 0x74, 0x6c, 0x65, 0x3d, 0x22, 0x50, 0x6c, 0x65, 0x61, 0x73, 0x65, 0x20, 0x45, 0x6e, 0x74, 0x65, 0x72, 0x20, 0x52, 0x69, 0x67, 0x68, 0x74, 0x20, 0x56, 0x61, 0x6c, 0x75, 0x65, 0x22}, DataPosition: fileData, Options: []*ContentOption{&ContentOption{"nocase", 0}, &ContentOption{"distance", 0}}, FastPattern: FastPattern{Enabled: false, Length: 0, Offset: 0}, Negate: false},
+					&Content{Pattern: []byte{0x72, 0x65, 0x71, 0x75, 0x69, 0x72, 0x65, 0x64, 0x20, 0x74, 0x69, 0x74, 0x6c, 0x65, 0x3d, 0x22, 0x50, 0x6c, 0x65, 0x61, 0x73, 0x65, 0x20, 0x45, 0x6e, 0x74, 0x65, 0x72, 0x20, 0x52, 0x69, 0x67, 0x68, 0x74, 0x20, 0x56, 0x61, 0x6c, 0x75, 0x65, 0x22}, DataPosition: fileData, Options: []*ContentOption{&ContentOption{"nocase", 0}, &ContentOption{"distance", 0}}, FastPattern: FastPattern{Enabled: false, Length: 0, Offset: 0}, Negate: false},
 				},
 				Tags: map[string]string{"flow": "established,from_server", "classtype": "trojan-activity"},
 				Metas: []*Metadata{
@@ -435,7 +452,7 @@ func TestParseRule(t *testing.T) {
 				PCREs: []*PCRE{
 					&PCRE{
 						Pattern: []byte{0x66, 0x6f, 0x6f, 0x2e, 0x2a, 0x62, 0x61, 0x72},
-						Negate: true,
+						Negate:  true,
 						Options: []byte{0x55, 0x69}},
 				},
 			},
@@ -490,6 +507,113 @@ func TestRE(t *testing.T) {
 		}
 		if got := r.RE(); got != tt.want {
 			t.Fatalf("re: got=%v; want=%v", got, tt.want)
+		}
+	}
+}
+
+func TestDataPosString(t *testing.T) {
+	for _, tt := range []struct {
+		val  dataPos
+		want string
+	}{
+		{
+			val:  pktData,
+			want: "pkt_data",
+		},
+		{
+			val:  base64Data,
+			want: "base64_data",
+		},
+		{
+			val:  httpRequestLine,
+			want: "http_request_line",
+		},
+	} {
+		s := tt.val.String()
+		if s != tt.want {
+			t.Fatalf("String: got=%v; want=%v", s, tt.want)
+		}
+	}
+}
+
+func TestIsStickyBuffer(t *testing.T) {
+	for _, tt := range []struct {
+		buf  string
+		want bool
+	}{
+		{
+			buf:  "pkt_data",
+			want: true,
+		},
+		{
+			buf:  "foobarbaz",
+			want: false,
+		},
+		{
+			buf:  "http_request_line",
+			want: true,
+		},
+	} {
+		got := isStickyBuffer(tt.buf)
+		if got != tt.want {
+			t.Fatalf("got=%v; want=%v", got, tt.want)
+		}
+	}
+}
+
+func TestStickyBuffer(t *testing.T) {
+	for _, tt := range []struct {
+		s       string
+		want    dataPos
+		wantErr bool
+	}{
+		{
+			s:       "pkt_data",
+			want:    pktData,
+			wantErr: false,
+		},
+		{
+			s:       "foobarbaz",
+			want:    pktData,
+			wantErr: true,
+		},
+		{
+			s:       "http_request_line",
+			want:    httpRequestLine,
+			wantErr: false,
+		},
+	} {
+		got, gotErr := stickyBuffer(tt.s)
+		if got != tt.want {
+			t.Fatalf("got=%v; want=%v", got, tt.want)
+		}
+		if tt.wantErr != (gotErr != nil) {
+			t.Fatalf("gotErr=%v; wantErr=%v", gotErr != nil, tt.wantErr)
+		}
+
+	}
+}
+
+func TestInSlice(t *testing.T) {
+	for _, tt := range []struct {
+		str  string
+		strs []string
+		want bool
+	}{
+		{
+			str:  "pkt_data",
+			strs: []string{"foo", "bar", "baze"},
+			want: false,
+		},
+		{
+			str:  "pkt_data",
+			strs: []string{"foo", "pkt_data", "baze"},
+			want: true,
+		},
+	} {
+		got := inSlice(tt.str, tt.strs)
+		if got != tt.want {
+			t.Fatalf("got=%v; want=%v", got, tt.want)
 		}
 	}
 }

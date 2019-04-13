@@ -493,8 +493,6 @@ func (r *Rule) option(key item, l *lexer) error {
 			return errors.New("no value for option msg")
 		}
 		r.Description = nextItem.value
-	//case isStickyBuffer(key.value):
-	// dataPosition = (reverse string method.)
 	case isStickyBuffer(key.value):
 		if d, err := stickyBuffer(key.value); err != nil {
 			return err

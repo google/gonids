@@ -536,8 +536,6 @@ func TestDataPosString(t *testing.T) {
 	}
 }
 
-// TODO: Figure out why this fails when func is not exported.
-// This function should probably only be need by this package...
 func TestIsStickyBuffer(t *testing.T) {
 	for _, tt := range []struct {
 		buf  string
@@ -557,6 +555,63 @@ func TestIsStickyBuffer(t *testing.T) {
 		},
 	} {
 		got := isStickyBuffer(tt.buf)
+		if got != tt.want {
+			t.Fatalf("got=%v; want=%v", got, tt.want)
+		}
+	}
+}
+
+func TestStickyBuffer(t *testing.T) {
+	for _, tt := range []struct {
+		s       string
+		want    dataPos
+		wantErr bool
+	}{
+		{
+			s:       "pkt_data",
+			want:    pktData,
+			wantErr: false,
+		},
+		{
+			s:       "foobarbaz",
+			want:    pktData,
+			wantErr: true,
+		},
+		{
+			s:       "http_request_line",
+			want:    httpRequestLine,
+			wantErr: false,
+		},
+	} {
+		got, gotErr := stickyBuffer(tt.s)
+		if got != tt.want {
+			t.Fatalf("got=%v; want=%v", got, tt.want)
+		}
+		if tt.wantErr != (gotErr != nil) {
+			t.Fatalf("gotErr=%v; wantErr=%v", gotErr != nil, tt.wantErr)
+		}
+
+	}
+}
+
+func TestInSlice(t *testing.T) {
+	for _, tt := range []struct {
+		str  string
+		strs []string
+		want bool
+	}{
+		{
+			str:  "pkt_data",
+			strs: []string{"foo", "bar", "baze"},
+			want: false,
+		},
+		{
+			str:  "pkt_data",
+			strs: []string{"foo", "pkt_data", "baze"},
+			want: true,
+		},
+	} {
+		got := inSlice(tt.str, tt.strs)
 		if got != tt.want {
 			t.Fatalf("got=%v; want=%v", got, tt.want)
 		}

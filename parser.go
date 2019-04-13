@@ -60,16 +60,16 @@ type Rule struct {
 	PCREs []*PCRE
 	// Tags is a map of tag names to tag values (e.g. classtype:trojan).
 	Tags map[string]string
-	//Metas is a slice of Metadata 
-	Metas  []*Metadata
+	//Metas is a slice of Metadata
+	Metas []*Metadata
 }
 
 // TODO: Ensure all values either begin with $ (variable) or they are valid IPNet/int.
 
 //Metadata describes metadata tags in key-value struct
-type Metadata struct{
-	Key 	string 
-	Value	string
+type Metadata struct {
+	Key   string
+	Value string
 }
 
 // Network describes the IP addresses and port numbers used in a rule.
@@ -84,7 +84,87 @@ const (
 	pktData dataPos = iota
 	fileData
 	base64Data
+	// HTTP Sticky buffers
+	httpAcceptEnc
+	httpAccept
+	httpAcceptLang
+	httpConnection
+	httpContentLen
+	httpContentType
+	httpHeaderNames
+	httpProtocol
+	httpReferer
+	httpRequestLine
+	httpResponseLine
+	httpStart
+	// TLS Sticky Buffers
+	tlsCertSubject
+	tlsCertIssuer
+	tlsCertSerial
+	tlsCertFingerprint
+	tlsSNI
+	// JA3 Sticky Buffers
+	ja3Hash
+	ja3String
+	// SSH Sticky Buffers
+	sshProto
+	sshSoftware
+	// Kerberos Sticky Buffers
+	krb5Cname
+	krb5Sname
 )
+
+var stickyBuffers = map[dataPos]string{
+	pktData:    "pkt_data",
+	fileData:   "file_data",
+	base64Data: "base64_data",
+	// HTTP Sticky Buffers
+	httpAcceptEnc:    "http_accept_enc",
+	httpAccept:       "http_accept",
+	httpAcceptLang:   "http_accept_lang",
+	httpConnection:   "http_connection",
+	httpContentLen:   "http_content_len",
+	httpContentType:  "http_content_type",
+	httpHeaderNames:  "http_header_names",
+	httpProtocol:     "http_protocol",
+	httpReferer:      "http_referer",
+	httpRequestLine:  "http_request_line",
+	httpResponseLine: "http_response_line",
+	httpStart:        "http_start",
+	// TLS Sticky Buffers
+	tlsCertSubject:     "tls_cert_subject",
+	tlsCertIssuer:      "tls_cert_issuer",
+	tlsCertSerial:      "tls_cert_serial",
+	tlsCertFingerprint: "tls_cert_fingerprint",
+	tlsSNI:             "tls_sni",
+	// JA3 Sticky Buffers
+	ja3Hash:   "ja3_hash",
+	ja3String: "ja3_string",
+	// SSH Sticky Buffers
+	sshProto:    "ssh_proto",
+	sshSoftware: "ssh_software",
+	// Kerberos Sticky Buffers
+	krb5Cname: "krb5_cname",
+	krb5Sname: "krb5_sname",
+}
+
+func (d dataPos) String() string {
+	return stickyBuffers[d]
+}
+
+func stickyBuffer(s string) (dataPos, error) {
+	for k, v := range stickyBuffers {
+		if v == s {
+			return k, nil
+		}
+	}
+	return pktData, fmt.Errorf("not a sticky buffer")
+}
+
+func isStickyBuffer(s string) bool {
+	_, err := stickyBuffer(s)
+	return err == nil
+}
 
 // Content describes a rule content. A content is composed of a pattern followed by options.
 type Content struct {
@@ -104,7 +184,7 @@ type Content struct {
 // PCRE describes a PCRE item of a rule.
 type PCRE struct {
 	Pattern []byte
-	Negate bool
+	Negate  bool
 	Options []byte
 }
 
@@ -168,13 +248,13 @@ func parsePCRE(s string) (*PCRE, error) {
 		return nil, fmt.Errorf("couldn't find options in PCRE")
 	}
 
-	i := strings.Index(s,"/")
+	i := strings.Index(s, "/")
 	if l < 0 {
 		return nil, fmt.Errorf("couldn't find start of pattern")
 	}
 
 	return &PCRE{
-		Pattern: []byte(s[i+1:l]),
+		Pattern: []byte(s[i+1 : l]),
 		Options: []byte(s[l+1:]),
 	}, nil
 }
@@ -217,6 +297,15 @@ func (r *Rule) CVE() string {
 		}
 	}
 	return ""
+}
+
+func inSlice(str string, strings []string) bool {
+	for _, k := range strings {
+		if str == k {
+			return true
+		}
+	}
+	return false
 }
 
 // TODO: Add a String method for Content to add negation, and options.
@@ -265,11 +354,11 @@ func (c *Content) FormatPattern() string {
 // comment decodes a comment (commented rule, or just a comment.)
 func (r *Rule) comment(key item, l *lexer) error {
 	if key.typ != itemComment {
-		panic ("item is not a comment")
+		panic("item is not a comment")
 	}
 	// Pop off all leading # and space, try to parse as rule
 	rule, err := ParseRule(strings.TrimLeft(key.value, "# "))
-	
+
 	// If there was an error this means the comment is not a rule.
 	if err != nil {
 		return fmt.Errorf("this is not a rule: %s", err)
@@ -345,8 +434,8 @@ func (r *Rule) option(key item, l *lexer) error {
 	if key.typ != itemOptionKey {
 		panic("item is not an option key")
 	}
-	switch key.value {
-	case "classtype", "flow", "threshold", "tag", "priority":
+	switch {
+	case inSlice(key.value, []string{"classtype", "flow", "threshold", "tag", "priority"}):
 		nextItem := l.nextItem()
 		if nextItem.typ != itemOptionValue {
 			return fmt.Errorf("no valid value for %s tag", key.value)
@@ -355,7 +444,7 @@ func (r *Rule) option(key item, l *lexer) error {
 			r.Tags = make(map[string]string)
 		}
 		r.Tags[key.value] = nextItem.value
-	case "reference":
+	case key.value == "reference":
 		nextItem := l.nextItem()
 		if nextItem.typ != itemOptionValue {
 			return errors.New("no valid value for reference")
@@ -365,20 +454,20 @@ func (r *Rule) option(key item, l *lexer) error {
 			return fmt.Errorf("invalid reference definition: %s", refs)
 		}
 		r.References = append(r.References, &Reference{Type: refs[0], Value: refs[1]})
-	case "metadata":
+	case key.value == "metadata":
 		nextItem := l.nextItem()
 		if nextItem.typ != itemOptionValue {
 			return errors.New("no valid value for metadata")
 		}
 		metas := metaSplitRE.Split(nextItem.value, -1)
-		for _,kv := range metas{
+		for _, kv := range metas {
 			metaTmp := strings.SplitN(kv, " ", 2)
 			if len(metaTmp) != 2 {
 				return fmt.Errorf("invalid metadata definition: %s", metaTmp)
 			}
 			r.Metas = append(r.Metas, &Metadata{Key: strings.TrimSpace(metaTmp[0]), Value: strings.TrimSpace(metaTmp[1])})
 		}
-	case "sid":
+	case key.value == "sid":
 		nextItem := l.nextItem()
 		if nextItem.typ != itemOptionValue {
 			return errors.New("no value for option sid")
@@ -388,7 +477,7 @@ func (r *Rule) option(key item, l *lexer) error {
 			return fmt.Errorf("invalid sid %s", nextItem.value)
 		}
 		r.SID = sid
-	case "rev":
+	case key.value == "rev":
 		nextItem := l.nextItem()
 		if nextItem.typ != itemOptionValue {
 			return errors.New("no value for option rev")
@@ -398,19 +487,19 @@ func (r *Rule) option(key item, l *lexer) error {
 			return fmt.Errorf("invalid rev %s", nextItem.value)
 		}
 		r.Revision = rev
-	case "msg":
+	case key.value == "msg":
 		nextItem := l.nextItem()
 		if nextItem.typ != itemOptionValueString {
 			return errors.New("no value for option msg")
 		}
 		r.Description = nextItem.value
-	case "file_data":
-		dataPosition = fileData
-	case "pkt_data":
-		dataPosition = pktData
-	case "base64_data":
-		dataPosition = base64Data
-	case "content", "uricontent":
+	case isStickyBuffer(key.value):
+		if d, err := stickyBuffer(key.value); err != nil {
+			return err
+		} else {
+			dataPosition = d
+		}
+	case inSlice(key.value, []string{"content", "uricontent"}):
 		nextItem := l.nextItem()
 		negate := false
 		if nextItem.typ == itemNot {
@@ -435,15 +524,15 @@ func (r *Rule) option(key item, l *lexer) error {
 		} else {
 			return fmt.Errorf("invalid type %q for option content", nextItem.typ)
 		}
-	case "http_cookie", "http_raw_cookie", "http_method", "http_header", "http_raw_header",
+	case inSlice(key.value, []string{"http_cookie", "http_raw_cookie", "http_method", "http_header", "http_raw_header",
 		"http_uri", "http_raw_uri", "http_user_agent", "http_stat_code", "http_stat_msg",
-		"http_client_body", "http_server_body", "nocase":
+		"http_client_body", "http_server_body", "nocase"}):
 		if len(r.Contents) == 0 {
 			return fmt.Errorf("invalid content option %q with no content match", key.value)
 		}
 		lastContent := r.Contents[len(r.Contents)-1]
 		lastContent.Options = append(lastContent.Options, &ContentOption{Name: key.value})
-	case "depth", "distance", "offset", "within":
+	case inSlice(key.value, []string{"depth", "distance", "offset", "within"}):
 		if len(r.Contents) == 0 {
 			return fmt.Errorf("invalid content option %q with no content match", key.value)
 		}
@@ -457,7 +546,7 @@ func (r *Rule) option(key item, l *lexer) error {
 		}
 		lastContent := r.Contents[len(r.Contents)-1]
 		lastContent.Options = append(lastContent.Options, &ContentOption{Name: key.value, Value: v})
-	case "fast_pattern":
+	case key.value == "fast_pattern":
 		if len(r.Contents) == 0 {
 			return fmt.Errorf("invalid content option %q with no content match", key.value)
 		}
@@ -488,7 +577,7 @@ func (r *Rule) option(key item, l *lexer) error {
 		}
 		lastContent := r.Contents[len(r.Contents)-1]
 		lastContent.FastPattern = FastPattern{true, only, offset, length}
-	case "pcre":
+	case key.value == "pcre":
 		nextItem := l.nextItem()
 		negate := false
 		if nextItem.typ == itemNot {
@@ -544,6 +633,5 @@ func ParseRule(rule string) (*Rule, error) {
 			return nil, err
 		}
 	}
-	
 	return r, nil
 }

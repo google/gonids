@@ -494,11 +494,12 @@ func (r *Rule) option(key item, l *lexer) error {
 		}
 		r.Description = nextItem.value
 	case isStickyBuffer(key.value):
-		if d, err := stickyBuffer(key.value); err != nil {
+		var d dataPos
+		var err error
+		if d, err = stickyBuffer(key.value); err != nil {
 			return err
-		} else {
-			dataPosition = d
 		}
+		dataPosition = d
 	case inSlice(key.value, []string{"content", "uricontent"}):
 		nextItem := l.nextItem()
 		negate := false

@@ -124,6 +124,63 @@ func TestContentFormatPattern(t *testing.T) {
 	}
 }
 
+func TestFastPatternString(t *testing.T) {
+	for _, tt := range []struct {
+		name  string
+		input FastPattern
+		want  string
+	}{
+		{
+			name: "fast_pattern",
+			input: FastPattern{
+				Enabled: true,
+			},
+			want: "fast_pattern;",
+		},
+		{
+			name: "fast_pattern:only;",
+			input: FastPattern{
+				Enabled: true,
+				Only:    true,
+			},
+			want: "fast_pattern:only;",
+		},
+		{
+			name: "fast_pattern:`chop`",
+			input: FastPattern{
+				Enabled: true,
+				Offset:  2,
+				Length:  5,
+			},
+			want: "fast_pattern:2,5;",
+		},
+		{
+			name: "invalid state",
+			input: FastPattern{
+				Enabled: true,
+				Only:    true,
+				Offset:  2,
+				Length:  5,
+			},
+			want: "",
+		},
+		{
+			name: "not enabled",
+			input: FastPattern{
+				Only:   true,
+				Offset: 2,
+				Length: 5,
+			},
+			want: "",
+		},
+	} {
+		got := tt.input.String()
+		if got != tt.want {
+			t.Fatalf("%s: got %v; expected %v", tt.name, got, tt.want)
+		}
+	}
+}
+
 func TestParseRule(t *testing.T) {
 	for _, tt := range []struct {
 		name    string

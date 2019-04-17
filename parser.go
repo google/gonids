@@ -308,6 +308,31 @@ func inSlice(str string, strings []string) bool {
 	return false
 }
 
+func (f FastPattern) String() string {
+	if !f.Enabled {
+		return ""
+	}
+	// This is an invalid state.
+	if f.Only && (f.Offset != 0 || f.Length != 0) {
+		return ""
+	}
+
+	var s strings.Builder
+	s.WriteString("fast_pattern")
+	if f.Only {
+		s.WriteString(":only;")
+		return s.String()
+	}
+
+	// "only" and "chop" modes are mutually exclusive.
+	if f.Offset != 0 && f.Length != 0 {
+		s.WriteString(fmt.Sprintf(":%d,%d", f.Offset, f.Length))
+	}
+
+	s.WriteString(";")
+	return s.String()
+}
+
 // TODO: Add a String method for Content to add negation, and options.
 
 // ToRegexp returns a string that can be used as a regular expression

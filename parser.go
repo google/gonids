@@ -333,6 +333,17 @@ func (f FastPattern) String() string {
 	return s.String()
 }
 
+func (co ContentOption) String() string {
+	if inSlice(co.Name, []string{"depth", "distance", "offset", "within"}) {
+		return fmt.Sprintf("%s:%d;", co.Name, co.Value)
+	}
+	return fmt.Sprintf("%s;", co.Name)
+}
+
+func (r Reference) String() string {
+	return fmt.Sprintf("reference:%s,%s;", r.Type, r.Value)
+}
+
 // TODO: Add a String method for Content to add negation, and options.
 
 // ToRegexp returns a string that can be used as a regular expression

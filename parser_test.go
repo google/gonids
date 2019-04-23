@@ -181,6 +181,73 @@ func TestFastPatternString(t *testing.T) {
 	}
 }
 
+func TestContentOptionString(t *testing.T) {
+	for _, tt := range []struct {
+		name  string
+		input ContentOption
+		want  string
+	}{
+		{
+			name: "no value",
+			input: ContentOption{
+				Name: "http_uri",
+			},
+			want: "http_uri;",
+		},
+		{
+			name: "value",
+			input: ContentOption{
+				Name:  "depth",
+				Value: 0,
+			},
+			want: "depth:0;",
+		},
+		{
+			name: "invalid value",
+			input: ContentOption{
+				Name:  "http_uri",
+				Value: 1,
+			},
+			want: "http_uri;",
+		},
+	} {
+		got := tt.input.String()
+		if got != tt.want {
+			t.Fatalf("%s: got %v; expected %v", tt.name, got, tt.want)
+		}
+	}
+}
+
+func TestReferenceString(t *testing.T) {
+	for _, tt := range []struct {
+		name  string
+		input Reference
+		want  string
+	}{
+		{
+			name: "url",
+			input: Reference{
+				Type:  "url",
+				Value: "www.google.com",
+			},
+			want: "reference:url,www.google.com;",
+		},
+		{
+			name: "md5",
+			input: Reference{
+				Type:  "md5",
+				Value: "2aee1c40199c7754da766e61452612cc",
+			},
+			want: "reference:md5,2aee1c40199c7754da766e61452612cc;",
+		},
+	} {
+		got := tt.input.String()
+		if got != tt.want {
+			t.Fatalf("%s: got %v; expected %v", tt.name, got, tt.want)
+		}
+	}
+}
+
 func TestParseRule(t *testing.T) {
 	for _, tt := range []struct {
 		name    string

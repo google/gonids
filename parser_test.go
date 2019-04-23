@@ -124,6 +124,310 @@ func TestContentFormatPattern(t *testing.T) {
 	}
 }
 
+func TestFastPatternString(t *testing.T) {
+	for _, tt := range []struct {
+		name  string
+		input FastPattern
+		want  string
+	}{
+		{
+			name: "fast_pattern",
+			input: FastPattern{
+				Enabled: true,
+			},
+			want: "fast_pattern;",
+		},
+		{
+			name: "fast_pattern:only;",
+			input: FastPattern{
+				Enabled: true,
+				Only:    true,
+			},
+			want: "fast_pattern:only;",
+		},
+		{
+			name: "fast_pattern:`chop`",
+			input: FastPattern{
+				Enabled: true,
+				Offset:  2,
+				Length:  5,
+			},
+			want: "fast_pattern:2,5;",
+		},
+		{
+			name: "invalid state",
+			input: FastPattern{
+				Enabled: true,
+				Only:    true,
+				Offset:  2,
+				Length:  5,
+			},
+			want: "",
+		},
+		{
+			name: "not enabled",
+			input: FastPattern{
+				Only:   true,
+				Offset: 2,
+				Length: 5,
+			},
+			want: "",
+		},
+	} {
+		got := tt.input.String()
+		if got != tt.want {
+			t.Fatalf("%s: got %v; expected %v", tt.name, got, tt.want)
+		}
+	}
+}
+
+func TestContentOptionString(t *testing.T) {
+	for _, tt := range []struct {
+		name  string
+		input ContentOption
+		want  string
+	}{
+		{
+			name: "no value",
+			input: ContentOption{
+				Name: "http_uri",
+			},
+			want: "http_uri;",
+		},
+		{
+			name: "value",
+			input: ContentOption{
+				Name:  "depth",
+				Value: 0,
+			},
+			want: "depth:0;",
+		},
+		{
+			name: "invalid value",
+			input: ContentOption{
+				Name:  "http_uri",
+				Value: 1,
+			},
+			want: "http_uri;",
+		},
+	} {
+		got := tt.input.String()
+		if got != tt.want {
+			t.Fatalf("%s: got %v; expected %v", tt.name, got, tt.want)
+		}
+	}
+}
+
+func TestReferenceString(t *testing.T) {
+	for _, tt := range []struct {
+		name  string
+		input Reference
+		want  string
+	}{
+		{
+			name: "url",
+			input: Reference{
+				Type:  "url",
+				Value: "www.google.com",
+			},
+			want: "reference:url,www.google.com;",
+		},
+		{
+			name: "md5",
+			input: Reference{
+				Type:  "md5",
+				Value: "2aee1c40199c7754da766e61452612cc",
+			},
+			want: "reference:md5,2aee1c40199c7754da766e61452612cc;",
+		},
+	} {
+		got := tt.input.String()
+		if got != tt.want {
+			t.Fatalf("%s: got %v; expected %v", tt.name, got, tt.want)
+		}
+	}
+}
+
+func TestContentString(t *testing.T) {
+	for _, tt := range []struct {
+		name  string
+		input Content
+		want  string
+	}{
+		{
+			name: "basic",
+			input: Content{
+				Pattern: []byte("AA"),
+			},
+			want: `content:"AA";`,
+		},
+		{
+			name: "basic escaped char",
+			input: Content{
+				Pattern: []byte("AA;"),
+			},
+			want: `content:"AA|3B|";`,
+		},
+		{
+			name: "negated content",
+			input: Content{
+				Negate:  true,
+				Pattern: []byte("AA"),
+			},
+			want: `content:!"AA";`,
+		},
+		{
+			name: "content with one option",
+			input: Content{
+				Pattern: []byte("AA"),
+				Options: []*ContentOption{
+					&ContentOption{
+						Name: "http_uri",
+					},
+				},
+			},
+			want: `content:"AA"; http_uri;`,
+		},
+		{
+			name: "content with multiple options",
+			input: Content{
+				Pattern: []byte("AA"),
+				Options: []*ContentOption{
+					&ContentOption{
+						Name: "http_uri",
+					},
+					&ContentOption{
+						Name:  "depth",
+						Value: 0,
+					},
+				},
+			},
+			want: `content:"AA"; http_uri; depth:0;`,
+		},
+		{
+			name: "content with multiple options and fast_pattern",
+			input: Content{
+				Pattern: []byte("AA"),
+				Options: []*ContentOption{
+					&ContentOption{
+						Name: "http_uri",
+					},
+					&ContentOption{
+						Name:  "depth",
+						Value: 0,
+					},
+				},
+				FastPattern: FastPattern{
+					Enabled: true,
+				},
+			},
+			want: `content:"AA"; http_uri; depth:0; fast_pattern;`,
+		},
+	} {
+		got := tt.input.String()
+		if got != tt.want {
+			t.Fatalf("%s: got %v -- expected %v", tt.name, got, tt.want)
+		}
+	}
+}
+
+func TestContentsString(t *testing.T) {
+	for _, tt := range []struct {
+		name  string
+		input Contents
+		want  string
+	}{
+		{
+			name: "single simple content",
+			input: Contents{
+				&Content{
+					Pattern: []byte("AA"),
+				},
+			},
+			want: `content:"AA";`,
+		},
+		{
+			name: "multiple simple contents",
+			input: Contents{
+				&Content{
+					Pattern: []byte("AA"),
+				},
+				&Content{
+					Pattern: []byte("BB"),
+				},
+				&Content{
+					Pattern: []byte("CC"),
+				},
+			},
+			want: `content:"AA"; content:"BB"; content:"CC";`,
+		},
+		{
+			name: "single sticky buffer",
+			input: Contents{
+				&Content{
+					DataPosition: base64Data,
+					Pattern:      []byte("AA"),
+				},
+			},
+			want: `base64_data; content:"AA";`,
+		},
+		{
+			name: "changing sticky buffer",
+			input: Contents{
+				&Content{
+					DataPosition: base64Data,
+					Pattern:      []byte("AA"),
+				},
+				&Content{
+					DataPosition: pktData,
+					Pattern:      []byte("BB"),
+				},
+				&Content{
+					DataPosition: httpAccept,
+					Pattern:      []byte("CC"),
+				},
+			},
+			want: `base64_data; content:"AA"; pkt_data; content:"BB"; http_accept; content:"CC";`,
+		},
+		{
+			name: "changing sticky buffer and complex content",
+			input: Contents{
+				&Content{
+					DataPosition: base64Data,
+					Pattern:      []byte("AA"),
+					FastPattern: FastPattern{
+						Enabled: true,
+					},
+					Options: []*ContentOption{
+						&ContentOption{
+							Name:  "offset",
+							Value: 10,
+						},
+						&ContentOption{
+							Name:  "depth",
+							Value: 50,
+						},
+					},
+				},
+				&Content{
+					DataPosition: pktData,
+					Pattern:      []byte("BB"),
+				},
+				&Content{
+					DataPosition: httpAccept,
+					Pattern:      []byte("CC"),
+				},
+			},
+			want: `base64_data; content:"AA"; offset:10; depth:50; fast_pattern; pkt_data; content:"BB"; http_accept; content:"CC";`,
+		},
+	} {
+		got := tt.input.String()
+		if got != tt.want {
+			t.Fatalf("%s: got %v -- expected %v", tt.name, got, tt.want)
+		}
+	}
+}
+
 func TestParseRule(t *testing.T) {
 	for _, tt := range []struct {
 		name    string
@@ -153,7 +457,7 @@ func TestParseRule(t *testing.T) {
 				SID:         1337,
 				Revision:    2,
 				Description: "foo",
-				Contents: []*Content{
+				Contents: Contents{
 					&Content{
 						Pattern: []byte("AA"),
 					},
@@ -178,7 +482,7 @@ func TestParseRule(t *testing.T) {
 				SID:         1337,
 				Revision:    2,
 				Description: "foo",
-				Contents: []*Content{
+				Contents: Contents{
 					&Content{
 						Pattern: []byte("AA"),
 					},
@@ -203,7 +507,7 @@ func TestParseRule(t *testing.T) {
 				SID:           1337,
 				Revision:      2,
 				Description:   "foo",
-				Contents: []*Content{
+				Contents: Contents{
 					&Content{
 						Pattern: []byte("AA"),
 					},
@@ -226,7 +530,7 @@ func TestParseRule(t *testing.T) {
 				},
 				SID:         1337,
 				Description: "foo",
-				Contents: []*Content{
+				Contents: Contents{
 					&Content{
 						Pattern: []byte("AA"), Negate: true},
 				},
@@ -248,7 +552,7 @@ func TestParseRule(t *testing.T) {
 				},
 				SID:         1337,
 				Description: "foo",
-				Contents: []*Content{
+				Contents: Contents{
 					&Content{
 						Pattern: []byte("AA"),
 					},
@@ -274,7 +578,7 @@ func TestParseRule(t *testing.T) {
 				},
 				SID:         1337,
 				Description: "foo",
-				Contents: []*Content{
+				Contents: Contents{
 					&Content{
 						Pattern: []byte{'A', 0x42, 0x43, 'D', 0x45},
 					},
@@ -297,7 +601,7 @@ func TestParseRule(t *testing.T) {
 				},
 				SID:         1337,
 				Description: "foo",
-				Contents: []*Content{
+				Contents: Contents{
 					&Content{
 						Pattern: []byte("AA"), Negate: true},
 				},
@@ -320,7 +624,7 @@ func TestParseRule(t *testing.T) {
 				},
 				SID:         1337,
 				Description: "foo",
-				Contents: []*Content{
+				Contents: Contents{
 					&Content{
 						Pattern: []byte("A"),
 					},
@@ -347,7 +651,7 @@ func TestParseRule(t *testing.T) {
 				},
 				SID:         1337,
 				Description: "foo",
-				Contents: []*Content{
+				Contents: Contents{
 					&Content{
 						Pattern: []byte("AA"),
 						Negate:  true,
@@ -375,7 +679,7 @@ func TestParseRule(t *testing.T) {
 				},
 				SID:         1,
 				Description: "a",
-				Contents: []*Content{
+				Contents: Contents{
 					&Content{
 						Pattern: []byte("A"),
 						Options: []*ContentOption{
@@ -408,7 +712,7 @@ func TestParseRule(t *testing.T) {
 				},
 				SID:         1,
 				Description: "a",
-				Contents: []*Content{
+				Contents: Contents{
 					&Content{
 						Pattern: []byte("A"),
 						Options: []*ContentOption{
@@ -442,7 +746,7 @@ func TestParseRule(t *testing.T) {
 				},
 				SID:         1,
 				Description: "a",
-				Contents: []*Content{
+				Contents: Contents{
 					&Content{
 						DataPosition: fileData,
 						Pattern:      []byte("A"),
@@ -477,7 +781,7 @@ func TestParseRule(t *testing.T) {
 				},
 				SID:         1,
 				Description: "a",
-				Contents: []*Content{
+				Contents: Contents{
 					&Content{
 						DataPosition: fileData,
 						Pattern:      []byte("A"),
@@ -519,7 +823,7 @@ func TestParseRule(t *testing.T) {
 				},
 				SID:         1,
 				Description: "a",
-				Contents: []*Content{
+				Contents: Contents{
 					&Content{
 						DataPosition: httpRequestLine,
 						Pattern:      []byte("A"),
@@ -555,7 +859,7 @@ func TestParseRule(t *testing.T) {
 				Revision:    6,
 				Description: "VRT BLACKLIST URI request for known malicious URI - /tongji.js",
 				References:  []*Reference{&Reference{Type: "url", Value: "labs.snort.org/docs/17904.html"}},
-				Contents: []*Content{
+				Contents: Contents{
 					&Content{
 						Pattern: []byte("/tongji.js"),
 						Options: []*ContentOption{
@@ -610,7 +914,7 @@ func TestParseRule(t *testing.T) {
 						Type:  "url",
 						Value: "www.google.com"},
 				},
-				Contents: []*Content{
+				Contents: Contents{
 					&Content{
 						Pattern: []byte("blah"),
 						Options: []*ContentOption{
@@ -650,7 +954,7 @@ func TestParseRule(t *testing.T) {
 						Type:  "url",
 						Value: "doc.emergingthreats.net/2009256"},
 				},
-				Contents: []*Content{
+				Contents: Contents{
 					&Content{
 						Pattern: []byte{0x31, 0xc9, 0xb1, 0xfc, 0x80, 0x73, 0x0c},
 					},
@@ -685,7 +989,7 @@ func TestParseRule(t *testing.T) {
 				SID:         2025692,
 				Revision:    2,
 				Description: "ET CURRENT_EVENTS Chase Account Phish Landing Oct 22",
-				Contents: []*Content{
+				Contents: Contents{
 					&Content{
 						Pattern:      []byte("<title>Sign in</title>"),
 						DataPosition: fileData,

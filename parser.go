@@ -55,7 +55,7 @@ type Rule struct {
 	// to a content. urilen, dsize, etc. Various buffers, and directions need structured
 	// places to live.
 	// Contents are all the decoded content matches.
-	Contents []*Content
+	Contents Contents
 	// PCREs is a slice of PCRE structs that represent the regular expressions in a rule
 	PCREs []*PCRE
 	// Tags is a map of tag names to tag values (e.g. classtype:trojan).
@@ -77,6 +77,9 @@ type Network struct {
 	Nets  []string // Currently just []string because these can be variables $HOME_NET, not a valid IPNet.
 	Ports []string // Currently just []string because these can be variables $HTTP_PORTS, not just ints.
 }
+
+// Contents is used so we can have a target type for a Stringer.
+type Contents []*Content
 
 type dataPos int
 
@@ -308,7 +311,76 @@ func inSlice(str string, strings []string) bool {
 	return false
 }
 
-// TODO: Add a String method for Content to add negation, and options.
+// String returns a string for a FastPattern.
+func (f FastPattern) String() string {
+	if !f.Enabled {
+		return ""
+	}
+	// This is an invalid state.
+	if f.Only && (f.Offset != 0 || f.Length != 0) {
+		return ""
+	}
+
+	var s strings.Builder
+	s.WriteString("fast_pattern")
+	if f.Only {
+		s.WriteString(":only;")
+		return s.String()
+	}
+
+	// "only" and "chop" modes are mutually exclusive.
+	if f.Offset != 0 && f.Length != 0 {
+		s.WriteString(fmt.Sprintf(":%d,%d", f.Offset, f.Length))
+	}
+
+	s.WriteString(";")
+	return s.String()
+}
+
+// String returns a string for a ContentOption.
+func (co ContentOption) String() string {
+	if inSlice(co.Name, []string{"depth", "distance", "offset", "within"}) {
+		return fmt.Sprintf("%s:%d;", co.Name, co.Value)
+	}
+	return fmt.Sprintf("%s;", co.Name)
+}
+
+// String returns a string for a Reference.
+func (r Reference) String() string {
+	return fmt.Sprintf("reference:%s,%s;", r.Type, r.Value)
+}
+
+// String returns a string for a Content (ignoring sticky buffers.)
+func (c Content) String() string {
+	var s strings.Builder
+	s.WriteString("content:")
+	if c.Negate {
+		s.WriteString("!")
+	}
+	s.WriteString(fmt.Sprintf(`"%s";`, c.FormatPattern()))
+	for _, o := range c.Options {
+		s.WriteString(fmt.Sprintf(" %s", o))
+	}
+	if c.FastPattern.Enabled {
+		s.WriteString(fmt.Sprintf(" %s", c.FastPattern))
+	}
+
+	return s.String()
+}
+
+// String returns a string for all of the contents.
+func (cs Contents) String() string {
+	var s strings.Builder
+	d := pktData
+	for _, c := range cs {
+		if d != c.DataPosition {
+			d = c.DataPosition
+			s.WriteString(fmt.Sprintf(" %s;", d))
+		}
+		s.WriteString(fmt.Sprintf(" %s", c))
+	}
+	return strings.TrimSpace(s.String())
+}
 
 // ToRegexp returns a string that can be used as a regular expression
 // to identify content matches in an ASCII dump of a packet capture (tcpdump -A).

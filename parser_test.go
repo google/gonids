@@ -248,6 +248,89 @@ func TestReferenceString(t *testing.T) {
 	}
 }
 
+func TestContentString(t *testing.T) {
+	for _, tt := range []struct {
+		name  string
+		input Content
+		want  string
+	}{
+		{
+			name: "basic",
+			input: Content{
+				Pattern: []byte("AA"),
+			},
+			want: `content:"AA";`,
+		},
+		{
+			name: "basic escaped char",
+			input: Content{
+				Pattern: []byte("AA;"),
+			},
+			want: `content:"AA|3B|";`,
+		},
+		{
+			name: "negated content",
+			input: Content{
+				Negate:  true,
+				Pattern: []byte("AA"),
+			},
+			want: `content:!"AA";`,
+		},
+		{
+			name: "content with one option",
+			input: Content{
+				Pattern: []byte("AA"),
+				Options: []*ContentOption{
+					&ContentOption{
+						Name: "http_uri",
+					},
+				},
+			},
+			want: `content:"AA"; http_uri;`,
+		},
+		{
+			name: "content with multiple options",
+			input: Content{
+				Pattern: []byte("AA"),
+				Options: []*ContentOption{
+					&ContentOption{
+						Name: "http_uri",
+					},
+					&ContentOption{
+						Name:  "depth",
+						Value: 0,
+					},
+				},
+			},
+			want: `content:"AA"; http_uri; depth:0;`,
+		},
+		{
+			name: "content with multiple options and fast_pattern",
+			input: Content{
+				Pattern: []byte("AA"),
+				Options: []*ContentOption{
+					&ContentOption{
+						Name: "http_uri",
+					},
+					&ContentOption{
+						Name:  "depth",
+						Value: 0,
+					},
+				},
+				FastPattern: FastPattern{
+					Enabled: true,
+				},
+			},
+			want: `content:"AA"; http_uri; depth:0; fast_pattern;`,
+		},
+	} {
+		got := tt.input.String()
+		if got != tt.want {
+			t.Fatalf("%s: got %v -- expected %v", tt.name, got, tt.want)
+		}
+	}
+}
+
 func TestParseRule(t *testing.T) {
 	for _, tt := range []struct {
 		name    string

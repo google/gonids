@@ -55,7 +55,7 @@ type Rule struct {
 	// to a content. urilen, dsize, etc. Various buffers, and directions need structured
 	// places to live.
 	// Contents are all the decoded content matches.
-	Contents []*Content
+	Contents Contents
 	// PCREs is a slice of PCRE structs that represent the regular expressions in a rule
 	PCREs []*PCRE
 	// Tags is a map of tag names to tag values (e.g. classtype:trojan).
@@ -77,6 +77,9 @@ type Network struct {
 	Nets  []string // Currently just []string because these can be variables $HOME_NET, not a valid IPNet.
 	Ports []string // Currently just []string because these can be variables $HTTP_PORTS, not just ints.
 }
+
+// Contents is used so we can have a target type for a Stringer.
+type Contents []*Content
 
 type dataPos int
 
@@ -362,7 +365,18 @@ func (c Content) String() string {
 	return s.String()
 }
 
-// TODO: Stringer for []*Content. This is where we need to consider dataPos.
+func (cs Contents) String() string {
+	var s strings.Builder
+	d := pktData
+	for _, c := range cs {
+		if d != c.DataPosition {
+			d = c.DataPosition
+			s.WriteString(fmt.Sprintf(" %s;", d))
+		}
+		s.WriteString(fmt.Sprintf(" %s", c))
+	}
+	return strings.TrimSpace(s.String())
+}
 
 // ToRegexp returns a string that can be used as a regular expression
 // to identify content matches in an ASCII dump of a packet capture (tcpdump -A).

@@ -311,6 +311,7 @@ func inSlice(str string, strings []string) bool {
 	return false
 }
 
+// String returns a string for a FastPattern.
 func (f FastPattern) String() string {
 	if !f.Enabled {
 		return ""
@@ -336,6 +337,7 @@ func (f FastPattern) String() string {
 	return s.String()
 }
 
+// String returns a string for a ContentOption.
 func (co ContentOption) String() string {
 	if inSlice(co.Name, []string{"depth", "distance", "offset", "within"}) {
 		return fmt.Sprintf("%s:%d;", co.Name, co.Value)
@@ -343,10 +345,12 @@ func (co ContentOption) String() string {
 	return fmt.Sprintf("%s;", co.Name)
 }
 
+// String returns a string for a Reference.
 func (r Reference) String() string {
 	return fmt.Sprintf("reference:%s,%s;", r.Type, r.Value)
 }
 
+// String returns a string for a Content (ignoring sticky buffers.)
 func (c Content) String() string {
 	var s strings.Builder
 	s.WriteString("content:")
@@ -364,6 +368,7 @@ func (c Content) String() string {
 	return s.String()
 }
 
+// String returns a string for all of the contents.
 func (cs Contents) String() string {
 	var s strings.Builder
 	d := pktData

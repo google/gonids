@@ -344,7 +344,25 @@ func (r Reference) String() string {
 	return fmt.Sprintf("reference:%s,%s;", r.Type, r.Value)
 }
 
-// TODO: Add a String method for Content to add negation, and options.
+func (c Content) String() string {
+	var s strings.Builder
+	// TODO(duane): Figure out dataPos portion
+	s.WriteString("content:")
+	if c.Negate {
+		s.WriteString("!")
+	}
+	s.WriteString(fmt.Sprintf(`"%s";`, c.FormatPattern()))
+	for _, o := range c.Options {
+		s.WriteString(fmt.Sprintf(" %s", o))
+	}
+	if c.FastPattern.Enabled {
+		s.WriteString(fmt.Sprintf(" %s", c.FastPattern))
+	}
+
+	return s.String()
+}
+
+// TODO: Stringer for []*Content. This is where we need to consider dataPos.
 
 // ToRegexp returns a string that can be used as a regular expression
 // to identify content matches in an ASCII dump of a packet capture (tcpdump -A).

@@ -349,7 +349,6 @@ func (r Reference) String() string {
 
 func (c Content) String() string {
 	var s strings.Builder
-	// TODO(duane): Figure out dataPos portion
 	s.WriteString("content:")
 	if c.Negate {
 		s.WriteString("!")

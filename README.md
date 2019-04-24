@@ -13,7 +13,7 @@ import "github.com/google/gonids"
 
 To parse a rule:
 ```
-var rule := "alert tcp $HOME_NET any -> $EXTERNAL_NET 80 (msg:"GONIDS TEST hello world"; flow:established,to_server; content:"hello world"; classtype:trojan-activity; sid:1; rev:1;)"
+rule := `alert tcp $HOME_NET any -> $EXTERNAL_NET 80 (msg:"GONIDS TEST hello world"; flow:established,to_server; content:"hello world"; classtype:trojan-activity; sid:1; rev:1;)`
 r, err := gonids.ParseRule(rule)
 if err != nil {
   // Handle parse error

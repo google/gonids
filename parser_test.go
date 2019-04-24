@@ -248,6 +248,102 @@ func TestReferenceString(t *testing.T) {
 	}
 }
 
+func TestMetdatasString(t *testing.T) {
+	for _, tt := range []struct {
+		name  string
+		input Metadatas
+		want  string
+	}{
+		{
+			name: "one meta",
+			input: Metadatas{
+				&Metadata{
+					Key:   "foo",
+					Value: "bar",
+				},
+			},
+			want: "metadata:foo bar;",
+		},
+		{
+			name: "three meta",
+			input: Metadatas{
+				&Metadata{
+					Key:   "created_at",
+					Value: "2019_01_01",
+				},
+				&Metadata{
+					Key:   "updated_at",
+					Value: "2019_01_07",
+				},
+				&Metadata{
+					Key:   "target",
+					Value: "Windows",
+				},
+			},
+			want: "metadata:created_at 2019_01_01, updated_at 2019_01_07, target Windows;",
+		},
+	} {
+		got := tt.input.String()
+		if got != tt.want {
+			t.Fatalf("%s: got %v -- expected %v", tt.name, got, tt.want)
+		}
+	}
+}
+
+func TestNetString(t *testing.T) {
+	for _, tt := range []struct {
+		name  string
+		input []string
+		want  string
+	}{
+		{
+			name:  "one net",
+			input: []string{"$HOME_NET"},
+			want:  "$HOME_NET",
+		},
+		{
+			name:  "three nets",
+			input: []string{"$HOME_NET", "!$FOO_NET", "192.168.0.0/16"},
+			want:  "[$HOME_NET, !$FOO_NET, 192.168.0.0/16]",
+		},
+	} {
+		got := netString(tt.input)
+		if got != tt.want {
+			t.Fatalf("%s: got %v -- expected %v", tt.name, got, tt.want)
+		}
+	}
+}
+
+func TestNetworkString(t *testing.T) {
+	for _, tt := range []struct {
+		name  string
+		input Network
+		want  string
+	}{
+		{
+			name: "simple net",
+			input: Network{
+				Nets:  []string{"$HOME_NET"},
+				Ports: []string{"$HTTP_PORTS"},
+			},
+			want: "$HOME_NET $HTTP_PORTS",
+		},
+		{
+			name: "complex net",
+			input: Network{
+				Nets:  []string{"$HOME_NET", "!$FOO_NET", "192.168.0.0/16"},
+				Ports: []string{"$HTTP_PORTS", "!53", "$BAR_NET"},
+			},
+			want: "[$HOME_NET, !$FOO_NET, 192.168.0.0/16] [$HTTP_PORTS, !53, $BAR_NET]",
+		},
+	} {
+		got := tt.input.String()
+		if got != tt.want {
+			t.Fatalf("%s: got %v -- expected %v", tt.name, got, tt.want)
+		}
+	}
+}
+
 func TestContentString(t *testing.T) {
 	for _, tt := range []struct {
 		name  string
@@ -884,7 +980,7 @@ func TestParseRule(t *testing.T) {
 					"flow":      "to_server,established",
 					"classtype": "trojan-activity",
 				},
-				Metas: []*Metadata{
+				Metas: Metadatas{
 					&Metadata{Key: "impact_flag", Value: "red"},
 					&Metadata{Key: "policy", Value: "balanced-ips drop"},
 					&Metadata{Key: "policy", Value: "security-ips drop"},
@@ -966,7 +1062,7 @@ func TestParseRule(t *testing.T) {
 					},
 				},
 				Tags: map[string]string{"flow": "established", "classtype": "shellcode-detect"},
-				Metas: []*Metadata{
+				Metas: Metadatas{
 					&Metadata{Key: "created_at", Value: "2010_07_30"},
 					&Metadata{Key: "updated_at", Value: "2010_07_30"},
 				},
@@ -1021,7 +1117,7 @@ func TestParseRule(t *testing.T) {
 					},
 				},
 				Tags: map[string]string{"flow": "established,from_server", "classtype": "trojan-activity"},
-				Metas: []*Metadata{
+				Metas: Metadatas{
 					&Metadata{Key: "former_category", Value: "CURRENT_EVENTS"},
 					&Metadata{Key: "created_at", Value: "2015_10_22"},
 					&Metadata{Key: "updated_at", Value: "2018_07_12"},

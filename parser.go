@@ -56,30 +56,29 @@ type Rule struct {
 	// places to live.
 	// Contents are all the decoded content matches.
 	Contents Contents
-	// PCREs is a slice of PCRE structs that represent the regular expressions in a rule
+	// PCREs is a slice of PCRE structs that represent the regular expressions in a rule.
 	PCREs []*PCRE
 	// Tags is a map of tag names to tag values (e.g. classtype:trojan).
 	Tags map[string]string
-	//Metas is a slice of Metadata
-	Metas []*Metadata
+	// Metas is a slice of Metadata.
+	Metas Metadatas
 }
 
-// TODO: Ensure all values either begin with $ (variable) or they are valid IPNet/int.
-
-//Metadata describes metadata tags in key-value struct
+// Metadata describes metadata tags in key-value struct.
 type Metadata struct {
 	Key   string
 	Value string
 }
 
+// Metadatas allows for a Stringer on []*Metadata
+type Metadatas []*Metadata
+
+// TODO: Ensure all values either begin with $ (variable) or they are valid IPNet/int.
 // Network describes the IP addresses and port numbers used in a rule.
 type Network struct {
 	Nets  []string // Currently just []string because these can be variables $HOME_NET, not a valid IPNet.
 	Ports []string // Currently just []string because these can be variables $HTTP_PORTS, not just ints.
 }
-
-// Contents is used so we can have a target type for a Stringer.
-type Contents []*Content
 
 type dataPos int
 
@@ -183,6 +182,9 @@ type Content struct {
 	// Options are the option associated to the content (e.g. http_header).
 	Options []*ContentOption
 }
+
+// Contents is used so we can have a target type for a Stringer.
+type Contents []*Content
 
 // PCRE describes a PCRE item of a rule.
 type PCRE struct {
@@ -311,6 +313,28 @@ func inSlice(str string, strings []string) bool {
 	return false
 }
 
+func netString(netPart []string) string {
+	var s strings.Builder
+	if len(netPart) > 1 {
+		s.WriteString("[")
+	}
+	for i, n := range netPart {
+		s.WriteString(n)
+		if i < len(netPart)-1 {
+			s.WriteString(", ")
+		}
+	}
+	if len(netPart) > 1 {
+		s.WriteString("]")
+	}
+	return s.String()
+}
+
+// String retunrs a string for a Network.
+func (n Network) String() string {
+	return fmt.Sprintf("%s %s", netString(n.Nets), netString(n.Ports))
+}
+
 // String returns a string for a FastPattern.
 func (f FastPattern) String() string {
 	if !f.Enabled {
@@ -380,6 +404,77 @@ func (cs Contents) String() string {
 		s.WriteString(fmt.Sprintf(" %s", c))
 	}
 	return strings.TrimSpace(s.String())
+}
+
+// String returns a string for all of the metadata values.
+func (ms Metadatas) String() string {
+	var s strings.Builder
+	if len(ms) < 1 {
+		return ""
+	}
+	s.WriteString("metadata:")
+	for i, m := range ms {
+		if i < len(ms)-1 {
+			s.WriteString(fmt.Sprintf("%s %s, ", m.Key, m.Value))
+			continue
+		}
+		s.WriteString(fmt.Sprintf("%s %s;", m.Key, m.Value))
+	}
+	return s.String()
+}
+
+// String returns a string for a PCRE.
+func (p PCRE) String() string {
+	if len(p.Pattern) < 1 {
+		return ""
+	}
+	var s strings.Builder
+	s.WriteString("pcre:")
+	if p.Negate {
+		s.WriteString("!")
+	}
+	s.WriteString(fmt.Sprintf(`"/%s/%s";`, p.Pattern, p.Options))
+	return s.String()
+}
+
+// String returns a string for a rule.
+func (r Rule) String() string {
+	var s strings.Builder
+	if r.Disabled {
+		s.WriteString("#")
+	}
+	s.WriteString(fmt.Sprintf("%s %s %s ", r.Action, r.Protocol, r.Source))
+	if !r.Bidirectional {
+		s.WriteString("-> ")
+	} else {
+		s.WriteString("<> ")
+	}
+
+	s.WriteString(fmt.Sprintf(`%s (msg:"%s"; `, r.Destination, r.Description))
+
+	if len(r.Contents) > 0 {
+		s.WriteString(fmt.Sprintf("%s ", r.Contents))
+	}
+
+	for _, p := range r.PCREs {
+		s.WriteString(fmt.Sprintf("%s ", p))
+	}
+
+	if len(r.Metas) > 0 {
+		s.WriteString(fmt.Sprintf("%s ", r.Metas))
+	}
+
+	for k, v := range r.Tags {
+		s.WriteString(fmt.Sprintf("%s:%s; ", k, v))
+	}
+
+	for _, ref := range r.References {
+		s.WriteString(fmt.Sprintf("%s ", ref))
+	}
+
+	s.WriteString(fmt.Sprintf("sid:%d; rev:%d;)", r.SID, r.Revision))
+	return s.String()
+
 }
 
 // ToRegexp returns a string that can be used as a regular expression

@@ -332,13 +332,14 @@ func lexOptionValueBegin(l *lexer) stateFn {
 
 // lexOptionValueString consumes the inner content of a string value from the rule options.
 func lexOptionValueString(l *lexer) stateFn {
-	if l.next() == '"' {
-		l.backup()
-		l.emit(itemOptionValueString, false)
-		l.skipNext()
-		return lexOptionKey
+	for {
+		if l.next() == '"' {
+			l.backup()
+			l.emit(itemOptionValueString, false)
+			l.skipNext()
+			return lexOptionKey
+		}
 	}
-	return lexOptionValueString
 }
 
 // lexOptionValue scans a value from the rule options.

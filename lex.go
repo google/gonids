@@ -247,11 +247,15 @@ func lexProtocol(l *lexer) stateFn {
 
 // lexSourceAddress consumes a source address.
 func lexSourceAddress(l *lexer) stateFn {
-	if l.next() == ' ' {
-		l.emit(itemSourceAddress, true)
-		return lexSourcePort
+	for {
+		switch l.next() {
+		case ' ':
+			l.emit(itemSourceAddress, true)
+			return lexSourcePort
+		case eof:
+			return l.unexpectedEOF()
+		}
 	}
-	return lexSourceAddress
 }
 
 // lexSourcePort consumes a source port.

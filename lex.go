@@ -157,6 +157,11 @@ func (l *lexer) errorf(format string, args ...interface{}) stateFn {
 	return nil
 }
 
+func (l *lexer) unexpectedEOF() stateFn {
+	l.items <- item{itemError, "unexpected EOF"}
+	return nil
+}
+
 // nextItem returns the next item from the input.
 func (l *lexer) nextItem() item {
 	return <-l.items
@@ -333,11 +338,14 @@ func lexOptionValueBegin(l *lexer) stateFn {
 // lexOptionValueString consumes the inner content of a string value from the rule options.
 func lexOptionValueString(l *lexer) stateFn {
 	for {
-		if l.next() == '"' {
+		switch l.next() {
+		case '"':
 			l.backup()
 			l.emit(itemOptionValueString, false)
 			l.skipNext()
 			return lexOptionKey
+		case eof:
+			return l.unexpectedEOF()
 		}
 	}
 }

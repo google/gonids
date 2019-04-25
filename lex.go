@@ -294,29 +294,32 @@ func lexDestinationPort(l *lexer) stateFn {
 
 // lexOptionKey scans a key from the rule options.
 func lexOptionKey(l *lexer) stateFn {
-	switch l.next() {
-	case ':':
-		l.backup()
-		l.emit(itemOptionKey, true)
-		l.skipNext()
-		return lexOptionValueBegin
-	case ';':
-		l.backup()
-		if l.pos > l.start {
+	for {
+		switch l.next() {
+		case ':':
+			l.backup()
 			l.emit(itemOptionKey, true)
-			l.emit(itemOptionNoValue, true)
+			l.skipNext()
+			return lexOptionValueBegin
+		case ';':
+			l.backup()
+			if l.pos > l.start {
+				l.emit(itemOptionKey, true)
+				l.emit(itemOptionNoValue, true)
+			}
+			l.skipNext()
+			return lexOptionKey
+		case ')':
+			l.backup()
+			if l.pos > l.start {
+				l.emit(itemOptionKey, true)
+			}
+			l.skipNext()
+			return lexRuleEnd
+		case eof:
+			return l.unexpectedEOF()
 		}
-		l.skipNext()
-		return lexOptionKey
-	case ')':
-		l.backup()
-		if l.pos > l.start {
-			l.emit(itemOptionKey, true)
-		}
-		l.skipNext()
-		return lexRuleEnd
 	}
-	return lexOptionKey
 }
 
 // lexOptionValueBegin scans the beginning of a value from the rule option.

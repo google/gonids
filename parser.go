@@ -409,6 +409,9 @@ func (cs Contents) String() string {
 // String returns a string for all of the metadata values.
 func (ms Metadatas) String() string {
 	var s strings.Builder
+	if len(ms) < 1 {
+		return ""
+	}
 	s.WriteString("metadata:")
 	for i, m := range ms {
 		if i < len(ms)-1 {
@@ -418,6 +421,60 @@ func (ms Metadatas) String() string {
 		s.WriteString(fmt.Sprintf("%s %s;", m.Key, m.Value))
 	}
 	return s.String()
+}
+
+// String returns a string for a PCRE.
+func (p PCRE) String() string {
+	if len(p.Pattern) < 1 {
+		return ""
+	}
+	var s strings.Builder
+	s.WriteString("pcre:")
+	if p.Negate {
+		s.WriteString("!")
+	}
+	s.WriteString(fmt.Sprintf(`"/%s/%s";`, p.Pattern, p.Options))
+	return s.String()
+}
+
+// String returns a string for a rule.
+func (r Rule) String() string {
+	var s strings.Builder
+	if r.Disabled {
+		s.WriteString("#")
+	}
+	s.WriteString(fmt.Sprintf("%s %s %s ", r.Action, r.Protocol, r.Source))
+	if !r.Bidirectional {
+		s.WriteString("-> ")
+	} else {
+		s.WriteString("<> ")
+	}
+
+	s.WriteString(fmt.Sprintf(`%s (msg:"%s"; `, r.Destination, r.Description))
+
+	if len(r.Contents) > 0 {
+		s.WriteString(fmt.Sprintf("%s ", r.Contents))
+	}
+
+	for _, p := range r.PCREs {
+		s.WriteString(fmt.Sprintf("%s ", p))
+	}
+
+	if len(r.Metas) > 0 {
+		s.WriteString(fmt.Sprintf("%s ", r.Metas))
+	}
+
+	for k, v := range r.Tags {
+		s.WriteString(fmt.Sprintf("%s:%s; ", k, v))
+	}
+
+	for _, ref := range r.References {
+		s.WriteString(fmt.Sprintf("%s ", ref))
+	}
+
+	s.WriteString(fmt.Sprintf("sid:%d; rev:%d;)", r.SID, r.Revision))
+	return s.String()
+
 }
 
 // ToRegexp returns a string that can be used as a regular expression

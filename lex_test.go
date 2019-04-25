@@ -155,6 +155,11 @@ func TestLexer(t *testing.T) {
 			wantErr: true,
 		},
 		{
+			name:    "source port EOF",
+			input:   "alert udp $HOME_NET incomplet",
+			wantErr: true,
+		},
+		{
 			name:    "option key EOF",
 			input:   "alert udp $HOME_NET any -> $EXTERNAL_NET any (incomplet",
 			wantErr: true,

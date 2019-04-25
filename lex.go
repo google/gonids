@@ -260,11 +260,15 @@ func lexSourceAddress(l *lexer) stateFn {
 
 // lexSourcePort consumes a source port.
 func lexSourcePort(l *lexer) stateFn {
-	if l.next() == ' ' {
-		l.emit(itemSourcePort, true)
-		return lexDirection
+	for {
+		switch l.next() {
+		case ' ':
+			l.emit(itemSourcePort, true)
+			return lexDirection
+		case eof:
+			return l.unexpectedEOF()
+		}
 	}
-	return lexSourcePort
 }
 
 // lexDirection consumes a rule direction.

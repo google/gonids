@@ -206,16 +206,17 @@ func lexRule(l *lexer) stateFn {
 
 // lexComment consumes a commented rule.
 func lexComment(l *lexer) stateFn {
-	switch l.next() {
-	case '\n':
-		l.emit(itemComment, false)
-		return lexRule
-	case eof:
-		l.backup()
-		l.emit(itemComment, false)
-		return lexRule
+	for {
+		switch l.next() {
+		case '\n':
+			l.emit(itemComment, false)
+			return lexRule
+		case eof:
+			l.backup()
+			l.emit(itemComment, false)
+			return lexRule
+		}
 	}
-	return lexComment
 }
 
 // lexAction consumes a rule action.

@@ -296,13 +296,17 @@ func lexDestinationAddress(l *lexer) stateFn {
 
 // lexDestinationPort consumes a destination port.
 func lexDestinationPort(l *lexer) stateFn {
-	if l.next() == '(' {
-		l.backup()
-		l.emit(itemDestinationPort, true)
-		l.skipNext()
-		return lexOptionKey
+	for {
+		switch l.next() {
+		case '(':
+			l.backup()
+			l.emit(itemDestinationPort, true)
+			l.skipNext()
+			return lexOptionKey
+		case eof:
+			return l.unexpectedEOF()
+		}
 	}
-	return lexDestinationPort
 }
 
 // lexOptionKey scans a key from the rule options.

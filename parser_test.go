@@ -524,6 +524,139 @@ func TestContentsString(t *testing.T) {
 	}
 }
 
+func TestPCREString(t *testing.T) {
+	for _, tt := range []struct {
+		name  string
+		input PCRE
+		want  string
+	}{
+		{
+			name: "basic",
+			input: PCRE{
+				Pattern: []byte("foo.*bar"),
+				Options: []byte("iU"),
+			},
+			want: `pcre:"/foo.*bar/iU";`,
+		},
+		{
+			name: "negate",
+			input: PCRE{
+				Negate:  true,
+				Pattern: []byte("foo.*bar"),
+				Options: []byte("iU"),
+			},
+			want: `pcre:!"/foo.*bar/iU";`,
+		},
+		{
+			name: "no options",
+			input: PCRE{
+				Pattern: []byte("foo.*bar"),
+			},
+			want: `pcre:"/foo.*bar/";`,
+		},
+	} {
+		got := tt.input.String()
+		if got != tt.want {
+			t.Fatalf("%s: got %v -- expected %v", tt.name, got, tt.want)
+		}
+	}
+}
+
+func TestRuleString(t *testing.T) {
+	for _, tt := range []struct {
+		name  string
+		input Rule
+		want  string
+	}{
+		{
+			name: "rule",
+			input: Rule{
+				Action:   "alert",
+				Protocol: "udp",
+				Source: Network{
+					Nets:  []string{"$HOME_NET"},
+					Ports: []string{"any"},
+				},
+				Destination: Network{
+					Nets:  []string{"$EXTERNAL_NET"},
+					Ports: []string{"any"},
+				},
+				SID:         1337,
+				Revision:    2,
+				Description: "foo",
+				Contents: Contents{
+					&Content{
+						Pattern: []byte("AA"),
+					},
+				},
+			},
+			want: `alert udp $HOME_NET any -> $EXTERNAL_NET any (msg:"foo"; content:"AA"; sid:1337; rev:2;)`,
+		},
+		{
+			name: "rule with pcre",
+			input: Rule{
+				Action:   "alert",
+				Protocol: "udp",
+				Source: Network{
+					Nets:  []string{"$HOME_NET"},
+					Ports: []string{"any"},
+				},
+				Destination: Network{
+					Nets:  []string{"$EXTERNAL_NET"},
+					Ports: []string{"any"},
+				},
+				SID:         1337,
+				Revision:    2,
+				Description: "foo",
+				Contents: Contents{
+					&Content{
+						Pattern: []byte("AA"),
+					},
+				},
+				PCREs: []*PCRE{
+					&PCRE{
+						Pattern: []byte("foo.*bar"),
+						Options: []byte("Ui"),
+					},
+				},
+			},
+			want: `alert udp $HOME_NET any -> $EXTERNAL_NET any (msg:"foo"; content:"AA"; pcre:"/foo.*bar/Ui"; sid:1337; rev:2;)`,
+		},
+		{
+			name: "rule with pcre",
+			input: Rule{
+				Action:   "alert",
+				Protocol: "udp",
+				Source: Network{
+					Nets:  []string{"$HOME_NET"},
+					Ports: []string{"any"},
+				},
+				Destination: Network{
+					Nets:  []string{"$EXTERNAL_NET"},
+					Ports: []string{"any"},
+				},
+				SID:         1337,
+				Revision:    2,
+				Description: "foo",
+				Contents: Contents{
+					&Content{
+						Pattern: []byte("AA"),
+					},
+				},
+				Tags: map[string]string{
+					"classtype": "trojan-activity",
+				},
+			},
+			want: `alert udp $HOME_NET any -> $EXTERNAL_NET any (msg:"foo"; content:"AA"; classtype:trojan-activity; sid:1337; rev:2;)`,
+		},
+	} {
+		got := tt.input.String()
+		if got != tt.want {
+			t.Fatalf("%s: got %v -- expected %v", tt.name, got, tt.want)
+		}
+	}
+}
+
 func TestParseRule(t *testing.T) {
 	for _, tt := range []struct {
 		name    string
@@ -1307,6 +1440,33 @@ func TestInSlice(t *testing.T) {
 		got := inSlice(tt.str, tt.strs)
 		if got != tt.want {
 			t.Fatalf("got=%v; want=%v", got, tt.want)
+		}
+	}
+}
+
+// Test that parsing a string input and then parsing the stringer output of that struct are identical.
+func TestInEqualOut(t *testing.T) {
+	for _, tt := range []struct {
+		name  string
+		input string
+	}{
+		{
+			name:  "simple test",
+			input: `alert udp $HOME_NET any -> $EXTERNAL_NET any (sid:1337; msg:"foo"; content:"|28|foo"; content:".AA"; within:40);`,
+		},
+		{
+			name:  "complex rule",
+			input: `alert http $EXTERNAL_NET any -> $HOME_NET any (msg:"FOO BAR BLAH"; flow:established,from_server; content:"200"; http_stat_code; file_data; content:"|3d 21 2d 2f|eyJjWEEEEEE"; fast_pattern; content:"|3z 21 2f 2d|"; pcre:"/^(?:[A-Z0-9+/]{1})*(?:[A-Z0-9+/]{1}==|[A-Z0-9+/]{7}=|[A-Z0-9+/]{9})/R"; metadata: former_category BOO; reference:url,this.is.sparta.com/fooblog; classtype:trojan-activity; sid:1111111; rev:1; metadata:affected_product Windows_XP_Vista_7_8_10_Server_32_64_Bit, attack_target Client_Endpoint, deployment Perimeter, tag FOOO, signature_severity Major, created_at 2018_06_25, performance_impact Low, updated_at 2018_09_23;)`,
+		},
+	} {
+		first, _ := ParseRule(tt.input)
+		s := first.String()
+		second, err := ParseRule(s)
+		if err != nil {
+			t.Fatalf("%v", err)
+		}
+		if !reflect.DeepEqual(first, second) {
+			t.Fatalf("first=%v; second=%v\ns=%v", first, second, s)
 		}
 	}
 }

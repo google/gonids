@@ -154,6 +154,11 @@ func TestLexer(t *testing.T) {
 			input:   "alert udp $HOME_NET any -> $EXTERNAL_NET any (key1:\"incomplet",
 			wantErr: true,
 		},
+		{
+			name:    "value EOF",
+			input:   "alert udp $HOME_NET any -> $EXTERNAL_NET any (key1:incomplet",
+			wantErr: true,
+		},
 	} {
 		lexItems, err := collect(tt.input)
 		if (err != nil) != tt.wantErr {

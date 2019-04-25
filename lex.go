@@ -352,19 +352,22 @@ func lexOptionValueString(l *lexer) stateFn {
 
 // lexOptionValue scans a value from the rule options.
 func lexOptionValue(l *lexer) stateFn {
-	switch l.next() {
-	case ';':
-		l.backup()
-		l.emit(itemOptionValue, true)
-		l.skipNext()
-		return lexOptionKey
-	case ')':
-		l.backup()
-		l.emit(itemOptionValue, true)
-		l.skipNext()
-		return lexRuleEnd
+	for {
+		switch l.next() {
+		case ';':
+			l.backup()
+			l.emit(itemOptionValue, true)
+			l.skipNext()
+			return lexOptionKey
+		case ')':
+			l.backup()
+			l.emit(itemOptionValue, true)
+			l.skipNext()
+			return lexRuleEnd
+		case eof:
+			return l.unexpectedEOF()
+		}
 	}
-	return lexOptionValue
 }
 
 // lexOptionEnd marks the end of a rule.

@@ -283,11 +283,15 @@ func lexDirection(l *lexer) stateFn {
 
 // lexDestinationAddress consumes a destination address.
 func lexDestinationAddress(l *lexer) stateFn {
-	if l.next() == ' ' {
-		l.emit(itemDestinationAddress, true)
-		return lexDestinationPort
+	for {
+		switch l.next() {
+		case ' ':
+			l.emit(itemDestinationAddress, true)
+			return lexDestinationPort
+		case eof:
+			return l.unexpectedEOF()
+		}
 	}
-	return lexDestinationAddress
 }
 
 // lexDestinationPort consumes a destination port.

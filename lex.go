@@ -157,6 +157,11 @@ func (l *lexer) errorf(format string, args ...interface{}) stateFn {
 	return nil
 }
 
+func (l *lexer) unexpectedEOF() stateFn {
+	l.items <- item{itemError, "unexpected EOF"}
+	return nil
+}
+
 // nextItem returns the next item from the input.
 func (l *lexer) nextItem() item {
 	return <-l.items
@@ -201,16 +206,17 @@ func lexRule(l *lexer) stateFn {
 
 // lexComment consumes a commented rule.
 func lexComment(l *lexer) stateFn {
-	switch l.next() {
-	case '\n':
-		l.emit(itemComment, false)
-		return lexRule
-	case eof:
-		l.backup()
-		l.emit(itemComment, false)
-		return lexRule
+	for {
+		switch l.next() {
+		case '\n':
+			l.emit(itemComment, false)
+			return lexRule
+		case eof:
+			l.backup()
+			l.emit(itemComment, false)
+			return lexRule
+		}
 	}
-	return lexComment
 }
 
 // lexAction consumes a rule action.
@@ -241,20 +247,28 @@ func lexProtocol(l *lexer) stateFn {
 
 // lexSourceAddress consumes a source address.
 func lexSourceAddress(l *lexer) stateFn {
-	if l.next() == ' ' {
-		l.emit(itemSourceAddress, true)
-		return lexSourcePort
+	for {
+		switch l.next() {
+		case ' ':
+			l.emit(itemSourceAddress, true)
+			return lexSourcePort
+		case eof:
+			return l.unexpectedEOF()
+		}
 	}
-	return lexSourceAddress
 }
 
 // lexSourcePort consumes a source port.
 func lexSourcePort(l *lexer) stateFn {
-	if l.next() == ' ' {
-		l.emit(itemSourcePort, true)
-		return lexDirection
+	for {
+		switch l.next() {
+		case ' ':
+			l.emit(itemSourcePort, true)
+			return lexDirection
+		case eof:
+			return l.unexpectedEOF()
+		}
 	}
-	return lexSourcePort
 }
 
 // lexDirection consumes a rule direction.
@@ -269,49 +283,60 @@ func lexDirection(l *lexer) stateFn {
 
 // lexDestinationAddress consumes a destination address.
 func lexDestinationAddress(l *lexer) stateFn {
-	if l.next() == ' ' {
-		l.emit(itemDestinationAddress, true)
-		return lexDestinationPort
+	for {
+		switch l.next() {
+		case ' ':
+			l.emit(itemDestinationAddress, true)
+			return lexDestinationPort
+		case eof:
+			return l.unexpectedEOF()
+		}
 	}
-	return lexDestinationAddress
 }
 
 // lexDestinationPort consumes a destination port.
 func lexDestinationPort(l *lexer) stateFn {
-	if l.next() == '(' {
-		l.backup()
-		l.emit(itemDestinationPort, true)
-		l.skipNext()
-		return lexOptionKey
+	for {
+		switch l.next() {
+		case '(':
+			l.backup()
+			l.emit(itemDestinationPort, true)
+			l.skipNext()
+			return lexOptionKey
+		case eof:
+			return l.unexpectedEOF()
+		}
 	}
-	return lexDestinationPort
 }
 
 // lexOptionKey scans a key from the rule options.
 func lexOptionKey(l *lexer) stateFn {
-	switch l.next() {
-	case ':':
-		l.backup()
-		l.emit(itemOptionKey, true)
-		l.skipNext()
-		return lexOptionValueBegin
-	case ';':
-		l.backup()
-		if l.pos > l.start {
+	for {
+		switch l.next() {
+		case ':':
+			l.backup()
 			l.emit(itemOptionKey, true)
-			l.emit(itemOptionNoValue, true)
+			l.skipNext()
+			return lexOptionValueBegin
+		case ';':
+			l.backup()
+			if l.pos > l.start {
+				l.emit(itemOptionKey, true)
+				l.emit(itemOptionNoValue, true)
+			}
+			l.skipNext()
+			return lexOptionKey
+		case ')':
+			l.backup()
+			if l.pos > l.start {
+				l.emit(itemOptionKey, true)
+			}
+			l.skipNext()
+			return lexRuleEnd
+		case eof:
+			return l.unexpectedEOF()
 		}
-		l.skipNext()
-		return lexOptionKey
-	case ')':
-		l.backup()
-		if l.pos > l.start {
-			l.emit(itemOptionKey, true)
-		}
-		l.skipNext()
-		return lexRuleEnd
 	}
-	return lexOptionKey
 }
 
 // lexOptionValueBegin scans the beginning of a value from the rule option.
@@ -332,30 +357,37 @@ func lexOptionValueBegin(l *lexer) stateFn {
 
 // lexOptionValueString consumes the inner content of a string value from the rule options.
 func lexOptionValueString(l *lexer) stateFn {
-	if l.next() == '"' {
-		l.backup()
-		l.emit(itemOptionValueString, false)
-		l.skipNext()
-		return lexOptionKey
+	for {
+		switch l.next() {
+		case '"':
+			l.backup()
+			l.emit(itemOptionValueString, false)
+			l.skipNext()
+			return lexOptionKey
+		case eof:
+			return l.unexpectedEOF()
+		}
 	}
-	return lexOptionValueString
 }
 
 // lexOptionValue scans a value from the rule options.
 func lexOptionValue(l *lexer) stateFn {
-	switch l.next() {
-	case ';':
-		l.backup()
-		l.emit(itemOptionValue, true)
-		l.skipNext()
-		return lexOptionKey
-	case ')':
-		l.backup()
-		l.emit(itemOptionValue, true)
-		l.skipNext()
-		return lexRuleEnd
+	for {
+		switch l.next() {
+		case ';':
+			l.backup()
+			l.emit(itemOptionValue, true)
+			l.skipNext()
+			return lexOptionKey
+		case ')':
+			l.backup()
+			l.emit(itemOptionValue, true)
+			l.skipNext()
+			return lexRuleEnd
+		case eof:
+			return l.unexpectedEOF()
+		}
 	}
-	return lexOptionValue
 }
 
 // lexOptionEnd marks the end of a rule.

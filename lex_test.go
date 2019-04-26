@@ -149,6 +149,41 @@ func TestLexer(t *testing.T) {
 			input:   "alert udp $HOME_NET any foo any any (key);",
 			wantErr: true,
 		},
+		{
+			name:    "source address EOF",
+			input:   "alert udp incomplet",
+			wantErr: true,
+		},
+		{
+			name:    "source port EOF",
+			input:   "alert udp $HOME_NET incomplet",
+			wantErr: true,
+		},
+		{
+			name:    "destination address EOF",
+			input:   "alert udp $HOME_NET any -> incomplet",
+			wantErr: true,
+		},
+		{
+			name:    "destination port EOF",
+			input:   "alert udp $HOME_NET any -> $EXTERNAL_NET incomplet",
+			wantErr: true,
+		},
+		{
+			name:    "option key EOF",
+			input:   "alert udp $HOME_NET any -> $EXTERNAL_NET any (incomplet",
+			wantErr: true,
+		},
+		{
+			name:    "value string EOF",
+			input:   "alert udp $HOME_NET any -> $EXTERNAL_NET any (key1:\"incomplet",
+			wantErr: true,
+		},
+		{
+			name:    "value EOF",
+			input:   "alert udp $HOME_NET any -> $EXTERNAL_NET any (key1:incomplet",
+			wantErr: true,
+		},
 	} {
 		lexItems, err := collect(tt.input)
 		if (err != nil) != tt.wantErr {

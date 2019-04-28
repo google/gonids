@@ -112,7 +112,7 @@ func TestLexer(t *testing.T) {
 		},
 		{
 			name:  "multiple spaces",
-			input: "\talert udp $HOME_NET any -> [1.1.1.1,2.2.2.2] any (key1: value1 ; key2;) ;",
+			input: "\talert   udp   $HOME_NET   any   ->   [1.1.1.1,2.2.2.2]   any   (key1: value1 ; key2;) ;",
 			items: []item{
 				{itemAction, "alert"},
 				{itemProtocol, "udp"},

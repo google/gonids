@@ -46,7 +46,7 @@ func TestLexer(t *testing.T) {
 	}{
 		{
 			name:  "simple",
-			input: "alert udp $HOME_NET any -> [1.1.1.1,2.2.2.2] any (key1:value1; key2:value2);",
+			input: "alert udp $HOME_NET any -> [1.1.1.1,2.2.2.2] any (key1:value1; key2:value2;);",
 			items: []item{
 				{itemAction, "alert"},
 				{itemProtocol, "udp"},
@@ -64,7 +64,7 @@ func TestLexer(t *testing.T) {
 		},
 		{
 			name:  "string value",
-			input: `alert udp $HOME_NET any -> [1.1.1.1,2.2.2.2] any (key1:"value1");`,
+			input: `alert udp $HOME_NET any -> [1.1.1.1,2.2.2.2] any (key1:"value1";);`,
 			items: []item{
 				{itemAction, "alert"},
 				{itemProtocol, "udp"},
@@ -80,7 +80,7 @@ func TestLexer(t *testing.T) {
 		},
 		{
 			name:  "string value not",
-			input: `alert udp $HOME_NET any -> [1.1.1.1,2.2.2.2] any (key1:!"value1");`,
+			input: `alert udp $HOME_NET any -> [1.1.1.1,2.2.2.2] any (key1:!"value1";);`,
 			items: []item{
 				{itemAction, "alert"},
 				{itemProtocol, "udp"},
@@ -97,7 +97,7 @@ func TestLexer(t *testing.T) {
 		},
 		{
 			name:  "single key",
-			input: "alert udp $HOME_NET any -> [1.1.1.1,2.2.2.2] any (key);",
+			input: "alert udp $HOME_NET any -> [1.1.1.1,2.2.2.2] any (key;);",
 			items: []item{
 				{itemAction, "alert"},
 				{itemProtocol, "udp"},
@@ -107,6 +107,7 @@ func TestLexer(t *testing.T) {
 				{itemDestinationAddress, "[1.1.1.1,2.2.2.2]"},
 				{itemDestinationPort, "any"},
 				{itemOptionKey, "key"},
+				{itemOptionNoValue, ""},
 				{itemEOR, ""},
 			},
 		},
@@ -125,6 +126,24 @@ func TestLexer(t *testing.T) {
 				{itemOptionValue, "value1"},
 				{itemOptionKey, "key2"},
 				{itemOptionNoValue, ""},
+				{itemEOR, ""},
+			},
+		},
+		{
+			name:  "parentheses in value",
+			input: `alert dns $HOME_NET any -> any any (reference:url,en.wikipedia.org/wiki/Tor_(anonymity_network); sid:42;) ;`,
+			items: []item{
+				{itemAction, "alert"},
+				{itemProtocol, "dns"},
+				{itemSourceAddress, "$HOME_NET"},
+				{itemSourcePort, "any"},
+				{itemDirection, "->"},
+				{itemDestinationAddress, "any"},
+				{itemDestinationPort, "any"},
+				{itemOptionKey, "reference"},
+				{itemOptionValue, "url,en.wikipedia.org/wiki/Tor_(anonymity_network)"},
+				{itemOptionKey, "sid"},
+				{itemOptionValue, "42"},
 				{itemEOR, ""},
 			},
 		},

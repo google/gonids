@@ -166,7 +166,7 @@ func TestContentOptionString(t *testing.T) {
 			name: "value",
 			input: ContentOption{
 				Name:  "depth",
-				Value: 0,
+				Value: "0",
 			},
 			want: "depth:0;",
 		},
@@ -174,7 +174,7 @@ func TestContentOptionString(t *testing.T) {
 			name: "invalid value",
 			input: ContentOption{
 				Name:  "http_uri",
-				Value: 1,
+				Value: "1",
 			},
 			want: "http_uri;",
 		},
@@ -362,7 +362,7 @@ func TestContentString(t *testing.T) {
 					},
 					&ContentOption{
 						Name:  "depth",
-						Value: 0,
+						Value: "0",
 					},
 				},
 			},
@@ -378,7 +378,7 @@ func TestContentString(t *testing.T) {
 					},
 					&ContentOption{
 						Name:  "depth",
-						Value: 0,
+						Value: "0",
 					},
 				},
 				FastPattern: FastPattern{
@@ -465,11 +465,11 @@ func TestContentsString(t *testing.T) {
 					Options: []*ContentOption{
 						&ContentOption{
 							Name:  "offset",
-							Value: 10,
+							Value: "10",
 						},
 						&ContentOption{
 							Name:  "depth",
-							Value: 50,
+							Value: "50",
 						},
 					},
 				},

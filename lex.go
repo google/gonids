@@ -150,6 +150,14 @@ func (l *lexer) acceptRun(valid string) {
 	l.backup()
 }
 
+// ignoreSpaces ignores all spaces at the start of the input.
+func (l *lexer) ignoreSpaces() {
+	for unicode.IsSpace(l.next()) {
+		l.ignore()
+	}
+	l.backup()
+}
+
 // errorf returns an error token and terminates the scan by passing
 // back a nil pointer that will be the next state, terminating l.nextItem.
 func (l *lexer) errorf(format string, args ...interface{}) stateFn {
@@ -234,19 +242,23 @@ func lexAction(l *lexer) stateFn {
 
 // lexProtocol consumes a rule protocol.
 func lexProtocol(l *lexer) stateFn {
-	r := l.next()
-	switch {
-	case r == ' ':
-		l.emit(itemProtocol, true)
-		return lexSourceAddress
-	case unicode.IsLetter(r):
-		return lexProtocol
+	l.ignoreSpaces()
+	for {
+		r := l.next()
+		switch {
+		case r == ' ':
+			l.emit(itemProtocol, true)
+			return lexSourceAddress
+		case !unicode.IsLetter(r):
+			return l.errorf("invalid character %q for a rule protocol", r)
+		}
 	}
-	return l.errorf("invalid character %q for a rule protocol", r)
+
 }
 
 // lexSourceAddress consumes a source address.
 func lexSourceAddress(l *lexer) stateFn {
+	l.ignoreSpaces()
 	for {
 		switch l.next() {
 		case ' ':
@@ -260,6 +272,7 @@ func lexSourceAddress(l *lexer) stateFn {
 
 // lexSourcePort consumes a source port.
 func lexSourcePort(l *lexer) stateFn {
+	l.ignoreSpaces()
 	for {
 		switch l.next() {
 		case ' ':
@@ -273,6 +286,7 @@ func lexSourcePort(l *lexer) stateFn {
 
 // lexDirection consumes a rule direction.
 func lexDirection(l *lexer) stateFn {
+	l.ignoreSpaces()
 	l.acceptRun("<->")
 	if r := l.next(); r != ' ' {
 		return l.errorf("invalid character %q for a rule direction", r)
@@ -283,6 +297,7 @@ func lexDirection(l *lexer) stateFn {
 
 // lexDestinationAddress consumes a destination address.
 func lexDestinationAddress(l *lexer) stateFn {
+	l.ignoreSpaces()
 	for {
 		switch l.next() {
 		case ' ':

@@ -631,7 +631,7 @@ func TestRE(t *testing.T) {
 		want string
 	}{
 		{
-			rule: `alert udp $HOME_NET any -> $EXTERNAL_NET any (sid:1337; msg:"foo"; content:"|28|foo"; content:".AA"; within:40;);`,
+			rule: `alert udp $HOME_NET any -> $EXTERNAL_NET any (sid:1337; msg:"foo"; content:"|28|foo"; content:".AA"; within:40;)`,
 			want: `.*\(foo.{0,40}\.AA`,
 		},
 	} {

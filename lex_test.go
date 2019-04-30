@@ -46,7 +46,7 @@ func TestLexer(t *testing.T) {
 	}{
 		{
 			name:  "simple",
-			input: "alert udp $HOME_NET any -> [1.1.1.1,2.2.2.2] any (key1:value1; key2:value2;);",
+			input: "alert udp $HOME_NET any -> [1.1.1.1,2.2.2.2] any (key1:value1; key2:value2;)",
 			items: []item{
 				{itemAction, "alert"},
 				{itemProtocol, "udp"},
@@ -64,7 +64,7 @@ func TestLexer(t *testing.T) {
 		},
 		{
 			name:  "string value",
-			input: `alert udp $HOME_NET any -> [1.1.1.1,2.2.2.2] any (key1:"value1";);`,
+			input: `alert udp $HOME_NET any -> [1.1.1.1,2.2.2.2] any (key1:"value1";)`,
 			items: []item{
 				{itemAction, "alert"},
 				{itemProtocol, "udp"},
@@ -80,7 +80,7 @@ func TestLexer(t *testing.T) {
 		},
 		{
 			name:  "string value not",
-			input: `alert udp $HOME_NET any -> [1.1.1.1,2.2.2.2] any (key1:!"value1";);`,
+			input: `alert udp $HOME_NET any -> [1.1.1.1,2.2.2.2] any (key1:!"value1";)`,
 			items: []item{
 				{itemAction, "alert"},
 				{itemProtocol, "udp"},
@@ -97,7 +97,7 @@ func TestLexer(t *testing.T) {
 		},
 		{
 			name:  "single key",
-			input: "alert udp $HOME_NET any -> [1.1.1.1,2.2.2.2] any (key;);",
+			input: "alert udp $HOME_NET any -> [1.1.1.1,2.2.2.2] any (key;)",
 			items: []item{
 				{itemAction, "alert"},
 				{itemProtocol, "udp"},

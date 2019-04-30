@@ -679,6 +679,31 @@ func TestParseRule(t *testing.T) {
 			},
 		},
 		{
+			name: "PCRE with quote",
+			rule: `alert tcp $HOME_NET any -> $EXTERNAL_NET $HTTP_PORTS (msg:"PCRE with quote"; pcre:"/=[.\"]\w{8}\.jar/Hi"; sid:12345; rev:1;)`,
+			want: &Rule{
+				Action:   "alert",
+				Protocol: "tcp",
+				Source: Network{
+					Nets:  []string{"$HOME_NET"},
+					Ports: []string{"any"},
+				},
+				Destination: Network{
+					Nets:  []string{"$EXTERNAL_NET"},
+					Ports: []string{"$HTTP_PORTS"},
+				},
+				SID:         12345,
+				Revision:    1,
+				Description: "PCRE with quote",
+				PCREs: []*PCRE{
+					&PCRE{
+						Pattern: []byte(`=[."]\w{8}\.jar`),
+						Options: []byte("Hi"),
+					},
+				},
+			},
+		},
+		{
 			name: "byte_extract",
 			rule: `alert tcp $EXTERNAL_NET 443 -> $HOME_NET any (msg:"byte_extract"; content:"|ff fe|"; byte_extract:3,0,Certs.len, relative ,little ; content:"|55 04 0a 0c 0C|"; distance:3; within:Certs.len; sid:42; rev:1;)`,
 			want: &Rule{

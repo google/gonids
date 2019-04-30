@@ -64,10 +64,10 @@ func TestLexer(t *testing.T) {
 		},
 		{
 			name:  "string value",
-			input: `alert udp $HOME_NET any -> [1.1.1.1,2.2.2.2] any (key1:"value1";)`,
+			input: `alert tcp-pkt $HOME_NET any -> [1.1.1.1,2.2.2.2] any (key1:"value1";)`,
 			items: []item{
 				{itemAction, "alert"},
-				{itemProtocol, "udp"},
+				{itemProtocol, "tcp-pkt"},
 				{itemSourceAddress, "$HOME_NET"},
 				{itemSourcePort, "any"},
 				{itemDirection, "->"},

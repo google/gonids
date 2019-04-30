@@ -680,7 +680,7 @@ func TestParseRule(t *testing.T) {
 		},
 		{
 			name: "byte_extract",
-			rule: `alert tcp $EXTERNAL_NET 443 -> $HOME_NET any (msg:"byte_extract"; content:"|ff fe|"; byte_extract:3,0,Certs.len, relative; content:"|55 04 0a 0c 0C|"; distance:3; within:Certs.len; sid:42; rev:1;)`,
+			rule: `alert tcp $EXTERNAL_NET 443 -> $HOME_NET any (msg:"byte_extract"; content:"|ff fe|"; byte_extract:3,0,Certs.len, relative ,little ; content:"|55 04 0a 0c 0C|"; distance:3; within:Certs.len; sid:42; rev:1;)`,
 			want: &Rule{
 				Action:   "alert",
 				Protocol: "tcp",
@@ -700,7 +700,7 @@ func TestParseRule(t *testing.T) {
 						Pattern:      []byte{0xff, 0xfe},
 						DataPosition: fileData,
 						Options: []*ContentOption{
-							&ContentOption{"byte_extract", "3,0,Certs.len,relative"},
+							&ContentOption{"byte_extract", "3,0,Certs.len,relative,little"},
 						},
 					},
 					&Content{
@@ -713,7 +713,7 @@ func TestParseRule(t *testing.T) {
 					},
 				},
 				Vars: map[string]*Var{
-					"Certs.len": {3, 0, true},
+					"Certs.len": {3, 0, []string{"relative", "little"}},
 				},
 			},
 		},

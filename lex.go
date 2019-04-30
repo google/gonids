@@ -389,7 +389,6 @@ func lexOptionValueString(l *lexer) stateFn {
 			l.skipNext()
 			return lexOptionKey
 		case '\\':
-			// TODO: this should probably remove the escape character
 			if l.next() != '"' {
 				l.backup()
 			}

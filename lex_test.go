@@ -148,6 +148,22 @@ func TestLexer(t *testing.T) {
 			},
 		},
 		{
+			name:  "escaped quote",
+			input: `alert udp $HOME_NET any -> $EXTERNAL_NET any (pcre:"/[=\"]\w{8}\.jar/Hi";) ;`,
+			items: []item{
+				{itemAction, "alert"},
+				{itemProtocol, "udp"},
+				{itemSourceAddress, "$HOME_NET"},
+				{itemSourcePort, "any"},
+				{itemDirection, "->"},
+				{itemDestinationAddress, "$EXTERNAL_NET"},
+				{itemDestinationPort, "any"},
+				{itemOptionKey, "pcre"},
+				{itemOptionValueString, `/[=\"]\w{8}\.jar/Hi`},
+				{itemEOR, ""},
+			},
+		},
+		{
 			name:  "comment",
 			input: "# bla",
 			items: []item{{itemComment, "# bla"}},

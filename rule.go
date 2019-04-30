@@ -376,15 +376,22 @@ func (ms Metadatas) String() string {
 
 // String returns a string for a PCRE.
 func (p PCRE) String() string {
-	if len(p.Pattern) < 1 {
+	pattern := p.Pattern
+	if len(pattern) < 1 {
 		return ""
 	}
+
+	// escape quote signs, if necessary
+	if bytes.IndexByte(pattern, '"') > -1 {
+		pattern = bytes.Replace(pattern, []byte(`"`), []byte(`\"`), -1)
+	}
+
 	var s strings.Builder
 	s.WriteString("pcre:")
 	if p.Negate {
 		s.WriteString("!")
 	}
-	s.WriteString(fmt.Sprintf(`"/%s/%s";`, p.Pattern, p.Options))
+	s.WriteString(fmt.Sprintf(`"/%s/%s";`, pattern, p.Options))
 	return s.String()
 }
 

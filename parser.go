@@ -75,6 +75,13 @@ func parsePCRE(s string) (*PCRE, error) {
 	}, nil
 }
 
+func unquote(s string) string {
+	if strings.IndexByte(s, '"') < 0 {
+		return s
+	}
+	return strings.Replace(s, `\"`, `"`, -1)
+}
+
 func inSlice(str string, strings []string) bool {
 	for _, k := range strings {
 		if str == k {
@@ -324,7 +331,7 @@ func (r *Rule) option(key item, l *lexer) error {
 			negate = true
 		}
 		if nextItem.typ == itemOptionValueString {
-			p, err := parsePCRE(nextItem.value)
+			p, err := parsePCRE(unquote(nextItem.value))
 			if err != nil {
 				return err
 			}

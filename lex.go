@@ -388,6 +388,10 @@ func lexOptionValueString(l *lexer) stateFn {
 			l.emit(itemOptionValueString, false)
 			l.skipNext()
 			return lexOptionKey
+		case '\\':
+			if l.next() != '"' {
+				l.backup()
+			}
 		case eof:
 			return l.unexpectedEOF()
 		}

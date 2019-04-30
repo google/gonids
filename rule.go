@@ -23,6 +23,7 @@ import (
 	"bytes"
 	"fmt"
 	"regexp"
+	"strconv"
 	"strings"
 )
 
@@ -57,8 +58,17 @@ type Rule struct {
 	PCREs []*PCRE
 	// Tags is a map of tag names to tag values (e.g. classtype:trojan).
 	Tags map[string]string
+	// Vars is a map of variable names to variable values extracted via byte_extract.
+	Vars map[string]*Var
 	// Metas is a slice of Metadata.
 	Metas Metadatas
+}
+
+// Var describes a variable extracted via byte_extract.
+type Var struct {
+	NumBytes int
+	Offset   int
+	Relative bool
 }
 
 // Metadata describes metadata tags in key-value struct.
@@ -202,8 +212,8 @@ type FastPattern struct {
 type ContentOption struct {
 	// Name is the name of the option (e.g. offset).
 	Name string
-	// Value is the value associated to the option, default to 0 for option without value.
-	Value int
+	// Value is the value associated to the option, default to "" for option without value.
+	Value string
 }
 
 // Reference describes a gonids reference in a rule.
@@ -220,13 +230,13 @@ func escape(r string) string {
 }
 
 // within returns the within value for a specific content.
-func within(options []*ContentOption) int {
+func within(options []*ContentOption) string {
 	for _, o := range options {
 		if o.Name == "within" {
-			return int(o.Value)
+			return o.Value
 		}
 	}
-	return 0
+	return ""
 }
 
 // RE returns all content matches as a single and simple regexp.
@@ -234,8 +244,8 @@ func (r *Rule) RE() string {
 	var re string
 	for _, c := range r.Contents {
 		// TODO: handle pcre, depth, offset, distance.
-		if w := within(c.Options); w != 0 {
-			re += fmt.Sprintf(".{0,%d}", w)
+		if d, err := strconv.Atoi(within(c.Options)); err == nil && d > 0 {
+			re += fmt.Sprintf(".{0,%d}", d)
 		} else {
 			re += ".*"
 		}
@@ -304,8 +314,8 @@ func (f FastPattern) String() string {
 
 // String returns a string for a ContentOption.
 func (co ContentOption) String() string {
-	if inSlice(co.Name, []string{"depth", "distance", "offset", "within"}) {
-		return fmt.Sprintf("%s:%d;", co.Name, co.Value)
+	if inSlice(co.Name, []string{"byte_extract", "depth", "distance", "offset", "within"}) {
+		return fmt.Sprintf("%s:%v;", co.Name, co.Value)
 	}
 	return fmt.Sprintf("%s;", co.Name)
 }

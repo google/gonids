@@ -280,8 +280,8 @@ func TestParseRule(t *testing.T) {
 						Pattern: []byte("AA"),
 						Negate:  true,
 						Options: []*ContentOption{
-							&ContentOption{"http_header", 0},
-							&ContentOption{"offset", 3},
+							&ContentOption{"http_header", ""},
+							&ContentOption{"offset", "3"},
 						},
 					},
 				},
@@ -307,14 +307,14 @@ func TestParseRule(t *testing.T) {
 					&Content{
 						Pattern: []byte("A"),
 						Options: []*ContentOption{
-							&ContentOption{"http_header", 0},
+							&ContentOption{"http_header", ""},
 						},
 						FastPattern: FastPattern{Enabled: true},
 					},
 					&Content{
 						Pattern: []byte("B"),
 						Options: []*ContentOption{
-							&ContentOption{"http_uri", 0},
+							&ContentOption{"http_uri", ""},
 						},
 					},
 				},
@@ -340,15 +340,15 @@ func TestParseRule(t *testing.T) {
 					&Content{
 						Pattern: []byte("A"),
 						Options: []*ContentOption{
-							&ContentOption{"http_header", 0},
-							&ContentOption{"nocase", 0},
+							&ContentOption{"http_header", ""},
+							&ContentOption{"nocase", ""},
 						},
 						FastPattern: FastPattern{Enabled: true, Offset: 0, Length: 42},
 					},
 					&Content{
 						Pattern: []byte("B"),
 						Options: []*ContentOption{
-							&ContentOption{"http_uri", 0},
+							&ContentOption{"http_uri", ""},
 						},
 					},
 				},
@@ -375,15 +375,15 @@ func TestParseRule(t *testing.T) {
 						DataPosition: fileData,
 						Pattern:      []byte("A"),
 						Options: []*ContentOption{
-							&ContentOption{"http_header", 0},
-							&ContentOption{"nocase", 0},
+							&ContentOption{"http_header", ""},
+							&ContentOption{"nocase", ""},
 						},
 					},
 					&Content{
 						DataPosition: fileData,
 						Pattern:      []byte("B"),
 						Options: []*ContentOption{
-							&ContentOption{"http_uri", 0},
+							&ContentOption{"http_uri", ""},
 						},
 					},
 				},
@@ -410,22 +410,22 @@ func TestParseRule(t *testing.T) {
 						DataPosition: fileData,
 						Pattern:      []byte("A"),
 						Options: []*ContentOption{
-							&ContentOption{"http_header", 0},
-							&ContentOption{"nocase", 0},
+							&ContentOption{"http_header", ""},
+							&ContentOption{"nocase", ""},
 						},
 					},
 					&Content{
 						DataPosition: fileData,
 						Pattern:      []byte("B"),
 						Options: []*ContentOption{
-							&ContentOption{"http_uri", 0},
+							&ContentOption{"http_uri", ""},
 						},
 					},
 					&Content{
 						DataPosition: pktData,
 						Pattern:      []byte("C"),
 						Options: []*ContentOption{
-							&ContentOption{"http_uri", 0},
+							&ContentOption{"http_uri", ""},
 						},
 					},
 				},
@@ -460,7 +460,7 @@ func TestParseRule(t *testing.T) {
 						DataPosition: pktData,
 						Pattern:      []byte("C"),
 						Options: []*ContentOption{
-							&ContentOption{"http_uri", 0},
+							&ContentOption{"http_uri", ""},
 						},
 					},
 				},
@@ -487,14 +487,14 @@ func TestParseRule(t *testing.T) {
 					&Content{
 						Pattern: []byte("/tongji.js"),
 						Options: []*ContentOption{
-							&ContentOption{"http_uri", 0},
+							&ContentOption{"http_uri", ""},
 						},
 						FastPattern: FastPattern{Enabled: true, Only: true},
 					},
 					&Content{
 						Pattern: append([]byte("Host"), 0x3a, 0x20),
 						Options: []*ContentOption{
-							&ContentOption{"http_header", 0},
+							&ContentOption{"http_header", ""},
 						},
 					},
 				},
@@ -542,7 +542,7 @@ func TestParseRule(t *testing.T) {
 					&Content{
 						Pattern: []byte("blah"),
 						Options: []*ContentOption{
-							&ContentOption{"http_uri", 0},
+							&ContentOption{"http_uri", ""},
 						},
 					},
 				},
@@ -585,7 +585,7 @@ func TestParseRule(t *testing.T) {
 					&Content{
 						Pattern: []byte{0x43, 0xe2, 0x8b, 0x9f},
 						Options: []*ContentOption{
-							&ContentOption{"distance", 0},
+							&ContentOption{"distance", "0"},
 						},
 					},
 				},
@@ -622,8 +622,8 @@ func TestParseRule(t *testing.T) {
 						Pattern:      []byte("name=chalbhai"),
 						DataPosition: fileData,
 						Options: []*ContentOption{
-							&ContentOption{"nocase", 0},
-							&ContentOption{"distance", 0},
+							&ContentOption{"nocase", ""},
+							&ContentOption{"distance", "0"},
 						},
 						FastPattern: FastPattern{Enabled: true},
 					},
@@ -631,16 +631,16 @@ func TestParseRule(t *testing.T) {
 						Pattern:      []byte{0x72, 0x65, 0x71, 0x75, 0x69, 0x72, 0x65, 0x64, 0x20, 0x74, 0x69, 0x74, 0x6c, 0x65, 0x3d, 0x22, 0x50, 0x6c, 0x65, 0x61, 0x73, 0x65, 0x20, 0x45, 0x6e, 0x74, 0x65, 0x72, 0x20, 0x52, 0x69, 0x67, 0x68, 0x74, 0x20, 0x56, 0x61, 0x6c, 0x75, 0x65, 0x22},
 						DataPosition: fileData,
 						Options: []*ContentOption{
-							&ContentOption{"nocase", 0},
-							&ContentOption{"distance", 0},
+							&ContentOption{"nocase", ""},
+							&ContentOption{"distance", "0"},
 						},
 					},
 					&Content{
 						Pattern:      []byte{0x72, 0x65, 0x71, 0x75, 0x69, 0x72, 0x65, 0x64, 0x20, 0x74, 0x69, 0x74, 0x6c, 0x65, 0x3d, 0x22, 0x50, 0x6c, 0x65, 0x61, 0x73, 0x65, 0x20, 0x45, 0x6e, 0x74, 0x65, 0x72, 0x20, 0x52, 0x69, 0x67, 0x68, 0x74, 0x20, 0x56, 0x61, 0x6c, 0x75, 0x65, 0x22},
 						DataPosition: fileData,
 						Options: []*ContentOption{
-							&ContentOption{"nocase", 0},
-							&ContentOption{"distance", 0},
+							&ContentOption{"nocase", ""},
+							&ContentOption{"distance", "0"},
 						},
 					},
 				},
@@ -678,6 +678,45 @@ func TestParseRule(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "byte_extract",
+			rule: `alert tcp $EXTERNAL_NET 443 -> $HOME_NET any (msg:"byte_extract"; content:"|ff fe|"; byte_extract:3,0,Certs.len, relative; content:"|55 04 0a 0c 0C|"; distance:3; within:Certs.len; sid:42; rev:1;)`,
+			want: &Rule{
+				Action:   "alert",
+				Protocol: "tcp",
+				Source: Network{
+					Nets:  []string{"$EXTERNAL_NET"},
+					Ports: []string{"443"},
+				},
+				Destination: Network{
+					Nets:  []string{"$HOME_NET"},
+					Ports: []string{"any"},
+				},
+				SID:         42,
+				Revision:    1,
+				Description: "byte_extract",
+				Contents: Contents{
+					&Content{
+						Pattern:      []byte{0xff, 0xfe},
+						DataPosition: fileData,
+						Options: []*ContentOption{
+							&ContentOption{"byte_extract", "3,0,Certs.len,relative"},
+						},
+					},
+					&Content{
+						Pattern:      []byte{0x55, 0x04, 0x0A, 0x0C, 0x0C},
+						DataPosition: fileData,
+						Options: []*ContentOption{
+							&ContentOption{"distance", "3"},
+							&ContentOption{"within", "Certs.len"},
+						},
+					},
+				},
+				Vars: map[string]*Var{
+					"Certs.len": {3, 0, true},
+				},
+			},
+		},
 		// Errors
 		{
 			name:    "invalid direction",
@@ -702,6 +741,11 @@ func TestParseRule(t *testing.T) {
 		{
 			name:    "invalid msg",
 			rule:    `alert udp $HOME_NET any -> $EXTERNAL_NET any (sid:2; msg; content:"A";)`,
+			wantErr: true,
+		},
+		{
+			name:    "byte_extract without content",
+			rule:    `alert tcp $EXTERNAL_NET 443 -> $HOME_NET any (msg:"byte_extract"; byte_extract:3,0,Certs.len,relative; sid:42; rev:1;)`,
 			wantErr: true,
 		},
 	} {

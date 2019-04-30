@@ -339,19 +339,11 @@ func (r *Rule) option(key item, l *lexer) error {
 		}
 		nextItem := l.nextItem()
 		parts := strings.Split(nextItem.value, ",")
-		v := new(Var)
-		switch len(parts) {
-		case 4:
-			parts[3] = strings.TrimSpace(parts[3])
-			if parts[3] != "relative" {
-				return fmt.Errorf("invalid byte_extract option: %s", parts[3])
-			}
-			v.Relative = true
-		case 3:
-			// no extra options
-		default:
+		if len(parts) < 3 {
 			return fmt.Errorf("invalid byte_extract value: %s", nextItem.value)
 		}
+
+		v := new(Var)
 
 		n, err := strconv.Atoi(parts[0])
 		if err != nil {
@@ -372,6 +364,13 @@ func (r *Rule) option(key item, l *lexer) error {
 		} else if _, exists := r.Vars[name]; exists {
 			return fmt.Errorf("byte_extract var already declared: %s", name)
 		}
+
+		// options
+		for i, l := 3, len(parts); i < l; i++ {
+			parts[i] = strings.TrimSpace(parts[i])
+			v.Options = append(v.Options, parts[i])
+		}
+
 		r.Vars[name] = v
 		lastContent := r.Contents[len(r.Contents)-1]
 		lastContent.Options = append(lastContent.Options, &ContentOption{Name: key.value, Value: strings.Join(parts, ",")})

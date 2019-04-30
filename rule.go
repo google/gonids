@@ -68,7 +68,7 @@ type Rule struct {
 type Var struct {
 	NumBytes int
 	Offset   int
-	Relative bool
+	Options  []string
 }
 
 // Metadata describes metadata tags in key-value struct.

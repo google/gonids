@@ -66,7 +66,7 @@ func TestParseRule(t *testing.T) {
 		},
 		{
 			name: "simple content",
-			rule: `alert udp $HOME_NET any -> $EXTERNAL_NET any (sid:1337; msg:"foo"; content:"AA"; rev:2;);`,
+			rule: `alert udp $HOME_NET any -> $EXTERNAL_NET any (sid:1337; msg:"foo"; content:"AA"; rev:2;)`,
 			want: &Rule{
 				Action:   "alert",
 				Protocol: "udp",
@@ -90,7 +90,7 @@ func TestParseRule(t *testing.T) {
 		},
 		{
 			name: "commented rule content",
-			rule: `#alert udp $HOME_NET any -> $EXTERNAL_NET any (sid:1337; msg:"foo"; content:"AA"; rev:2;);`,
+			rule: `#alert udp $HOME_NET any -> $EXTERNAL_NET any (sid:1337; msg:"foo"; content:"AA"; rev:2;)`,
 			want: &Rule{
 				Disabled: true,
 				Action:   "alert",
@@ -115,7 +115,7 @@ func TestParseRule(t *testing.T) {
 		},
 		{
 			name: "bidirectional",
-			rule: `alert udp $HOME_NET any <> $EXTERNAL_NET any (sid:1337; msg:"foo"; content:"AA"; rev:2;);`,
+			rule: `alert udp $HOME_NET any <> $EXTERNAL_NET any (sid:1337; msg:"foo"; content:"AA"; rev:2;)`,
 			want: &Rule{
 				Action:   "alert",
 				Protocol: "udp",
@@ -140,7 +140,7 @@ func TestParseRule(t *testing.T) {
 		},
 		{
 			name: "not content",
-			rule: `alert udp $HOME_NET any -> $EXTERNAL_NET any (sid:1337; msg:"foo"; content:!"AA";);`,
+			rule: `alert udp $HOME_NET any -> $EXTERNAL_NET any (sid:1337; msg:"foo"; content:!"AA";)`,
 			want: &Rule{
 				Action:   "alert",
 				Protocol: "udp",
@@ -162,7 +162,7 @@ func TestParseRule(t *testing.T) {
 		},
 		{
 			name: "multiple contents",
-			rule: `alert udp $HOME_NET any -> $EXTERNAL_NET any (sid:1337; msg:"foo"; content:"AA"; content:"BB";);`,
+			rule: `alert udp $HOME_NET any -> $EXTERNAL_NET any (sid:1337; msg:"foo"; content:"AA"; content:"BB";)`,
 			want: &Rule{
 				Action:   "alert",
 				Protocol: "udp",
@@ -188,7 +188,7 @@ func TestParseRule(t *testing.T) {
 		},
 		{
 			name: "hex content",
-			rule: `alert udp $HOME_NET any -> $EXTERNAL_NET any (sid:1337; msg:"foo"; content:"A|42 43|D|45|";);`,
+			rule: `alert udp $HOME_NET any -> $EXTERNAL_NET any (sid:1337; msg:"foo"; content:"A|42 43|D|45|";)`,
 			want: &Rule{
 				Action:   "alert",
 				Protocol: "udp",
@@ -211,7 +211,7 @@ func TestParseRule(t *testing.T) {
 		},
 		{
 			name: "tags",
-			rule: `alert udp $HOME_NET any -> $EXTERNAL_NET any (sid:1337; msg:"foo"; content:!"AA"; classtype:foo;);`,
+			rule: `alert udp $HOME_NET any -> $EXTERNAL_NET any (sid:1337; msg:"foo"; content:!"AA"; classtype:foo;)`,
 			want: &Rule{
 				Action:   "alert",
 				Protocol: "udp",
@@ -234,7 +234,7 @@ func TestParseRule(t *testing.T) {
 		},
 		{
 			name: "references",
-			rule: `alert udp $HOME_NET any -> $EXTERNAL_NET any (sid:1337; msg:"foo"; content:"A"; reference:cve,2014; reference:url,www.suricata-ids.org;);`,
+			rule: `alert udp $HOME_NET any -> $EXTERNAL_NET any (sid:1337; msg:"foo"; content:"A"; reference:cve,2014; reference:url,www.suricata-ids.org;)`,
 			want: &Rule{
 				Action:   "alert",
 				Protocol: "udp",
@@ -261,7 +261,7 @@ func TestParseRule(t *testing.T) {
 		},
 		{
 			name: "content options",
-			rule: `alert udp $HOME_NET any -> $EXTERNAL_NET any (sid:1337; msg:"foo"; content:!"AA"; http_header; offset:3;);`,
+			rule: `alert udp $HOME_NET any -> $EXTERNAL_NET any (sid:1337; msg:"foo"; content:!"AA"; http_header; offset:3;)`,
 			want: &Rule{
 				Action:   "alert",
 				Protocol: "udp",
@@ -289,7 +289,7 @@ func TestParseRule(t *testing.T) {
 		},
 		{
 			name: "multiple contents and options",
-			rule: `alert udp $HOME_NET any -> $EXTERNAL_NET any (sid:1; msg:"a"; content:"A"; http_header; fast_pattern; content:"B"; http_uri;);`,
+			rule: `alert udp $HOME_NET any -> $EXTERNAL_NET any (sid:1; msg:"a"; content:"A"; http_header; fast_pattern; content:"B"; http_uri;)`,
 			want: &Rule{
 				Action:   "alert",
 				Protocol: "udp",
@@ -322,7 +322,7 @@ func TestParseRule(t *testing.T) {
 		},
 		{
 			name: "multiple contents and multiple options",
-			rule: `alert udp $HOME_NET any -> $EXTERNAL_NET any (sid:1; msg:"a"; content:"A"; http_header; fast_pattern:0,42; nocase; content:"B"; http_uri;);`,
+			rule: `alert udp $HOME_NET any -> $EXTERNAL_NET any (sid:1; msg:"a"; content:"A"; http_header; fast_pattern:0,42; nocase; content:"B"; http_uri;)`,
 			want: &Rule{
 				Action:   "alert",
 				Protocol: "udp",
@@ -356,7 +356,7 @@ func TestParseRule(t *testing.T) {
 		},
 		{
 			name: "multiple contents with file_data",
-			rule: `alert udp $HOME_NET any -> $EXTERNAL_NET any (sid:1; msg:"a"; file_data; content:"A"; http_header; nocase; content:"B"; http_uri;);`,
+			rule: `alert udp $HOME_NET any -> $EXTERNAL_NET any (sid:1; msg:"a"; file_data; content:"A"; http_header; nocase; content:"B"; http_uri;)`,
 			want: &Rule{
 				Action:   "alert",
 				Protocol: "udp",
@@ -681,7 +681,7 @@ func TestParseRule(t *testing.T) {
 		// Errors
 		{
 			name:    "invalid direction",
-			rule:    `alert udp $HOME_NET any *# $EXTERNAL_NET any (sid:2; msg:"foo"; content:"A";);`,
+			rule:    `alert udp $HOME_NET any *# $EXTERNAL_NET any (sid:2; msg:"foo"; content:"A";)`,
 			wantErr: true,
 		},
 		{
@@ -691,17 +691,17 @@ func TestParseRule(t *testing.T) {
 		},
 		{
 			name:    "invalid content option",
-			rule:    `alert udp $HOME_NET any -> $EXTERNAL_NET any (sid:1; content:"foo"; offset:"a";);`,
+			rule:    `alert udp $HOME_NET any -> $EXTERNAL_NET any (sid:1; content:"foo"; offset:"a";)`,
 			wantErr: true,
 		},
 		{
 			name:    "invalid content value",
-			rule:    `alert udp $HOME_NET any -> $EXTERNAL_NET any (sid:1; content:!; offset:"a";);`,
+			rule:    `alert udp $HOME_NET any -> $EXTERNAL_NET any (sid:1; content:!; offset:"a";)`,
 			wantErr: true,
 		},
 		{
 			name:    "invalid msg",
-			rule:    `alert udp $HOME_NET any -> $EXTERNAL_NET any (sid:2; msg; content:"A";);`,
+			rule:    `alert udp $HOME_NET any -> $EXTERNAL_NET any (sid:2; msg; content:"A";)`,
 			wantErr: true,
 		},
 	} {
@@ -744,7 +744,7 @@ func TestInEqualOut(t *testing.T) {
 	}{
 		{
 			name:  "simple test",
-			input: `alert udp $HOME_NET any -> $EXTERNAL_NET any (sid:1337; msg:"foo"; content:"|28|foo"; content:".AA"; within:40;);`,
+			input: `alert udp $HOME_NET any -> $EXTERNAL_NET any (sid:1337; msg:"foo"; content:"|28|foo"; content:".AA"; within:40;)`,
 		},
 		{
 			name:  "complex rule",

@@ -394,11 +394,6 @@ func lexOptionValue(l *lexer) stateFn {
 			l.emit(itemOptionValue, true)
 			l.skipNext()
 			return lexOptionKey
-		case ')':
-			l.backup()
-			l.emit(itemOptionValue, true)
-			l.skipNext()
-			return lexRuleEnd
 		case eof:
 			return l.unexpectedEOF()
 		}

@@ -381,6 +381,7 @@ func lexOptionValueBegin(l *lexer) stateFn {
 
 // lexOptionValueString consumes the inner content of a string value from the rule options.
 func lexOptionValueString(l *lexer) stateFn {
+	escaped := false
 	for {
 		switch l.next() {
 		case '"':
@@ -389,11 +390,14 @@ func lexOptionValueString(l *lexer) stateFn {
 			l.skipNext()
 			return lexOptionKey
 		case '\\':
-			if l.next() != '"' {
+			escaped = !escaped
+			if l.next() != '"' || !escaped {
 				l.backup()
 			}
 		case eof:
 			return l.unexpectedEOF()
+		default:
+			escaped = false
 		}
 	}
 }

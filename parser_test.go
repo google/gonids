@@ -390,6 +390,33 @@ func TestParseRule(t *testing.T) {
 			},
 		},
 		{
+			name: "broken rule",
+			rule: `alert http $HOME_NET any -> $EXTERNAL_NET any (msg:"broken rule"; content:"A"; content:"B"; sid:12345; rev:1;)`,
+			want: &Rule{
+				Action:   "alert",
+				Protocol: "http",
+				Source: Network{
+					Nets:  []string{"$HOME_NET"},
+					Ports: []string{"any"},
+				},
+				Destination: Network{
+					Nets:  []string{"$EXTERNAL_NET"},
+					Ports: []string{"any"},
+				},
+				SID:         12345,
+				Revision:    1,
+				Description: "broken rule",
+				Contents: Contents{
+					&Content{
+						Pattern: []byte("A"),
+					},
+					&Content{
+						Pattern: []byte("B"),
+					},
+				},
+			},
+		},
+		{
 			name: "multiple contents with file_data and pkt_data",
 			rule: `alert udp $HOME_NET any -> $EXTERNAL_NET any (sid:1; msg:"a"; file_data; content:"A"; http_header; nocase; content:"B"; http_uri; pkt_data; content:"C"; http_uri;)`,
 			want: &Rule{
@@ -722,15 +749,13 @@ func TestParseRule(t *testing.T) {
 				Description: "byte_extract",
 				Contents: Contents{
 					&Content{
-						Pattern:      []byte{0xff, 0xfe},
-						DataPosition: fileData,
+						Pattern: []byte{0xff, 0xfe},
 						Options: []*ContentOption{
 							&ContentOption{"byte_extract", "3,0,Certs.len,relative,little"},
 						},
 					},
 					&Content{
-						Pattern:      []byte{0x55, 0x04, 0x0A, 0x0C, 0x0C},
-						DataPosition: fileData,
+						Pattern: []byte{0x55, 0x04, 0x0A, 0x0C, 0x0C},
 						Options: []*ContentOption{
 							&ContentOption{"distance", "3"},
 							&ContentOption{"within", "Certs.len"},

@@ -75,6 +75,13 @@ func parsePCRE(s string) (*PCRE, error) {
 	}, nil
 }
 
+func unquote(s string) string {
+	if strings.IndexByte(s, '"') < 0 {
+		return s
+	}
+	return strings.Replace(s, `\"`, `"`, -1)
+}
+
 func inSlice(str string, strings []string) bool {
 	for _, k := range strings {
 		if str == k {
@@ -274,12 +281,17 @@ func (r *Rule) option(key item, l *lexer) error {
 		if nextItem.typ != itemOptionValue {
 			return fmt.Errorf("no value for content option %s", key.value)
 		}
-		v, err := strconv.Atoi(nextItem.value)
-		if err != nil {
-			return fmt.Errorf("invalid value %s for option %s", nextItem.value, key.value)
+
+		// check if the value is an integer value
+		if _, err := strconv.Atoi(nextItem.value); err != nil {
+			// check if it is the name of a var
+			if _, ok := r.Vars[nextItem.value]; !ok {
+				return fmt.Errorf("invalid value %s for option %s", nextItem.value, key.value)
+			}
 		}
 		lastContent := r.Contents[len(r.Contents)-1]
-		lastContent.Options = append(lastContent.Options, &ContentOption{Name: key.value, Value: v})
+		lastContent.Options = append(lastContent.Options, &ContentOption{Name: key.value, Value: nextItem.value})
+
 	case key.value == "fast_pattern":
 		if len(r.Contents) == 0 {
 			return fmt.Errorf("invalid content option %q with no content match", key.value)
@@ -319,7 +331,7 @@ func (r *Rule) option(key item, l *lexer) error {
 			negate = true
 		}
 		if nextItem.typ == itemOptionValueString {
-			p, err := parsePCRE(nextItem.value)
+			p, err := parsePCRE(unquote(nextItem.value))
 			if err != nil {
 				return err
 			}
@@ -328,6 +340,47 @@ func (r *Rule) option(key item, l *lexer) error {
 		} else {
 			return fmt.Errorf("invalid type %q for option content", nextItem.typ)
 		}
+	case key.value == "byte_extract":
+		if len(r.Contents) == 0 {
+			return fmt.Errorf("invalid content option %q with no content match", key.value)
+		}
+		nextItem := l.nextItem()
+		parts := strings.Split(nextItem.value, ",")
+		if len(parts) < 3 {
+			return fmt.Errorf("invalid byte_extract value: %s", nextItem.value)
+		}
+
+		v := new(Var)
+
+		n, err := strconv.Atoi(parts[0])
+		if err != nil {
+			return fmt.Errorf("byte_extract number of bytes is not an int: %s; %s", parts[0], err)
+		}
+		v.NumBytes = n
+
+		offset, err := strconv.Atoi(parts[1])
+		if err != nil {
+			return fmt.Errorf("byte_extract offset is not an int: %s; %s", parts[1], err)
+		}
+		v.Offset = offset
+
+		name := parts[2]
+		if r.Vars == nil {
+			// Lazy init r.Vars if necessary
+			r.Vars = make(map[string]*Var)
+		} else if _, exists := r.Vars[name]; exists {
+			return fmt.Errorf("byte_extract var already declared: %s", name)
+		}
+
+		// options
+		for i, l := 3, len(parts); i < l; i++ {
+			parts[i] = strings.TrimSpace(parts[i])
+			v.Options = append(v.Options, parts[i])
+		}
+
+		r.Vars[name] = v
+		lastContent := r.Contents[len(r.Contents)-1]
+		lastContent.Options = append(lastContent.Options, &ContentOption{Name: key.value, Value: strings.Join(parts, ",")})
 	}
 	return nil
 }

@@ -64,10 +64,10 @@ func TestLexer(t *testing.T) {
 		},
 		{
 			name:  "string value",
-			input: `alert udp $HOME_NET any -> [1.1.1.1,2.2.2.2] any (key1:"value1";)`,
+			input: `alert tcp-pkt $HOME_NET any -> [1.1.1.1,2.2.2.2] any (key1:"value1";)`,
 			items: []item{
 				{itemAction, "alert"},
-				{itemProtocol, "udp"},
+				{itemProtocol, "tcp-pkt"},
 				{itemSourceAddress, "$HOME_NET"},
 				{itemSourcePort, "any"},
 				{itemDirection, "->"},
@@ -113,7 +113,7 @@ func TestLexer(t *testing.T) {
 		},
 		{
 			name:  "multiple spaces",
-			input: "\talert   udp   $HOME_NET   any   ->   [1.1.1.1,2.2.2.2]   any   (key1: value1 ; key2;) ;",
+			input: "\talert   udp   $HOME_NET   any   ->   [1.1.1.1,2.2.2.2]   any   (key1: value1 ; key2;)",
 			items: []item{
 				{itemAction, "alert"},
 				{itemProtocol, "udp"},
@@ -131,7 +131,7 @@ func TestLexer(t *testing.T) {
 		},
 		{
 			name:  "parentheses in value",
-			input: `alert dns $HOME_NET any -> any any (reference:url,en.wikipedia.org/wiki/Tor_(anonymity_network); sid:42;) ;`,
+			input: `alert dns $HOME_NET any -> any any (reference:url,en.wikipedia.org/wiki/Tor_(anonymity_network); sid:42;)`,
 			items: []item{
 				{itemAction, "alert"},
 				{itemProtocol, "dns"},
@@ -142,6 +142,40 @@ func TestLexer(t *testing.T) {
 				{itemDestinationPort, "any"},
 				{itemOptionKey, "reference"},
 				{itemOptionValue, "url,en.wikipedia.org/wiki/Tor_(anonymity_network)"},
+				{itemOptionKey, "sid"},
+				{itemOptionValue, "42"},
+				{itemEOR, ""},
+			},
+		},
+		{
+			name:  "escaped quote",
+			input: `alert udp $HOME_NET any -> $EXTERNAL_NET any (pcre:"/[=\"]\w{8}\.jar/Hi";)`,
+			items: []item{
+				{itemAction, "alert"},
+				{itemProtocol, "udp"},
+				{itemSourceAddress, "$HOME_NET"},
+				{itemSourcePort, "any"},
+				{itemDirection, "->"},
+				{itemDestinationAddress, "$EXTERNAL_NET"},
+				{itemDestinationPort, "any"},
+				{itemOptionKey, "pcre"},
+				{itemOptionValueString, `/[=\"]\w{8}\.jar/Hi`},
+				{itemEOR, ""},
+			},
+		},
+		{
+			name:  "escaped backslash",
+			input: `alert tcp $HOME_NET any -> $EXTERNAL_NET 21 (content:"CWD C|3a|\\WINDOWS\\system32\\"; sid:42;)`,
+			items: []item{
+				{itemAction, "alert"},
+				{itemProtocol, "tcp"},
+				{itemSourceAddress, "$HOME_NET"},
+				{itemSourcePort, "any"},
+				{itemDirection, "->"},
+				{itemDestinationAddress, "$EXTERNAL_NET"},
+				{itemDestinationPort, "21"},
+				{itemOptionKey, "content"},
+				{itemOptionValueString, `CWD C|3a|\\WINDOWS\\system32\\`},
 				{itemOptionKey, "sid"},
 				{itemOptionValue, "42"},
 				{itemEOR, ""},

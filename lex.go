@@ -109,6 +109,14 @@ func (l *lexer) peek() rune {
 	return r
 }
 
+// len returns the the current length of the item in processing.
+func (l *lexer) len() int {
+	if l.pos >= len(l.input) {
+		return -1
+	}
+	return l.pos - l.start
+}
+
 // backup steps back one rune. Can only be called once per call of next.
 func (l *lexer) backup() {
 	if l.width == -1 {
@@ -229,15 +237,16 @@ func lexComment(l *lexer) stateFn {
 
 // lexAction consumes a rule action.
 func lexAction(l *lexer) stateFn {
-	r := l.next()
-	switch {
-	case r == ' ':
-		l.emit(itemAction, true)
-		return lexProtocol
-	case unicode.IsLetter(r):
-		return lexAction
+	for {
+		r := l.next()
+		switch {
+		case r == ' ':
+			l.emit(itemAction, true)
+			return lexProtocol
+		case !unicode.IsLetter(r):
+			return l.errorf("invalid character %q for a rule action", r)
+		}
 	}
-	return l.errorf("invalid character %q for a rule action", r)
 }
 
 // lexProtocol consumes a rule protocol.
@@ -249,7 +258,7 @@ func lexProtocol(l *lexer) stateFn {
 		case r == ' ':
 			l.emit(itemProtocol, true)
 			return lexSourceAddress
-		case !unicode.IsLetter(r):
+		case !(unicode.IsLetter(r) || (l.len() > 0 && r == '-')):
 			return l.errorf("invalid character %q for a rule protocol", r)
 		}
 	}
@@ -372,6 +381,7 @@ func lexOptionValueBegin(l *lexer) stateFn {
 
 // lexOptionValueString consumes the inner content of a string value from the rule options.
 func lexOptionValueString(l *lexer) stateFn {
+	escaped := false
 	for {
 		switch l.next() {
 		case '"':
@@ -379,8 +389,15 @@ func lexOptionValueString(l *lexer) stateFn {
 			l.emit(itemOptionValueString, false)
 			l.skipNext()
 			return lexOptionKey
+		case '\\':
+			escaped = !escaped
+			if l.next() != '"' || !escaped {
+				l.backup()
+			}
 		case eof:
 			return l.unexpectedEOF()
+		default:
+			escaped = false
 		}
 	}
 }

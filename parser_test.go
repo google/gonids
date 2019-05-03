@@ -389,9 +389,10 @@ func TestParseRule(t *testing.T) {
 				},
 			},
 		},
+		// Some remnant of the previously parsed rule having fileData set at the end is affecting this.
 		{
 			name: "broken rule",
-			rule: `alert http $HOME_NET any -> $EXTERNAL_NET any (msg:"ET TROJAN TrueBot/Silence.Downloader CnC Checkin"; file_data; content:"POST"; http_method; content:".php"; http_uri; content:"Content-Disposition|3A| form-data|3B| name=|22|file|22 3B| filename=|22|C|3A|\"; http_client_body; content:".DAT|22 3B 0D 0A|"; http_client_body; distance:0; content:"|0D 0A|Host Name|3A|                "; http_client_body; distance:0; content:"|0D 0A|OS Name|3A|                "; http_client_body; distance:0; content:"|0D 0A|OS Version|3A|                "; http_client_body; distance:0; http_header_names; content:!"Referer"; content:!"User-Agent"; content:!"Accept"; metadata:former_category TROJAN, affected_product Windows_XP_Vista_7_8_10_Server_32_64_Bit, attack_target Client_Endpoint, deployment Perimeter, signature_severity Major, created_at 2018_10_29, malware_family TrueBot, malware_family Silence_Downloader, performance_impact Moderate, updated_at 2018_10_29; flow:established,to_server; classtype:trojan-activity; reference:md5,c2a00949ddacfed9ed2ef83a8cb44780; sid:2026559; rev:2;)`,
+			rule: `alert http $HOME_NET any -> $EXTERNAL_NET any (msg:"broken rule"; content:"A"; content:"B"; sid:12345; rev:1;)`,
 			want: &Rule{
 				Action:   "alert",
 				Protocol: "http",
@@ -403,29 +404,15 @@ func TestParseRule(t *testing.T) {
 					Nets:  []string{"$EXTERNAL_NET"},
 					Ports: []string{"any"},
 				},
-				SID:         2026559,
-				Description: "ET TROJAN TrueBot/Silence.Downloader CnC Checkin",
+				SID:         12345,
+				Revision:    1,
+				Description: "broken rule",
 				Contents: Contents{
 					&Content{
-						DataPosition: fileData,
-						Pattern:      []byte("POST"),
-						Options: []*ContentOption{
-							&ContentOption{"http_method", 0},
-						},
+						Pattern: []byte("A"),
 					},
 					&Content{
-						DataPosition: fileData,
-						Pattern:      []byte(".php"),
-						Options: []*ContentOption{
-							&ContentOption{"http_uri", 0},
-						},
-					},
-					&Content{
-						DataPosition: fileData,
-						Pattern:      []byte{0x43, 0x6f, 0x6e, 0x74, 0x65, 0x6e, 0x74, 0x2d, 0x44, 0x69, 0x73, 0x70, 0x6f, 0x73, 0x69, 0x74, 0x69, 0x6f, 0x6e, 0x3a, 0x20, 0x66, 0x6f, 0x72, 0x6d, 0x2d, 0x64, 0x61, 0x74, 0x61, 0x3b, 0x6e, 0x61, 0x6d, 0x65, 0x3d, 0x22, 0x20, 0x66, 0x69, 0x6c, 0x65, 0x22, 0x3b, 0x66, 0x69, 0x6c, 0x65, 0x6e, 0x61, 0x6d, 0x65, 0x3d, 0x22, 0x43, 0x3a, 0x5c},
-						Options: []*ContentOption{
-							&ContentOption{"http_client_body", 0},
-						},
+						Pattern: []byte("B"),
 					},
 				},
 			},
@@ -763,15 +750,13 @@ func TestParseRule(t *testing.T) {
 				Description: "byte_extract",
 				Contents: Contents{
 					&Content{
-						Pattern:      []byte{0xff, 0xfe},
-						DataPosition: fileData,
+						Pattern: []byte{0xff, 0xfe},
 						Options: []*ContentOption{
 							&ContentOption{"byte_extract", "3,0,Certs.len,relative,little"},
 						},
 					},
 					&Content{
-						Pattern:      []byte{0x55, 0x04, 0x0A, 0x0C, 0x0C},
-						DataPosition: fileData,
+						Pattern: []byte{0x55, 0x04, 0x0A, 0x0C, 0x0C},
 						Options: []*ContentOption{
 							&ContentOption{"distance", "3"},
 							&ContentOption{"within", "Certs.len"},

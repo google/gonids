@@ -391,7 +391,6 @@ func ParseRule(rule string) (*Rule, error) {
 	if err != nil {
 		return nil, err
 	}
-	dataPosition = pktData
 	r := &Rule{}
 	for item := l.nextItem(); item.typ != itemEOR && item.typ != itemEOF && err == nil; item = l.nextItem() {
 		switch item.typ {

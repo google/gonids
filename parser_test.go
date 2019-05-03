@@ -389,7 +389,6 @@ func TestParseRule(t *testing.T) {
 				},
 			},
 		},
-		// Some remnant of the previously parsed rule having fileData set at the end is affecting this.
 		{
 			name: "broken rule",
 			rule: `alert http $HOME_NET any -> $EXTERNAL_NET any (msg:"broken rule"; content:"A"; content:"B"; sid:12345; rev:1;)`,

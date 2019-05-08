@@ -121,6 +121,11 @@ const (
 	// Kerberos Sticky Buffers
 	krb5Cname
 	krb5Sname
+	// DNS Sticky Buffers
+	dnsQuery
+	// SMB Sticky Buffers
+	smbNamedPipe
+	smbShare
 )
 
 var stickyBuffers = map[dataPos]string{
@@ -155,6 +160,11 @@ var stickyBuffers = map[dataPos]string{
 	// Kerberos Sticky Buffers
 	krb5Cname: "krb5_cname",
 	krb5Sname: "krb5_sname",
+	// DNS Sticky Buffers
+	dnsQuery: "dns_query",
+	// SMB Sticky Buffers
+	smbNamedPipe: "smb_named_pipe",
+	smbShare:     "smb_share",
 }
 
 func (d dataPos) String() string {

@@ -494,6 +494,34 @@ func TestParseRule(t *testing.T) {
 			},
 		},
 		{
+			name: "DNS sticky buffer",
+			rule: `alert dns any any -> any any (msg:"DNS Query for google.com"; dns_query; content:"google.com"; nocase; sid:1234; rev:1;)`,
+			want: &Rule{
+				Action:   "alert",
+				Protocol: "dns",
+				Source: Network{
+					Nets:  []string{"any"},
+					Ports: []string{"any"},
+				},
+				Destination: Network{
+					Nets:  []string{"any"},
+					Ports: []string{"any"},
+				},
+				SID:         1234,
+				Revision:    1,
+				Description: "DNS Query for google.com",
+				Contents: Contents{
+					&Content{
+						DataPosition: dnsQuery,
+						Pattern:      []byte("google.com"),
+						Options: []*ContentOption{
+							&ContentOption{"nocase", ""},
+						},
+					},
+				},
+			},
+		},
+		{
 			name: "Complex VRT rule",
 			rule: `alert tcp $HOME_NET any -> $EXTERNAL_NET $HTTP_PORTS (msg:"VRT BLACKLIST URI request for known malicious URI - /tongji.js"; flow:to_server,established; content:"/tongji.js"; fast_pattern:only; http_uri; content:"Host|3A| "; http_header; pcre:"/Host\x3a[^\r\n]*?\.tongji/Hi"; metadata:impact_flag red, policy balanced-ips drop, policy security-ips drop, ruleset community, service http; reference:url,labs.snort.org/docs/17904.html; classtype:trojan-activity; sid:17904; rev:6;)`,
 			want: &Rule{

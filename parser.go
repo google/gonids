@@ -236,7 +236,7 @@ func (r *Rule) option(key item, l *lexer) error {
 	case isStickyBuffer(key.value):
 		var d dataPos
 		var err error
-		if d, err = stickyBuffer(key.value); err != nil {
+		if d, err = StickyBuffer(key.value); err != nil {
 			return err
 		}
 		dataPosition = d

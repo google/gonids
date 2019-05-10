@@ -724,7 +724,7 @@ func TestStickyBuffer(t *testing.T) {
 			wantErr: false,
 		},
 	} {
-		got, gotErr := stickyBuffer(tt.s)
+		got, gotErr := StickyBuffer(tt.s)
 		if got != tt.want {
 			t.Fatalf("got=%v; want=%v", got, tt.want)
 		}

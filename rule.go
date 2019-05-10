@@ -171,7 +171,8 @@ func (d dataPos) String() string {
 	return stickyBuffers[d]
 }
 
-func stickyBuffer(s string) (dataPos, error) {
+// StickyBuffer returns the data position value for the string representation of a sticky buffer name (e.g. "file_data")
+func StickyBuffer(s string) (dataPos, error) {
 	for k, v := range stickyBuffers {
 		if v == s {
 			return k, nil
@@ -181,7 +182,7 @@ func stickyBuffer(s string) (dataPos, error) {
 }
 
 func isStickyBuffer(s string) bool {
-	_, err := stickyBuffer(s)
+	_, err := StickyBuffer(s)
 	return err == nil
 }
 

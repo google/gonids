@@ -281,6 +281,11 @@ func TestNetString(t *testing.T) {
 			input: []string{"$HOME_NET", "!$FOO_NET", "192.168.0.0/16"},
 			want:  "[$HOME_NET, !$FOO_NET, 192.168.0.0/16]",
 		},
+		{
+			name:  "busted",
+			input: []string{"82.163.143.135", "82.163.142.137"},
+			want:  "[82.163.143.135, 82.163.142.137]",
+		},
 	} {
 		got := netString(tt.input)
 		if got != tt.want {

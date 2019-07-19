@@ -133,6 +133,8 @@ func (l *lexer) emit(t itemType, trimSpaces bool) {
 	if trimSpaces {
 		input = strings.TrimSpace(input)
 	}
+	// This is a bit of a hack. We lex until `;` now so we end up with extra `"`.
+	input = strings.TrimSuffix(input, `"`)
 	l.items <- item{t, input}
 	l.start = l.pos
 }
@@ -384,14 +386,16 @@ func lexOptionValueString(l *lexer) stateFn {
 	escaped := false
 	for {
 		switch l.next() {
-		case '"':
+		case ';':
 			l.backup()
+			if escaped {
+			}
 			l.emit(itemOptionValueString, false)
 			l.skipNext()
 			return lexOptionKey
 		case '\\':
 			escaped = !escaped
-			if l.next() != '"' || !escaped {
+			if l.next() != ';' || !escaped {
 				l.backup()
 			}
 		case eof:

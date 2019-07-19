@@ -35,11 +35,6 @@ func TestParseContent(t *testing.T) {
 			want:  []byte("abcd"),
 		},
 		{
-			name:  "escaped content",
-			input: `abcd\;ef`,
-			want:  []byte("abcd;ef"),
-		},
-		{
 			name:  "hex content",
 			input: "A|42 43|D| 45|",
 			want:  []byte("ABCDE"),
@@ -792,6 +787,29 @@ func TestParseRule(t *testing.T) {
 				},
 				Vars: map[string]*Var{
 					"Certs.len": {3, 0, []string{"relative", "little"}},
+				},
+			},
+		},
+		{
+			name: "content with backslash at end",
+			rule: `alert http $HOME_NET any -> $EXTERNAL_NET any (msg:"ending backslash rule"; content:"foo\"; sid:12345; rev:2;)`, want: &Rule{
+				Action:   "alert",
+				Protocol: "http",
+				Source: Network{
+					Nets:  []string{"$HOME_NET"},
+					Ports: []string{"any"},
+				},
+				Destination: Network{
+					Nets:  []string{"$EXTERNAL_NET"},
+					Ports: []string{"any"},
+				},
+				SID:         12345,
+				Revision:    2,
+				Description: "ending backslash rule",
+				Contents: Contents{
+					&Content{
+						Pattern: []byte{0x66, 0x6f, 0x6f, 0x5c},
+					},
 				},
 			},
 		},

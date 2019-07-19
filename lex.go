@@ -133,6 +133,7 @@ func (l *lexer) emit(t itemType, trimSpaces bool) {
 	if trimSpaces {
 		input = strings.TrimSpace(input)
 	}
+
 	// This is a bit of a hack. We lex until `;` now so we end up with extra `"`.
 	input = strings.TrimSuffix(input, `"`)
 	l.items <- item{t, input}

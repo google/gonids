@@ -389,8 +389,6 @@ func lexOptionValueString(l *lexer) stateFn {
 		switch l.next() {
 		case ';':
 			l.backup()
-			if escaped {
-			}
 			l.emit(itemOptionValueString, false)
 			l.skipNext()
 			return lexOptionKey

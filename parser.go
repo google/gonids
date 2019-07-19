@@ -40,8 +40,7 @@ var metaSplitRE = regexp.MustCompile(`,\s*`)
 // parseContent decodes rule content match. For now it only takes care of escaped and hex
 // encoded content.
 func parseContent(content string) ([]byte, error) {
-	// Unescape, decode and replace all occurrences of hexadecimal content.
-	// b := hexRE.ReplaceAllStringFunc(strings.Replace(content, `\`, "", -1),
+	// Decode and replace all occurrences of hexadecimal content.
 	b := hexRE.ReplaceAllStringFunc(content,
 		func(h string) string {
 			r, err := hex.DecodeString(strings.Replace(strings.Trim(h, "|"), " ", "", -1))

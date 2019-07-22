@@ -109,7 +109,7 @@ func (l *lexer) peek() rune {
 	return r
 }
 
-// len returns the the current length of the item in processing.
+// len returns the current length of the item in processing.
 func (l *lexer) len() int {
 	if l.pos >= len(l.input) {
 		return -1

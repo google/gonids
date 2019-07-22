@@ -654,7 +654,7 @@ func TestRE(t *testing.T) {
 
 func TestDataPosString(t *testing.T) {
 	for _, tt := range []struct {
-		val  dataPos
+		val  DataPos
 		want string
 	}{
 		{
@@ -705,7 +705,7 @@ func TestIsStickyBuffer(t *testing.T) {
 func TestStickyBuffer(t *testing.T) {
 	for _, tt := range []struct {
 		s       string
-		want    dataPos
+		want    DataPos
 		wantErr bool
 	}{
 		{

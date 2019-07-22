@@ -175,7 +175,7 @@ func (r *Rule) option(key item, l *lexer) error {
 		panic("item is not an option key")
 	}
 	switch {
-	case inSlice(key.value, []string{"classtype", "flow", "threshold", "tag", "priority"}):
+	case inSlice(key.value, []string{"classtype", "flow", "threshold", "tag", "priority", "dsize", "byte_test"}):
 		nextItem := l.nextItem()
 		if nextItem.typ != itemOptionValue {
 			return fmt.Errorf("no valid value for %s tag", key.value)

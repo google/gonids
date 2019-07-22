@@ -13,10 +13,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package gonids implements a basic parser of IDS rules.
-//
-// For now the parser is very basic and it only parses a subset of fields.
-// We intentionally omit http_encode as it doesn't seem to be used in practice.
 package gonids
 
 import (
@@ -80,8 +76,8 @@ type Metadata struct {
 // Metadatas allows for a Stringer on []*Metadata
 type Metadatas []*Metadata
 
-// TODO: Ensure all values either begin with $ (variable) or they are valid IPNet/int.
 // Network describes the IP addresses and port numbers used in a rule.
+// TODO: Ensure all values either begin with $ (variable) or they are valid IPNet/int.
 type Network struct {
 	Nets  []string // Currently just []string because these can be variables $HOME_NET, not a valid IPNet.
 	Ports []string // Currently just []string because these can be variables $HTTP_PORTS, not just ints.

@@ -13,10 +13,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package gonids implements a basic lexer of IDS rules (Snort/Suricata).
-//
-// For now the lexer is able to lex all parts of the rule but it is still
-// pretty lax on error handling.
 package gonids
 
 import (

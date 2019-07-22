@@ -279,7 +279,7 @@ func TestNetString(t *testing.T) {
 		{
 			name:  "three nets",
 			input: []string{"$HOME_NET", "!$FOO_NET", "192.168.0.0/16"},
-			want:  "[$HOME_NET, !$FOO_NET, 192.168.0.0/16]",
+			want:  "[$HOME_NET,!$FOO_NET,192.168.0.0/16]",
 		},
 	} {
 		got := netString(tt.input)
@@ -309,7 +309,7 @@ func TestNetworkString(t *testing.T) {
 				Nets:  []string{"$HOME_NET", "!$FOO_NET", "192.168.0.0/16"},
 				Ports: []string{"$HTTP_PORTS", "!53", "$BAR_NET"},
 			},
-			want: "[$HOME_NET, !$FOO_NET, 192.168.0.0/16] [$HTTP_PORTS, !53, $BAR_NET]",
+			want: "[$HOME_NET,!$FOO_NET,192.168.0.0/16] [$HTTP_PORTS,!53,$BAR_NET]",
 		},
 	} {
 		got := tt.input.String()

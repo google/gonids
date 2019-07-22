@@ -283,7 +283,7 @@ func netString(netPart []string) string {
 	for i, n := range netPart {
 		s.WriteString(n)
 		if i < len(netPart)-1 {
-			s.WriteString(", ")
+			s.WriteString(",")
 		}
 	}
 	if len(netPart) > 1 {

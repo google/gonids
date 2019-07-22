@@ -83,10 +83,10 @@ type Network struct {
 	Ports []string // Currently just []string because these can be variables $HTTP_PORTS, not just ints.
 }
 
-type dataPos int
+type DataPos int
 
 const (
-	pktData dataPos = iota
+	pktData DataPos = iota
 	fileData
 	base64Data
 	// HTTP Sticky buffers
@@ -124,7 +124,7 @@ const (
 	smbShare
 )
 
-var stickyBuffers = map[dataPos]string{
+var stickyBuffers = map[DataPos]string{
 	pktData:    "pkt_data",
 	fileData:   "file_data",
 	base64Data: "base64_data",
@@ -163,12 +163,12 @@ var stickyBuffers = map[dataPos]string{
 	smbShare:     "smb_share",
 }
 
-func (d dataPos) String() string {
+func (d DataPos) String() string {
 	return stickyBuffers[d]
 }
 
 // StickyBuffer returns the data position value for the string representation of a sticky buffer name (e.g. "file_data")
-func StickyBuffer(s string) (dataPos, error) {
+func StickyBuffer(s string) (DataPos, error) {
 	for k, v := range stickyBuffers {
 		if v == s {
 			return k, nil
@@ -186,7 +186,7 @@ func isStickyBuffer(s string) bool {
 type Content struct {
 	// DataPosition defaults to pkt_data state, can be modified to apply to file_data, base64_data locations.
 	// This value will apply to all following contents, to reset to default you must reset DataPosition during processing.
-	DataPosition dataPos
+	DataPosition DataPos
 	// FastPattern settings for the content.
 	FastPattern FastPattern
 	// Pattern is the pattern match of a content (e.g. HTTP in content:"HTTP").

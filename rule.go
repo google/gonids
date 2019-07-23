@@ -83,6 +83,8 @@ type Network struct {
 	Ports []string // Currently just []string because these can be variables $HTTP_PORTS, not just ints.
 }
 
+// DataPos indicates the data position for content matches. These should be referenced for creation
+// by using their Suricata keywords and the StickyBuffer() function.
 type DataPos int
 
 const (
@@ -174,7 +176,7 @@ func StickyBuffer(s string) (DataPos, error) {
 			return k, nil
 		}
 	}
-	return pktData, fmt.Errorf("not a sticky buffer")
+	return pktData, fmt.Errorf("%s is not a sticky buffer", s)
 }
 
 func isStickyBuffer(s string) bool {

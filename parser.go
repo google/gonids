@@ -358,7 +358,7 @@ func (r *Rule) option(key item, l *lexer) error {
 		}
 		v.NumBytes = n
 
-		offset, err := strconv.Atoi(parts[1])
+		offset, err := strconv.Atoi(strings.TrimSpace(parts[1]))
 		if err != nil {
 			return fmt.Errorf("byte_extract offset is not an int: %s; %s", parts[1], err)
 		}

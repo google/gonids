@@ -20,7 +20,6 @@ limitations under the License.
 package gonids
 
 import (
-	"bytes"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -28,106 +27,6 @@ import (
 	"strconv"
 	"strings"
 )
-
-// Rule describes an IDS rule.
-type Rule struct {
-	// Action is the action the rule will take (alert, pass, drop, etc.).
-	Action string
-	// Protocol is the protocol the rule looks at.
-	Protocol string
-	// Source is the address and ports for the source of the traffic.
-	Source Network
-	// Destination is the address and ports for the source of the traffic.
-	Destination Network
-	// Bidirectional indicates the directionality of a rule (-> or <>).
-	Bidirectional bool
-	// SID is the identifier of the rule.
-	SID int
-	// Revision is the revision of the rule.
-	Revision int
-	// Description is the msg field of the rule.
-	Description string
-	// References contains references associated to the rule (e.g. CVE number).
-	References []*Reference
-	// TODO: Define some structure for tracking checks that do not directly apply
-	// to a content. urilen, dsize, etc. Various buffers, and directions need structured
-	// places to live.
-	// Contents are all the decoded content matches.
-	Contents []*Content
-	// PCREs is a slice of PCRE structs that represent the regular expressions in a rule
-	PCREs []*PCRE
-	// Tags is a map of tag names to tag values (e.g. classtype:trojan).
-	Tags map[string]string
-	//Metas is a slice of Metadata 
-	Metas  []*Metadata
-}
-
-// TODO: Ensure all values either begin with $ (variable) or they are valid IPNet/int.
-
-//Metadata describe metadata in  key-value struct
-type Metadata struct{
-	Key 	string 
-	Value	string
-}
-
-// Network describes the IP addresses and port numbers used in a rule.
-type Network struct {
-	Nets  []string // Currently just []string because these can be variables $HOME_NET, not a valid IPNet.
-	Ports []string // Currently just []string because these can be variables $HTTP_PORTS, not just ints.
-}
-
-type dataPos int
-
-const (
-	pktData dataPos = iota
-	fileData
-	base64Data
-)
-
-// Content describes a rule content. A content is composed of a pattern followed by options.
-type Content struct {
-	// DataPosition defaults to pkt_data state, can be modified to apply to file_data, base64_data locations.
-	// This value will apply to all following contents, to reset to default you must reset DataPosition during processing.
-	DataPosition dataPos
-	// FastPattern settings for the content.
-	FastPattern FastPattern
-	// Pattern is the pattern match of a content (e.g. HTTP in content:"HTTP").
-	Pattern []byte
-	// Negate is true for negated content match.
-	Negate bool
-	// Options are the option associated to the content (e.g. http_header).
-	Options []*ContentOption
-}
-
-type PCRE struct {
-	Pattern []byte
-	Negate bool
-	Options []byte
-}
-
-// FastPattern describes various properties of a fast_pattern value for a content.
-type FastPattern struct {
-	Enabled bool
-	Only    bool
-	Offset  int
-	Length  int
-}
-
-// ContentOption describes an option set on a rule content.
-type ContentOption struct {
-	// Name is the name of the option (e.g. offset).
-	Name string
-	// Value is the value associated to the option, default to 0 for option without value.
-	Value int
-}
-
-// Reference describes a gonids reference in a rule.
-type Reference struct {
-	// Type is the system name for the reference: (url, cve, md5, etc.)
-	Type string
-	// Value is the identifier in the system: (address, cvd-id, hash)
-	Value string
-}
 
 // hexRE matches on hexadecimal content like |41 41 41| for example.
 var hexRE = regexp.MustCompile(`(?i)(\|(?:\s*[a-f0-9]{2}\s*)+\|)`)
@@ -141,8 +40,8 @@ var metaSplitRE = regexp.MustCompile(`,\s*`)
 // parseContent decodes rule content match. For now it only takes care of escaped and hex
 // encoded content.
 func parseContent(content string) ([]byte, error) {
-	// Unescape, decode and replace all occurrences of hexadecimal content.
-	b := hexRE.ReplaceAllStringFunc(strings.Replace(content, `\`, "", -1),
+	// Decode and replace all occurrences of hexadecimal content.
+	b := hexRE.ReplaceAllStringFunc(content,
 		func(h string) string {
 			r, err := hex.DecodeString(strings.Replace(strings.Trim(h, "|"), " ", "", -1))
 			if err != nil {
@@ -157,106 +56,60 @@ func parseContent(content string) ([]byte, error) {
 func parsePCRE(s string) (*PCRE, error) {
 	c := strings.Count(s, "/")
 	if c < 2 {
-		return nil, fmt.Errorf("All pcre patterns must contain at least 2 '/', found: %d", c)
+		return nil, fmt.Errorf("all pcre patterns must contain at least 2 '/', found: %d", c)
 	}
 
 	l := strings.LastIndex(s, "/")
 	if l < 0 {
-		return nil, fmt.Errorf("Couldn't find options in PCRE.")
+		return nil, fmt.Errorf("couldn't find options in PCRE")
 	}
 
-	i := strings.Index(s,"/")
+	i := strings.Index(s, "/")
 	if l < 0 {
-		return nil, fmt.Errorf("Couldn't find start of pattern.")
+		return nil, fmt.Errorf("couldn't find start of pattern")
 	}
 
 	return &PCRE{
-		Pattern: []byte(s[i+1:l]),
+		Pattern: []byte(s[i+1 : l]),
 		Options: []byte(s[l+1:]),
 	}, nil
 }
 
-// escape escapes special char used in regexp.
-func escape(r string) string {
-	return escapeRE.ReplaceAllString(r, `\$1`)
+func unquote(s string) string {
+	if strings.IndexByte(s, '"') < 0 {
+		return s
+	}
+	return strings.Replace(s, `\"`, `"`, -1)
 }
 
-// within returns the within value for a specific content.
-func within(options []*ContentOption) int {
-	for _, o := range options {
-		if o.Name == "within" {
-			return int(o.Value)
+func inSlice(str string, strings []string) bool {
+	for _, k := range strings {
+		if str == k {
+			return true
 		}
 	}
-	return 0
+	return false
 }
 
-// RE returns all content matches as a single and simple regexp.
-func (r *Rule) RE() string {
-	var re string
-	for _, c := range r.Contents {
-		// TODO: handle pcre, depth, offset, distance.
-		if w := within(c.Options); w != 0 {
-			re += fmt.Sprintf(".{0,%d}", w)
-		} else {
-			re += ".*"
-		}
-		re += escape(string(c.Pattern))
+// comment decodes a comment (commented rule, or just a comment.)
+func (r *Rule) comment(key item, l *lexer) error {
+	if key.typ != itemComment {
+		panic("item is not a comment")
 	}
-	return re
-}
+	// Pop off all leading # and space, try to parse as rule
+	rule, err := ParseRule(strings.TrimLeft(key.value, "# "))
 
-// CVE extracts CVE from a rule.
-func (r *Rule) CVE() string {
-	for _, ref := range r.References {
-		if ref.Type == "cve" {
-			return ref.Value
-		}
+	// If there was an error this means the comment is not a rule.
+	if err != nil {
+		return fmt.Errorf("this is not a rule: %s", err)
 	}
-	return ""
-}
 
-// TODO: Add a String method for Content to add negation, and options.
+	// We parsed a rule, this was a comment so set the rule to disabled.
+	rule.Disabled = true
 
-// ToRegexp returns a string that can be used as a regular expression
-// to identify content matches in an ASCII dump of a packet capture (tcpdump -A).
-func (c *Content) ToRegexp() string {
-	var buffer bytes.Buffer
-	for _, b := range c.Pattern {
-		if b > 126 || b < 32 {
-			buffer.WriteString(".")
-		} else {
-			buffer.WriteByte(b)
-		}
-	}
-	return regexp.QuoteMeta(buffer.String())
-}
-
-// FormatPattern returns a string for a Pattern in a content
-func (c *Content) FormatPattern() string {
-	var buffer bytes.Buffer
-	pipe := false
-	for _, b := range c.Pattern {
-		if b != ' ' && (b > 126 || b < 35 || b == ':' || b == ';') {
-			if !pipe {
-				buffer.WriteByte('|')
-				pipe = true
-			} else {
-				buffer.WriteString(" ")
-			}
-			buffer.WriteString(fmt.Sprintf("%.2X", b))
-		} else {
-			if pipe {
-				buffer.WriteByte('|')
-				pipe = false
-			}
-			buffer.WriteByte(b)
-		}
-	}
-	if pipe {
-		buffer.WriteByte('|')
-	}
-	return buffer.String()
+	// Overwrite the rule we're working on with the recently parsed, disabled rule.
+	*r = *rule
+	return nil
 }
 
 // action decodes an IDS rule option based on its key.
@@ -321,8 +174,8 @@ func (r *Rule) option(key item, l *lexer) error {
 	if key.typ != itemOptionKey {
 		panic("item is not an option key")
 	}
-	switch key.value {
-	case "classtype", "flow", "threshold", "tag", "priority":
+	switch {
+	case inSlice(key.value, []string{"classtype", "flow", "threshold", "tag", "priority", "dsize", "byte_test"}):
 		nextItem := l.nextItem()
 		if nextItem.typ != itemOptionValue {
 			return fmt.Errorf("no valid value for %s tag", key.value)
@@ -331,7 +184,7 @@ func (r *Rule) option(key item, l *lexer) error {
 			r.Tags = make(map[string]string)
 		}
 		r.Tags[key.value] = nextItem.value
-	case "reference":
+	case key.value == "reference":
 		nextItem := l.nextItem()
 		if nextItem.typ != itemOptionValue {
 			return errors.New("no valid value for reference")
@@ -341,20 +194,20 @@ func (r *Rule) option(key item, l *lexer) error {
 			return fmt.Errorf("invalid reference definition: %s", refs)
 		}
 		r.References = append(r.References, &Reference{Type: refs[0], Value: refs[1]})
-	case "metadata":
+	case key.value == "metadata":
 		nextItem := l.nextItem()
 		if nextItem.typ != itemOptionValue {
 			return errors.New("no valid value for metadata")
 		}
 		metas := metaSplitRE.Split(nextItem.value, -1)
-		for _,kv := range metas{
-			meta_tmp := strings.SplitN(kv, " ", 2)
-			if len(meta_tmp) != 2 {
-				return fmt.Errorf("invalid metadata definition: %s", meta_tmp)
+		for _, kv := range metas {
+			metaTmp := strings.SplitN(kv, " ", 2)
+			if len(metaTmp) != 2 {
+				return fmt.Errorf("invalid metadata definition: %s", metaTmp)
 			}
-			r.Metas = append(r.Metas, &Metadata{Key: strings.TrimSpace(meta_tmp[0]), Value: strings.TrimSpace(meta_tmp[1])})
+			r.Metas = append(r.Metas, &Metadata{Key: strings.TrimSpace(metaTmp[0]), Value: strings.TrimSpace(metaTmp[1])})
 		}
-	case "sid":
+	case key.value == "sid":
 		nextItem := l.nextItem()
 		if nextItem.typ != itemOptionValue {
 			return errors.New("no value for option sid")
@@ -364,7 +217,7 @@ func (r *Rule) option(key item, l *lexer) error {
 			return fmt.Errorf("invalid sid %s", nextItem.value)
 		}
 		r.SID = sid
-	case "rev":
+	case key.value == "rev":
 		nextItem := l.nextItem()
 		if nextItem.typ != itemOptionValue {
 			return errors.New("no value for option rev")
@@ -374,19 +227,20 @@ func (r *Rule) option(key item, l *lexer) error {
 			return fmt.Errorf("invalid rev %s", nextItem.value)
 		}
 		r.Revision = rev
-	case "msg":
+	case key.value == "msg":
 		nextItem := l.nextItem()
 		if nextItem.typ != itemOptionValueString {
 			return errors.New("no value for option msg")
 		}
 		r.Description = nextItem.value
-	case "file_data":
-		dataPosition = fileData
-	case "pkt_data":
-		dataPosition = pktData
-	case "base64_data":
-		dataPosition = base64Data
-	case "content", "uricontent":
+	case isStickyBuffer(key.value):
+		var d DataPos
+		var err error
+		if d, err = StickyBuffer(key.value); err != nil {
+			return err
+		}
+		dataPosition = d
+	case inSlice(key.value, []string{"content", "uricontent"}):
 		nextItem := l.nextItem()
 		negate := false
 		if nextItem.typ == itemNot {
@@ -411,15 +265,15 @@ func (r *Rule) option(key item, l *lexer) error {
 		} else {
 			return fmt.Errorf("invalid type %q for option content", nextItem.typ)
 		}
-	case "http_cookie", "http_raw_cookie", "http_method", "http_header", "http_raw_header",
+	case inSlice(key.value, []string{"http_cookie", "http_raw_cookie", "http_method", "http_header", "http_raw_header",
 		"http_uri", "http_raw_uri", "http_user_agent", "http_stat_code", "http_stat_msg",
-		"http_client_body", "http_server_body", "nocase":
+		"http_client_body", "http_server_body", "nocase"}):
 		if len(r.Contents) == 0 {
 			return fmt.Errorf("invalid content option %q with no content match", key.value)
 		}
 		lastContent := r.Contents[len(r.Contents)-1]
 		lastContent.Options = append(lastContent.Options, &ContentOption{Name: key.value})
-	case "depth", "distance", "offset", "within":
+	case inSlice(key.value, []string{"depth", "distance", "offset", "within"}):
 		if len(r.Contents) == 0 {
 			return fmt.Errorf("invalid content option %q with no content match", key.value)
 		}
@@ -427,13 +281,18 @@ func (r *Rule) option(key item, l *lexer) error {
 		if nextItem.typ != itemOptionValue {
 			return fmt.Errorf("no value for content option %s", key.value)
 		}
-		v, err := strconv.Atoi(nextItem.value)
-		if err != nil {
-			return fmt.Errorf("invalid value %s for option %s", nextItem.value, key.value)
+
+		// check if the value is an integer value
+		if _, err := strconv.Atoi(nextItem.value); err != nil {
+			// check if it is the name of a var
+			if _, ok := r.Vars[nextItem.value]; !ok {
+				return fmt.Errorf("invalid value %s for option %s", nextItem.value, key.value)
+			}
 		}
 		lastContent := r.Contents[len(r.Contents)-1]
-		lastContent.Options = append(lastContent.Options, &ContentOption{Name: key.value, Value: v})
-	case "fast_pattern":
+		lastContent.Options = append(lastContent.Options, &ContentOption{Name: key.value, Value: nextItem.value})
+
+	case key.value == "fast_pattern":
 		if len(r.Contents) == 0 {
 			return fmt.Errorf("invalid content option %q with no content match", key.value)
 		}
@@ -464,7 +323,7 @@ func (r *Rule) option(key item, l *lexer) error {
 		}
 		lastContent := r.Contents[len(r.Contents)-1]
 		lastContent.FastPattern = FastPattern{true, only, offset, length}
-	case "pcre":
+	case key.value == "pcre":
 		nextItem := l.nextItem()
 		negate := false
 		if nextItem.typ == itemNot {
@@ -472,7 +331,7 @@ func (r *Rule) option(key item, l *lexer) error {
 			negate = true
 		}
 		if nextItem.typ == itemOptionValueString {
-			p, err := parsePCRE(nextItem.value)
+			p, err := parsePCRE(unquote(nextItem.value))
 			if err != nil {
 				return err
 			}
@@ -481,6 +340,47 @@ func (r *Rule) option(key item, l *lexer) error {
 		} else {
 			return fmt.Errorf("invalid type %q for option content", nextItem.typ)
 		}
+	case key.value == "byte_extract":
+		if len(r.Contents) == 0 {
+			return fmt.Errorf("invalid content option %q with no content match", key.value)
+		}
+		nextItem := l.nextItem()
+		parts := strings.Split(nextItem.value, ",")
+		if len(parts) < 3 {
+			return fmt.Errorf("invalid byte_extract value: %s", nextItem.value)
+		}
+
+		v := new(Var)
+
+		n, err := strconv.Atoi(parts[0])
+		if err != nil {
+			return fmt.Errorf("byte_extract number of bytes is not an int: %s; %s", parts[0], err)
+		}
+		v.NumBytes = n
+
+		offset, err := strconv.Atoi(parts[1])
+		if err != nil {
+			return fmt.Errorf("byte_extract offset is not an int: %s; %s", parts[1], err)
+		}
+		v.Offset = offset
+
+		name := parts[2]
+		if r.Vars == nil {
+			// Lazy init r.Vars if necessary
+			r.Vars = make(map[string]*Var)
+		} else if _, exists := r.Vars[name]; exists {
+			return fmt.Errorf("byte_extract var already declared: %s", name)
+		}
+
+		// options
+		for i, l := 3, len(parts); i < l; i++ {
+			parts[i] = strings.TrimSpace(parts[i])
+			v.Options = append(v.Options, parts[i])
+		}
+
+		r.Vars[name] = v
+		lastContent := r.Contents[len(r.Contents)-1]
+		lastContent.Options = append(lastContent.Options, &ContentOption{Name: key.value, Value: strings.Join(parts, ",")})
 	}
 	return nil
 }
@@ -491,9 +391,19 @@ func ParseRule(rule string) (*Rule, error) {
 	if err != nil {
 		return nil, err
 	}
+	dataPosition = pktData
 	r := &Rule{}
 	for item := l.nextItem(); item.typ != itemEOR && item.typ != itemEOF && err == nil; item = l.nextItem() {
 		switch item.typ {
+		case itemComment:
+			err = r.comment(item, l)
+			// Error here means that the comment was not a commented rule.
+			// So we're not parsing a rule and we need to break out.
+			if err != nil {
+				break
+			}
+			// This line was a commented rule.
+			return r, nil
 		case itemAction:
 			err = r.action(item, l)
 		case itemProtocol:
@@ -507,9 +417,9 @@ func ParseRule(rule string) (*Rule, error) {
 		case itemError:
 			err = errors.New(item.value)
 		}
-	}
-	if err != nil {
-		return nil, err
+		if err != nil {
+			return nil, err
+		}
 	}
 	return r, nil
 }

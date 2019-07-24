@@ -46,7 +46,7 @@ func TestLexer(t *testing.T) {
 	}{
 		{
 			name:  "simple",
-			input: "alert udp $HOME_NET any -> [1.1.1.1,2.2.2.2] any (key1:value1; key2:value2);",
+			input: "alert udp $HOME_NET any -> [1.1.1.1,2.2.2.2] any (key1:value1; key2:value2;)",
 			items: []item{
 				{itemAction, "alert"},
 				{itemProtocol, "udp"},
@@ -64,10 +64,10 @@ func TestLexer(t *testing.T) {
 		},
 		{
 			name:  "string value",
-			input: `alert udp $HOME_NET any -> [1.1.1.1,2.2.2.2] any (key1:"value1");`,
+			input: `alert tcp-pkt $HOME_NET any -> [1.1.1.1,2.2.2.2] any (key1:"value1";)`,
 			items: []item{
 				{itemAction, "alert"},
-				{itemProtocol, "udp"},
+				{itemProtocol, "tcp-pkt"},
 				{itemSourceAddress, "$HOME_NET"},
 				{itemSourcePort, "any"},
 				{itemDirection, "->"},
@@ -80,7 +80,7 @@ func TestLexer(t *testing.T) {
 		},
 		{
 			name:  "string value not",
-			input: `alert udp $HOME_NET any -> [1.1.1.1,2.2.2.2] any (key1:!"value1");`,
+			input: `alert udp $HOME_NET any -> [1.1.1.1,2.2.2.2] any (key1:!"value1";)`,
 			items: []item{
 				{itemAction, "alert"},
 				{itemProtocol, "udp"},
@@ -97,7 +97,7 @@ func TestLexer(t *testing.T) {
 		},
 		{
 			name:  "single key",
-			input: "alert udp $HOME_NET any -> [1.1.1.1,2.2.2.2] any (key);",
+			input: "alert udp $HOME_NET any -> [1.1.1.1,2.2.2.2] any (key;)",
 			items: []item{
 				{itemAction, "alert"},
 				{itemProtocol, "udp"},
@@ -107,12 +107,13 @@ func TestLexer(t *testing.T) {
 				{itemDestinationAddress, "[1.1.1.1,2.2.2.2]"},
 				{itemDestinationPort, "any"},
 				{itemOptionKey, "key"},
+				{itemOptionNoValue, ""},
 				{itemEOR, ""},
 			},
 		},
 		{
 			name:  "multiple spaces",
-			input: "\talert udp $HOME_NET any -> [1.1.1.1,2.2.2.2] any (key1: value1 ; key2;) ;",
+			input: "\talert   udp   $HOME_NET   any   ->   [1.1.1.1,2.2.2.2]   any   (key1: value1 ; key2;)",
 			items: []item{
 				{itemAction, "alert"},
 				{itemProtocol, "udp"},
@@ -125,6 +126,58 @@ func TestLexer(t *testing.T) {
 				{itemOptionValue, "value1"},
 				{itemOptionKey, "key2"},
 				{itemOptionNoValue, ""},
+				{itemEOR, ""},
+			},
+		},
+		{
+			name:  "parentheses in value",
+			input: `alert dns $HOME_NET any -> any any (reference:url,en.wikipedia.org/wiki/Tor_(anonymity_network); sid:42;)`,
+			items: []item{
+				{itemAction, "alert"},
+				{itemProtocol, "dns"},
+				{itemSourceAddress, "$HOME_NET"},
+				{itemSourcePort, "any"},
+				{itemDirection, "->"},
+				{itemDestinationAddress, "any"},
+				{itemDestinationPort, "any"},
+				{itemOptionKey, "reference"},
+				{itemOptionValue, "url,en.wikipedia.org/wiki/Tor_(anonymity_network)"},
+				{itemOptionKey, "sid"},
+				{itemOptionValue, "42"},
+				{itemEOR, ""},
+			},
+		},
+		{
+			name:  "escaped quote",
+			input: `alert udp $HOME_NET any -> $EXTERNAL_NET any (pcre:"/[=\"]\w{8}\.jar/Hi";)`,
+			items: []item{
+				{itemAction, "alert"},
+				{itemProtocol, "udp"},
+				{itemSourceAddress, "$HOME_NET"},
+				{itemSourcePort, "any"},
+				{itemDirection, "->"},
+				{itemDestinationAddress, "$EXTERNAL_NET"},
+				{itemDestinationPort, "any"},
+				{itemOptionKey, "pcre"},
+				{itemOptionValueString, `/[=\"]\w{8}\.jar/Hi`},
+				{itemEOR, ""},
+			},
+		},
+		{
+			name:  "escaped backslash",
+			input: `alert tcp $HOME_NET any -> $EXTERNAL_NET 21 (content:"CWD C|3a|\\WINDOWS\\system32\\"; sid:42;)`,
+			items: []item{
+				{itemAction, "alert"},
+				{itemProtocol, "tcp"},
+				{itemSourceAddress, "$HOME_NET"},
+				{itemSourcePort, "any"},
+				{itemDirection, "->"},
+				{itemDestinationAddress, "$EXTERNAL_NET"},
+				{itemDestinationPort, "21"},
+				{itemOptionKey, "content"},
+				{itemOptionValueString, `CWD C|3a|\\WINDOWS\\system32\\`},
+				{itemOptionKey, "sid"},
+				{itemOptionValue, "42"},
 				{itemEOR, ""},
 			},
 		},
@@ -147,6 +200,41 @@ func TestLexer(t *testing.T) {
 		{
 			name:    "invalid direction",
 			input:   "alert udp $HOME_NET any foo any any (key);",
+			wantErr: true,
+		},
+		{
+			name:    "source address EOF",
+			input:   "alert udp incomplet",
+			wantErr: true,
+		},
+		{
+			name:    "source port EOF",
+			input:   "alert udp $HOME_NET incomplet",
+			wantErr: true,
+		},
+		{
+			name:    "destination address EOF",
+			input:   "alert udp $HOME_NET any -> incomplet",
+			wantErr: true,
+		},
+		{
+			name:    "destination port EOF",
+			input:   "alert udp $HOME_NET any -> $EXTERNAL_NET incomplet",
+			wantErr: true,
+		},
+		{
+			name:    "option key EOF",
+			input:   "alert udp $HOME_NET any -> $EXTERNAL_NET any (incomplet",
+			wantErr: true,
+		},
+		{
+			name:    "value string EOF",
+			input:   "alert udp $HOME_NET any -> $EXTERNAL_NET any (key1:\"incomplet",
+			wantErr: true,
+		},
+		{
+			name:    "value EOF",
+			input:   "alert udp $HOME_NET any -> $EXTERNAL_NET any (key1:incomplet",
 			wantErr: true,
 		},
 	} {

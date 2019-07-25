@@ -279,7 +279,7 @@ func TestNetString(t *testing.T) {
 		{
 			name:  "three nets",
 			input: []string{"$HOME_NET", "!$FOO_NET", "192.168.0.0/16"},
-			want:  "[$HOME_NET, !$FOO_NET, 192.168.0.0/16]",
+			want:  "[$HOME_NET,!$FOO_NET,192.168.0.0/16]",
 		},
 	} {
 		got := netString(tt.input)
@@ -309,7 +309,7 @@ func TestNetworkString(t *testing.T) {
 				Nets:  []string{"$HOME_NET", "!$FOO_NET", "192.168.0.0/16"},
 				Ports: []string{"$HTTP_PORTS", "!53", "$BAR_NET"},
 			},
-			want: "[$HOME_NET, !$FOO_NET, 192.168.0.0/16] [$HTTP_PORTS, !53, $BAR_NET]",
+			want: "[$HOME_NET,!$FOO_NET,192.168.0.0/16] [$HTTP_PORTS,!53,$BAR_NET]",
 		},
 	} {
 		got := tt.input.String()
@@ -564,6 +564,11 @@ func TestRuleString(t *testing.T) {
 						Pattern: []byte("AA"),
 					},
 				},
+				Matchers: []orderedMatcher{
+					&Content{
+						Pattern: []byte("AA"),
+					},
+				},
 			},
 			want: `alert udp $HOME_NET any -> $EXTERNAL_NET any (msg:"foo"; content:"AA"; sid:1337; rev:2;)`,
 		},
@@ -589,6 +594,15 @@ func TestRuleString(t *testing.T) {
 					},
 				},
 				PCREs: []*PCRE{
+					&PCRE{
+						Pattern: []byte("foo.*bar"),
+						Options: []byte("Ui"),
+					},
+				},
+				Matchers: []orderedMatcher{
+					&Content{
+						Pattern: []byte("AA"),
+					},
 					&PCRE{
 						Pattern: []byte("foo.*bar"),
 						Options: []byte("Ui"),
@@ -620,6 +634,11 @@ func TestRuleString(t *testing.T) {
 				},
 				Tags: map[string]string{
 					"classtype": "trojan-activity",
+				},
+				Matchers: []orderedMatcher{
+					&Content{
+						Pattern: []byte("AA"),
+					},
 				},
 			},
 			want: `alert udp $HOME_NET any -> $EXTERNAL_NET any (msg:"foo"; content:"AA"; classtype:trojan-activity; sid:1337; rev:2;)`,

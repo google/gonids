@@ -381,6 +381,19 @@ func (r *Rule) option(key item, l *lexer) error {
 		r.Vars[name] = v
 		lastContent := r.Contents[len(r.Contents)-1]
 		lastContent.Options = append(lastContent.Options, &ContentOption{Name: key.value, Value: strings.Join(parts, ",")})
+	case key.value == "flowbits":
+		nextItem := l.nextItem()
+		parts := strings.Split(nextItem.value, ",")
+		tmp_fb := &Flowbits{}
+		if len(parts) == 2{
+			tmp_fb.Condition = strings.TrimSpace(parts[0])
+			tmp_fb.Value = strings.TrimSpace(parts[1])
+		}else if len(parts) == 1{
+			tmp_fb.Value = strings.TrimSpace(parts[0])
+		}else{
+			break
+		}
+		r.Flowbs = append(r.Flowbs, tmp_fb)
 	}
 	return nil
 }

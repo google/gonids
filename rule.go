@@ -77,8 +77,8 @@ type Metadata struct {
 
 // Flowbits description.
 type Flowbits struct {
-	Condition   string
-	Value string
+	Condition	string
+	Value 		string
 }
 
 // Metadatas allows for a Stringer on []*Metadata

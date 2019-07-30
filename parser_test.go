@@ -832,6 +832,45 @@ func TestParseRule(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "flowbits",
+			rule: `alert http $HOME_NET any -> $EXTERNAL_NET any (msg:"ACTIVEX ATTACK Citrix Access Gateway Plug-in ActiveX Code Execution - SET"; flow:to_server,established; content:"epaq"; http_uri; flowbits:set,ETPRO.Citrix_AGAX; flowbits:noalert; classtype:attempted-user; sid:2803611; rev:4;)`,
+			want: &Rule{
+				Action:   "alert",
+				Protocol: "http",
+				Source: Network{
+					Nets:  []string{"$HOME_NET"},
+					Ports: []string{"any"},
+				},
+				Destination: Network{
+					Nets:  []string{"$EXTERNAL_NET"},
+					Ports: []string{"any"},
+				},
+				SID:         2803611,
+				Revision:    4,
+				Description: "ACTIVEX ATTACK Citrix Access Gateway Plug-in ActiveX Code Execution - SET",
+				Tags: map[string]string{"flow": "to_server,established", "classtype": "attempted-user"},
+				Contents: Contents{
+					&Content{
+						Pattern:      []byte("epaq"),
+						Options: []*ContentOption{
+							&ContentOption{"http_uri", ""},
+						},
+					},
+					
+				},
+				Flowbs: []*Flowbits{
+					&Flowbits{
+						Condition: "set",
+						Value: "ETPRO.Citrix_AGAX",
+					},
+					&Flowbits{
+						Condition: "",
+						Value: "noalert",
+					},
+				},
+			},
+		},
 		// Errors
 		{
 			name:    "invalid direction",

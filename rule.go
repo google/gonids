@@ -58,6 +58,8 @@ type Rule struct {
 	Vars map[string]*Var
 	// Metas is a slice of Metadata.
 	Metas Metadatas
+	//flowbits
+	Flowbs []*Flowbits
 }
 
 // Var describes a variable extracted via byte_extract.
@@ -70,6 +72,12 @@ type Var struct {
 // Metadata describes metadata tags in key-value struct.
 type Metadata struct {
 	Key   string
+	Value string
+}
+
+// Flowbits description.
+type Flowbits struct {
+	Condition   string
 	Value string
 }
 

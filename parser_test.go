@@ -81,6 +81,11 @@ func TestParseRule(t *testing.T) {
 						Pattern: []byte("AA"),
 					},
 				},
+				Matchers: []orderedMatcher{
+					&Content{
+						Pattern: []byte("AA"),
+					},
+				},
 			},
 		},
 		{
@@ -102,6 +107,11 @@ func TestParseRule(t *testing.T) {
 				Revision:    2,
 				Description: "foo",
 				Contents: Contents{
+					&Content{
+						Pattern: []byte("AA"),
+					},
+				},
+				Matchers: []orderedMatcher{
 					&Content{
 						Pattern: []byte("AA"),
 					},
@@ -131,6 +141,11 @@ func TestParseRule(t *testing.T) {
 						Pattern: []byte("AA"),
 					},
 				},
+				Matchers: []orderedMatcher{
+					&Content{
+						Pattern: []byte("AA"),
+					},
+				},
 			},
 		},
 		{
@@ -153,6 +168,10 @@ func TestParseRule(t *testing.T) {
 					&Content{
 						Pattern: []byte("AA"), Negate: true},
 				},
+				Matchers: []orderedMatcher{
+					&Content{
+						Pattern: []byte("AA"), Negate: true},
+				},
 			},
 		},
 		{
@@ -172,6 +191,14 @@ func TestParseRule(t *testing.T) {
 				SID:         1337,
 				Description: "foo",
 				Contents: Contents{
+					&Content{
+						Pattern: []byte("AA"),
+					},
+					&Content{
+						Pattern: []byte("BB"),
+					},
+				},
+				Matchers: []orderedMatcher{
 					&Content{
 						Pattern: []byte("AA"),
 					},
@@ -202,6 +229,11 @@ func TestParseRule(t *testing.T) {
 						Pattern: []byte{'A', 0x42, 0x43, 'D', 0x45},
 					},
 				},
+				Matchers: []orderedMatcher{
+					&Content{
+						Pattern: []byte{'A', 0x42, 0x43, 'D', 0x45},
+					},
+				},
 			},
 		},
 		{
@@ -225,6 +257,10 @@ func TestParseRule(t *testing.T) {
 						Pattern: []byte("AA"), Negate: true},
 				},
 				Tags: map[string]string{"classtype": "foo"},
+				Matchers: []orderedMatcher{
+					&Content{
+						Pattern: []byte("AA"), Negate: true},
+				},
 			},
 		},
 		{
@@ -271,6 +307,11 @@ func TestParseRule(t *testing.T) {
 					&Reference{Type: "cve", Value: "2014"},
 					&Reference{Type: "url", Value: "www.suricata-ids.org"},
 				},
+				Matchers: []orderedMatcher{
+					&Content{
+						Pattern: []byte("A"),
+					},
+				},
 			},
 		},
 		{
@@ -290,6 +331,16 @@ func TestParseRule(t *testing.T) {
 				SID:         1337,
 				Description: "foo",
 				Contents: Contents{
+					&Content{
+						Pattern: []byte("AA"),
+						Negate:  true,
+						Options: []*ContentOption{
+							&ContentOption{"http_header", ""},
+							&ContentOption{"offset", "3"},
+						},
+					},
+				},
+				Matchers: []orderedMatcher{
 					&Content{
 						Pattern: []byte("AA"),
 						Negate:  true,
@@ -332,6 +383,21 @@ func TestParseRule(t *testing.T) {
 						},
 					},
 				},
+				Matchers: []orderedMatcher{
+					&Content{
+						Pattern: []byte("A"),
+						Options: []*ContentOption{
+							&ContentOption{"http_header", ""},
+						},
+						FastPattern: FastPattern{Enabled: true},
+					},
+					&Content{
+						Pattern: []byte("B"),
+						Options: []*ContentOption{
+							&ContentOption{"http_uri", ""},
+						},
+					},
+				},
 			},
 		},
 		{
@@ -351,6 +417,22 @@ func TestParseRule(t *testing.T) {
 				SID:         1,
 				Description: "a",
 				Contents: Contents{
+					&Content{
+						Pattern: []byte("A"),
+						Options: []*ContentOption{
+							&ContentOption{"http_header", ""},
+							&ContentOption{"nocase", ""},
+						},
+						FastPattern: FastPattern{Enabled: true, Offset: 0, Length: 42},
+					},
+					&Content{
+						Pattern: []byte("B"),
+						Options: []*ContentOption{
+							&ContentOption{"http_uri", ""},
+						},
+					},
+				},
+				Matchers: []orderedMatcher{
 					&Content{
 						Pattern: []byte("A"),
 						Options: []*ContentOption{
@@ -401,6 +483,23 @@ func TestParseRule(t *testing.T) {
 						},
 					},
 				},
+				Matchers: []orderedMatcher{
+					&Content{
+						DataPosition: fileData,
+						Pattern:      []byte("A"),
+						Options: []*ContentOption{
+							&ContentOption{"http_header", ""},
+							&ContentOption{"nocase", ""},
+						},
+					},
+					&Content{
+						DataPosition: fileData,
+						Pattern:      []byte("B"),
+						Options: []*ContentOption{
+							&ContentOption{"http_uri", ""},
+						},
+					},
+				},
 			},
 		},
 		{
@@ -428,6 +527,14 @@ func TestParseRule(t *testing.T) {
 						Pattern: []byte("B"),
 					},
 				},
+				Matchers: []orderedMatcher{
+					&Content{
+						Pattern: []byte("A"),
+					},
+					&Content{
+						Pattern: []byte("B"),
+					},
+				},
 			},
 		},
 		{
@@ -447,6 +554,30 @@ func TestParseRule(t *testing.T) {
 				SID:         1,
 				Description: "a",
 				Contents: Contents{
+					&Content{
+						DataPosition: fileData,
+						Pattern:      []byte("A"),
+						Options: []*ContentOption{
+							&ContentOption{"http_header", ""},
+							&ContentOption{"nocase", ""},
+						},
+					},
+					&Content{
+						DataPosition: fileData,
+						Pattern:      []byte("B"),
+						Options: []*ContentOption{
+							&ContentOption{"http_uri", ""},
+						},
+					},
+					&Content{
+						DataPosition: pktData,
+						Pattern:      []byte("C"),
+						Options: []*ContentOption{
+							&ContentOption{"http_uri", ""},
+						},
+					},
+				},
+				Matchers: []orderedMatcher{
 					&Content{
 						DataPosition: fileData,
 						Pattern:      []byte("A"),
@@ -505,6 +636,23 @@ func TestParseRule(t *testing.T) {
 						},
 					},
 				},
+				Matchers: []orderedMatcher{
+					&Content{
+						DataPosition: httpRequestLine,
+						Pattern:      []byte("A"),
+					},
+					&Content{
+						DataPosition: httpRequestLine,
+						Pattern:      []byte("B"),
+					},
+					&Content{
+						DataPosition: pktData,
+						Pattern:      []byte("C"),
+						Options: []*ContentOption{
+							&ContentOption{"http_uri", ""},
+						},
+					},
+				},
 			},
 		},
 		{
@@ -525,6 +673,15 @@ func TestParseRule(t *testing.T) {
 				Revision:    1,
 				Description: "DNS Query for google.com",
 				Contents: Contents{
+					&Content{
+						DataPosition: dnsQuery,
+						Pattern:      []byte("google.com"),
+						Options: []*ContentOption{
+							&ContentOption{"nocase", ""},
+						},
+					},
+				},
+				Matchers: []orderedMatcher{
 					&Content{
 						DataPosition: dnsQuery,
 						Pattern:      []byte("google.com"),
@@ -584,6 +741,25 @@ func TestParseRule(t *testing.T) {
 					&Metadata{Key: "ruleset", Value: "community"},
 					&Metadata{Key: "service", Value: "http"},
 				},
+				Matchers: []orderedMatcher{
+					&Content{
+						Pattern: []byte("/tongji.js"),
+						Options: []*ContentOption{
+							&ContentOption{"http_uri", ""},
+						},
+						FastPattern: FastPattern{Enabled: true, Only: true},
+					},
+					&Content{
+						Pattern: append([]byte("Host"), 0x3a, 0x20),
+						Options: []*ContentOption{
+							&ContentOption{"http_header", ""},
+						},
+					},
+					&PCRE{
+						Pattern: []byte(`Host\x3a[^\r\n]*?\.tongji`),
+						Options: []byte("Hi"),
+					},
+				},
 			},
 		},
 		{
@@ -625,6 +801,18 @@ func TestParseRule(t *testing.T) {
 					"flow":      "to_server,established",
 					"classtype": "trojan-activity",
 				},
+				Matchers: []orderedMatcher{
+					&Content{
+						Pattern: []byte("blah"),
+						Options: []*ContentOption{
+							&ContentOption{"http_uri", ""},
+						},
+					},
+					&PCRE{
+						Pattern: []byte("foo.*bar"),
+						Options: []byte("Ui"),
+					},
+				},
 			},
 		},
 		{
@@ -662,6 +850,17 @@ func TestParseRule(t *testing.T) {
 				Metas: Metadatas{
 					&Metadata{Key: "created_at", Value: "2010_07_30"},
 					&Metadata{Key: "updated_at", Value: "2010_07_30"},
+				},
+				Matchers: []orderedMatcher{
+					&Content{
+						Pattern: []byte{0x31, 0xc9, 0xb1, 0xfc, 0x80, 0x73, 0x0c},
+					},
+					&Content{
+						Pattern: []byte{0x43, 0xe2, 0x8b, 0x9f},
+						Options: []*ContentOption{
+							&ContentOption{"distance", "0"},
+						},
+					},
 				},
 			},
 		},
@@ -719,6 +918,37 @@ func TestParseRule(t *testing.T) {
 					&Metadata{Key: "created_at", Value: "2015_10_22"},
 					&Metadata{Key: "updated_at", Value: "2018_07_12"},
 				},
+				Matchers: []orderedMatcher{
+					&Content{
+						Pattern:      []byte("<title>Sign in</title>"),
+						DataPosition: fileData,
+					},
+					&Content{
+						Pattern:      []byte("name=chalbhai"),
+						DataPosition: fileData,
+						Options: []*ContentOption{
+							&ContentOption{"nocase", ""},
+							&ContentOption{"distance", "0"},
+						},
+						FastPattern: FastPattern{Enabled: true},
+					},
+					&Content{
+						Pattern:      []byte{0x72, 0x65, 0x71, 0x75, 0x69, 0x72, 0x65, 0x64, 0x20, 0x74, 0x69, 0x74, 0x6c, 0x65, 0x3d, 0x22, 0x50, 0x6c, 0x65, 0x61, 0x73, 0x65, 0x20, 0x45, 0x6e, 0x74, 0x65, 0x72, 0x20, 0x52, 0x69, 0x67, 0x68, 0x74, 0x20, 0x56, 0x61, 0x6c, 0x75, 0x65, 0x22},
+						DataPosition: fileData,
+						Options: []*ContentOption{
+							&ContentOption{"nocase", ""},
+							&ContentOption{"distance", "0"},
+						},
+					},
+					&Content{
+						Pattern:      []byte{0x72, 0x65, 0x71, 0x75, 0x69, 0x72, 0x65, 0x64, 0x20, 0x74, 0x69, 0x74, 0x6c, 0x65, 0x3d, 0x22, 0x50, 0x6c, 0x65, 0x61, 0x73, 0x65, 0x20, 0x45, 0x6e, 0x74, 0x65, 0x72, 0x20, 0x52, 0x69, 0x67, 0x68, 0x74, 0x20, 0x56, 0x61, 0x6c, 0x75, 0x65, 0x22},
+						DataPosition: fileData,
+						Options: []*ContentOption{
+							&ContentOption{"nocase", ""},
+							&ContentOption{"distance", "0"},
+						},
+					},
+				},
 			},
 		},
 		{
@@ -745,6 +975,13 @@ func TestParseRule(t *testing.T) {
 						Options: []byte("Ui"),
 					},
 				},
+				Matchers: []orderedMatcher{
+					&PCRE{
+						Pattern: []byte("foo.*bar"),
+						Negate:  true,
+						Options: []byte("Ui"),
+					},
+				},
 			},
 		},
 		{
@@ -765,6 +1002,12 @@ func TestParseRule(t *testing.T) {
 				Revision:    1,
 				Description: "PCRE with quote",
 				PCREs: []*PCRE{
+					&PCRE{
+						Pattern: []byte(`=[."]\w{8}\.jar`),
+						Options: []byte("Hi"),
+					},
+				},
+				Matchers: []orderedMatcher{
 					&PCRE{
 						Pattern: []byte(`=[."]\w{8}\.jar`),
 						Options: []byte("Hi"),
@@ -807,6 +1050,21 @@ func TestParseRule(t *testing.T) {
 				Vars: map[string]*Var{
 					"Certs.len": {3, 0, []string{"relative", "little"}},
 				},
+				Matchers: []orderedMatcher{
+					&Content{
+						Pattern: []byte{0xff, 0xfe},
+						Options: []*ContentOption{
+							&ContentOption{"byte_extract", "3,0,Certs.len,relative,little"},
+						},
+					},
+					&Content{
+						Pattern: []byte{0x55, 0x04, 0x0A, 0x0C, 0x0C},
+						Options: []*ContentOption{
+							&ContentOption{"distance", "3"},
+							&ContentOption{"within", "Certs.len"},
+						},
+					},
+				},
 			},
 		},
 		{
@@ -828,6 +1086,55 @@ func TestParseRule(t *testing.T) {
 				Contents: Contents{
 					&Content{
 						Pattern: []byte{0x66, 0x6f, 0x6f, 0x5c},
+					},
+				},
+				Matchers: []orderedMatcher{
+					&Content{
+						Pattern: []byte{0x66, 0x6f, 0x6f, 0x5c},
+					},
+				},
+			},
+		},
+		{
+			name: "content and pcre order matters",
+			rule: `alert http $HOME_NET any -> $EXTERNAL_NET any (msg:"check order"; content:"1"; pcre:"/this.*/R"; content:"2"; sid:1; rev:1;)`, want: &Rule{
+				Action:   "alert",
+				Protocol: "http",
+				Source: Network{
+					Nets:  []string{"$HOME_NET"},
+					Ports: []string{"any"},
+				},
+				Destination: Network{
+					Nets:  []string{"$EXTERNAL_NET"},
+					Ports: []string{"any"},
+				},
+				SID:         1,
+				Revision:    1,
+				Description: "check order",
+				Contents: Contents{
+					&Content{
+						Pattern: []byte("1"),
+					},
+					&Content{
+						Pattern: []byte("2"),
+					},
+				},
+				PCREs: []*PCRE{
+					&PCRE{
+						Pattern: []byte(`this.*`),
+						Options: []byte("R"),
+					},
+				},
+				Matchers: []orderedMatcher{
+					&Content{
+						Pattern: []byte("1"),
+					},
+					&PCRE{
+						Pattern: []byte(`this.*`),
+						Options: []byte("R"),
+					},
+					&Content{
+						Pattern: []byte("2"),
 					},
 				},
 			},
@@ -866,7 +1173,7 @@ func TestParseRule(t *testing.T) {
 	} {
 		got, err := ParseRule(tt.rule)
 		if !reflect.DeepEqual(got, tt.want) || (err != nil) != tt.wantErr {
-			t.Fatal(spew.Sprintf("%s: got=%+v,%+v; want=%+v,%+v", tt.name, got, err, tt.want, tt.wantErr))
+			t.Fatal(spew.Sprintf("%s: got=%#v,%#v; want=%#v,%#v", tt.name, got, err, tt.want, tt.wantErr))
 		}
 	}
 }
@@ -914,13 +1221,12 @@ func TestInEqualOut(t *testing.T) {
 		if err != nil {
 			t.Fatalf("%v", err)
 		}
-		s := first.String()
-		second, err := ParseRule(s)
+		second, err := ParseRule(first.String())
 		if err != nil {
 			t.Fatalf("%v", err)
 		}
 		if !reflect.DeepEqual(first, second) {
-			t.Fatalf("first=%v; second=%v\ns=%v", first, second, s)
+			t.Fatalf("%s:\nfirst:\n%#v\n\nsecond:\n%#v\n\nf", tt.name, first, second)
 		}
 	}
 }

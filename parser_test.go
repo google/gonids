@@ -1095,6 +1095,50 @@ func TestParseRule(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "content and pcre order matters",
+			rule: `alert http $HOME_NET any -> $EXTERNAL_NET any (msg:"check order"; content:"1"; pcre:"/this.*/R"; content:"2"; sid:1; rev:1;)`, want: &Rule{
+				Action:   "alert",
+				Protocol: "http",
+				Source: Network{
+					Nets:  []string{"$HOME_NET"},
+					Ports: []string{"any"},
+				},
+				Destination: Network{
+					Nets:  []string{"$EXTERNAL_NET"},
+					Ports: []string{"any"},
+				},
+				SID:         1,
+				Revision:    1,
+				Description: "check order",
+				Contents: Contents{
+					&Content{
+						Pattern: []byte("1"),
+					},
+					&Content{
+						Pattern: []byte("2"),
+					},
+				},
+				PCREs: []*PCRE{
+					&PCRE{
+						Pattern: []byte(`this.*`),
+						Options: []byte("R"),
+					},
+				},
+				Matchers: []orderedMatcher{
+					&Content{
+						Pattern: []byte("1"),
+					},
+					&PCRE{
+						Pattern: []byte(`this.*`),
+						Options: []byte("R"),
+					},
+					&Content{
+						Pattern: []byte("2"),
+					},
+				},
+			},
+		},
 		// Errors
 		{
 			name:    "invalid direction",

@@ -75,10 +75,10 @@ type Metadata struct {
 	Value string
 }
 
-// Flowbits description.
+// Flowbits consists of two parts. The first part describes the action it is going to perform, the second part is the name of the flowbit.
 type Flowbit struct {
-	Condition	string
-	Value 		string
+	Action	string
+	Value 	string
 }
 
 // Metadatas allows for a Stringer on []*Metadata

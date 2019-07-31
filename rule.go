@@ -59,7 +59,7 @@ type Rule struct {
 	// Metas is a slice of Metadata.
 	Metas Metadatas
 	//flowbits
-	Flowbs []*Flowbits
+	Flowbits []*Flowbit
 }
 
 // Var describes a variable extracted via byte_extract.
@@ -76,7 +76,7 @@ type Metadata struct {
 }
 
 // Flowbits description.
-type Flowbits struct {
+type Flowbit struct {
 	Condition	string
 	Value 		string
 }

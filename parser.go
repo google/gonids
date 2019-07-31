@@ -358,7 +358,7 @@ func (r *Rule) option(key item, l *lexer) error {
 		}
 		v.NumBytes = n
 
-		offset, err := strconv.Atoi(strings.TrimSpace(parts[1]))
+		offset, err := strconv.Atoi(parts[1])
 		if err != nil {
 			return fmt.Errorf("byte_extract offset is not an int: %s; %s", parts[1], err)
 		}
@@ -384,16 +384,16 @@ func (r *Rule) option(key item, l *lexer) error {
 	case key.value == "flowbits":
 		nextItem := l.nextItem()
 		parts := strings.Split(nextItem.value, ",")
-		tmp_fb := &Flowbits{}
+		tmp_fb := &Flowbit{}
 		if len(parts) == 2{
-			tmp_fb.Condition = strings.TrimSpace(parts[0])
+			tmp_fb.Action = strings.TrimSpace(parts[0])
 			tmp_fb.Value = strings.TrimSpace(parts[1])
 		}else if len(parts) == 1{
 			tmp_fb.Value = strings.TrimSpace(parts[0])
 		}else{
 			break
 		}
-		r.Flowbs = append(r.Flowbs, tmp_fb)
+		r.Flowbits = append(r.Flowbits, tmp_fb)
 	}
 	return nil
 }

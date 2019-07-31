@@ -389,7 +389,7 @@ func (r *Rule) option(key item, l *lexer) error {
 			fb.Action = strings.TrimSpace(parts[0])
 			fb.Value = strings.TrimSpace(parts[1])
 		}else if len(parts) == 1{
-			fb.Value = strings.TrimSpace(parts[0])
+			fb.Action = strings.TrimSpace(parts[0])
 		}else{
 			break
 		}

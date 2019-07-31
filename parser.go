@@ -384,16 +384,16 @@ func (r *Rule) option(key item, l *lexer) error {
 	case key.value == "flowbits":
 		nextItem := l.nextItem()
 		parts := strings.Split(nextItem.value, ",")
-		tmp_fb := &Flowbit{}
+		fb := &Flowbit{}
 		if len(parts) == 2{
-			tmp_fb.Action = strings.TrimSpace(parts[0])
-			tmp_fb.Value = strings.TrimSpace(parts[1])
+			fb.Action = strings.TrimSpace(parts[0])
+			fb.Value = strings.TrimSpace(parts[1])
 		}else if len(parts) == 1{
-			tmp_fb.Value = strings.TrimSpace(parts[0])
+			fb.Value = strings.TrimSpace(parts[0])
 		}else{
 			break
 		}
-		r.Flowbits = append(r.Flowbits, tmp_fb)
+		r.Flowbits = append(r.Flowbits, fb)
 	}
 	return nil
 }

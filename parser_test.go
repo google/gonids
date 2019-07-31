@@ -859,12 +859,12 @@ func TestParseRule(t *testing.T) {
 					},
 					
 				},
-				Flowbs: []*Flowbits{
-					&Flowbits{
+				Flowbits: []*Flowbit{
+					&Flowbit{
 						Action: "set",
 						Value: "ETPRO.Citrix_AGAX",
 					},
-					&Flowbits{
+					&Flowbit{
 						Action: "",
 						Value: "noalert",
 					},

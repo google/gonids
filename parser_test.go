@@ -834,7 +834,7 @@ func TestParseRule(t *testing.T) {
 		},
 		{
 			name: "flowbits",
-			rule: `alert http $HOME_NET any -> $EXTERNAL_NET any (msg:"ACTIVEX ATTACK Citrix Access Gateway Plug-in ActiveX Code Execution - SET"; flow:to_server,established; content:"epaq"; http_uri; flowbits:set,ETPRO.Citrix_AGAX; flowbits:noalert; classtype:attempted-user; sid:2803611; rev:4;)`,
+			rule: `alert http $HOME_NET any -> $EXTERNAL_NET any (msg:"Flowbits test"; flow:to_server,established; content:"epaq"; http_uri; flowbits:set,Citrix_AGAX; flowbits:noalert; classtype:attempted-user; sid:2803611; rev:4;)`,
 			want: &Rule{
 				Action:   "alert",
 				Protocol: "http",
@@ -848,7 +848,7 @@ func TestParseRule(t *testing.T) {
 				},
 				SID:         2803611,
 				Revision:    4,
-				Description: "ACTIVEX ATTACK Citrix Access Gateway Plug-in ActiveX Code Execution - SET",
+				Description: "Flowbits test",
 				Tags: map[string]string{"flow": "to_server,established", "classtype": "attempted-user"},
 				Contents: Contents{
 					&Content{
@@ -862,11 +862,11 @@ func TestParseRule(t *testing.T) {
 				Flowbits: []*Flowbit{
 					&Flowbit{
 						Action: "set",
-						Value: "ETPRO.Citrix_AGAX",
+						Value: "Citrix_AGAX",
 					},
 					&Flowbit{
-						Action: "",
-						Value: "noalert",
+						Action: "noalert",
+						Value: "",
 					},
 				},
 			},

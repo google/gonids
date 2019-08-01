@@ -851,7 +851,7 @@ func TestParseRule(t *testing.T) {
 				Description: "Flowbits test",
 				Tags: map[string]string{
 					"flow": "to_server,established", 
-					"classtype": "test_page"
+					"classtype": "test_page",
 				},
 				Contents: Contents{
 					&Content{

@@ -58,7 +58,7 @@ type Rule struct {
 	Vars map[string]*Var
 	// Metas is a slice of Metadata.
 	Metas Metadatas
-	//flowbits
+	//flowbits is a slice of Flowbit
 	Flowbits []*Flowbit
 }
 

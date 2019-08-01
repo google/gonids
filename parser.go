@@ -395,7 +395,7 @@ func (r *Rule) option(key item, l *lexer) error {
 		nextItem := l.nextItem()
 		parts := strings.Split(nextItem.value, ",")
 		if len(parts) < 1 {
-			return fmt.Errorf("couldn't parse flowbit string: %s", s)
+			return fmt.Errorf("couldn't parse flowbit string: %s", nextItem.value)
 		}
 		// Ensure all actions are of valid type.
 		if !inSlice(parts[0], []string{"noalert", "isset", "isnotset", "set", "unset", "toggle"}) {

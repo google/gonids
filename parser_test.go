@@ -905,6 +905,11 @@ func TestParseRule(t *testing.T) {
 			rule:    `alert tcp $EXTERNAL_NET 443 -> $HOME_NET any (msg:"byte_extract"; byte_extract:3,0,Certs.len,relative; sid:42; rev:1;)`,
 			wantErr: true,
 		},
+		{
+			name:    "invalid flowbits action",
+			rule:    `alert tcp $EXTERNAL_NET 443 -> $HOME_NET any (msg:"flowbits"; flowbits:TEST; sid:4321;)`,
+			wantErr: true,
+		},
 	} {
 		got, err := ParseRule(tt.rule)
 		if !reflect.DeepEqual(got, tt.want) || (err != nil) != tt.wantErr {

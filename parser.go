@@ -38,8 +38,8 @@ var escapeRE = regexp.MustCompile(`([()+.'\\])`)
 var metaSplitRE = regexp.MustCompile(`,\s*`)
 
 //inSlice will test if a string in a slice
-func inSlice(str string, strings []string) bool {
-	for _, k := range strings {
+func inSlice(str string, str_slice []string) bool {
+	for _, k := range str_slice {
 		if str == k {
 			return true
 		}

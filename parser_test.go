@@ -849,7 +849,10 @@ func TestParseRule(t *testing.T) {
 				SID:         1234,
 				Revision:    2,
 				Description: "Flowbits test",
-				Tags: map[string]string{"flow": "to_server,established", "classtype": "test_page"},
+				Tags: map[string]string{
+					"flow": "to_server,established", 
+					"classtype": "test_page"
+				},
 				Contents: Contents{
 					&Content{
 						Pattern:      []byte("testflowbits"),

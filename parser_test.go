@@ -834,7 +834,7 @@ func TestParseRule(t *testing.T) {
 		},
 		{
 			name: "flowbits",
-			rule: `alert http $HOME_NET any -> $EXTERNAL_NET any (msg:"Flowbits test"; flow:to_server,established; content:"epaq"; http_uri; flowbits:set,Citrix_AGAX; flowbits:noalert; classtype:attempted-user; sid:2803611; rev:4;)`,
+			rule: `alert http $HOME_NET any -> $EXTERNAL_NET any (msg:"Flowbits test"; flow:to_server,established; content:"testflowbits"; http_uri; flowbits:set,testbits; flowbits:noalert; classtype:test_page; sid:1234; rev:2;)`,
 			want: &Rule{
 				Action:   "alert",
 				Protocol: "http",
@@ -846,13 +846,13 @@ func TestParseRule(t *testing.T) {
 					Nets:  []string{"$EXTERNAL_NET"},
 					Ports: []string{"any"},
 				},
-				SID:         2803611,
-				Revision:    4,
+				SID:         1234,
+				Revision:    2,
 				Description: "Flowbits test",
-				Tags: map[string]string{"flow": "to_server,established", "classtype": "attempted-user"},
+				Tags: map[string]string{"flow": "to_server,established", "classtype": "test_page"},
 				Contents: Contents{
 					&Content{
-						Pattern:      []byte("epaq"),
+						Pattern:      []byte("testflowbits"),
 						Options: []*ContentOption{
 							&ContentOption{"http_uri", ""},
 						},
@@ -862,7 +862,7 @@ func TestParseRule(t *testing.T) {
 				Flowbits: []*Flowbit{
 					&Flowbit{
 						Action: "set",
-						Value: "Citrix_AGAX",
+						Value: "testbits",
 					},
 					&Flowbit{
 						Action: "noalert",

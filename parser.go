@@ -37,6 +37,16 @@ var escapeRE = regexp.MustCompile(`([()+.'\\])`)
 // metaSplitRE matches string in metadata
 var metaSplitRE = regexp.MustCompile(`,\s*`)
 
+//inSlice will test if a string in a slice
+func inSlice(str string, strings []string) bool {
+	for _, k := range strings {
+		if str == k {
+			return true
+		}
+	}
+	return false
+}
+
 // parseContent decodes rule content match. For now it only takes care of escaped and hex
 // encoded content.
 func parseContent(content string) ([]byte, error) {
@@ -384,14 +394,18 @@ func (r *Rule) option(key item, l *lexer) error {
 	case key.value == "flowbits":
 		nextItem := l.nextItem()
 		parts := strings.Split(nextItem.value, ",")
-		fb := &Flowbit{}
-		if len(parts) == 2{
-			fb.Action = strings.TrimSpace(parts[0])
+		if len(parts) < 1 {
+			return fmt.Errorf("couldn't parse flowbit string: %s", s)
+		}
+		// Ensure all actions are of valid type.
+		if !inSlice(parts[0], []string{"noalert", "isset", "isnotset", "set", "unset", "toggle"}) {
+			return fmt.Errorf("invalid action for flowbit: %s", parts[0])
+		}
+		fb := &Flowbit{
+			Action: strings.TrimSpace(parts[0]),
+		}
+		if len(parts) == 2 {
 			fb.Value = strings.TrimSpace(parts[1])
-		}else if len(parts) == 1{
-			fb.Action = strings.TrimSpace(parts[0])
-		}else{
-			break
 		}
 		r.Flowbits = append(r.Flowbits, fb)
 	}

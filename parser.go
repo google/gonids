@@ -37,16 +37,6 @@ var escapeRE = regexp.MustCompile(`([()+.'\\])`)
 // metaSplitRE matches string in metadata
 var metaSplitRE = regexp.MustCompile(`,\s*`)
 
-//inSlice will test if a string in a slice
-func inSlice(str string, str_slice []string) bool {
-	for _, k := range str_slice {
-		if str == k {
-			return true
-		}
-	}
-	return false
-}
-
 // parseContent decodes rule content match. For now it only takes care of escaped and hex
 // encoded content.
 func parseContent(content string) ([]byte, error) {

@@ -256,12 +256,14 @@ func (r *Rule) option(key item, l *lexer) error {
 			if key.value == "uricontent" {
 				options = append(options, &ContentOption{Name: "http_uri"})
 			}
-			r.Contents = append(r.Contents, &Content{
+			con := &Content{
 				DataPosition: dataPosition,
 				Pattern:      c,
 				Negate:       negate,
 				Options:      options,
-			})
+			}
+			r.Contents = append(r.Contents, con)
+			r.Matchers = append(r.Matchers, con)
 		} else {
 			return fmt.Errorf("invalid type %q for option content", nextItem.typ)
 		}
@@ -337,6 +339,7 @@ func (r *Rule) option(key item, l *lexer) error {
 			}
 			p.Negate = negate
 			r.PCREs = append(r.PCREs, p)
+			r.Matchers = append(r.Matchers, p)
 		} else {
 			return fmt.Errorf("invalid type %q for option content", nextItem.typ)
 		}

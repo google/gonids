@@ -60,6 +60,13 @@ type Rule struct {
 	Metas Metadatas
 	// Flowbits is a slice of Flowbit.
 	Flowbits []*Flowbit
+	// Matchers are internally used to ensure relative matches are printed correctly.
+	// Make this private before checkin?
+	Matchers []orderedMatcher
+}
+
+type orderedMatcher interface {
+	String() string
 }
 
 // Var describes a variable extracted via byte_extract.
@@ -427,16 +434,22 @@ func (r Rule) String() string {
 
 	s.WriteString(fmt.Sprintf(`%s (msg:"%s"; `, r.Destination, r.Description))
 
-	if len(r.Contents) > 0 {
-		s.WriteString(fmt.Sprintf("%s ", r.Contents))
-	}
-
-	for _, p := range r.PCREs {
-		s.WriteString(fmt.Sprintf("%s ", p))
+	// Write out matchers in order (because things can be relative.)
+	if len(r.Matchers) > 0 {
+		d := pktData
+		for _, m := range r.Matchers {
+			if c, ok := m.(*Content); ok {
+				if d != c.DataPosition {
+					d = c.DataPosition
+					s.WriteString(fmt.Sprintf(" %s;", d))
+				}
+			}
+			s.WriteString(fmt.Sprintf("%s ", m))
+		}
 	}
 
 	if len(r.Metas) > 0 {
-		s.WriteString(fmt.Sprintf("%s ", r.Metas))
+		s.WriteString((fmt.Sprintf("%s ", r.Metas)))
 	}
 
 	for k, v := range r.Tags {

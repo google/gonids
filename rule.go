@@ -419,6 +419,21 @@ func (p PCRE) String() string {
 	return s.String()
 }
 
+//string returns a string for all of the flowbits
+func (fb Flowbit) String() string {
+	var s strings.Builder
+	if inSlice(fb.Action, []string{"noalert", "isset", "isnotset", "set", "unset", "toggle"}) {
+		s.WriteString("flowbits:")
+		if fb.Value == "" {
+			s.WriteString(fmt.Sprintf("%s;", fb.Action))
+		} else {
+			s.WriteString(fmt.Sprintf("%s,%s;", fb.Action, fb.Value))
+		}
+		return s.String()
+	}
+	return ""
+}
+
 // String returns a string for a rule.
 func (r Rule) String() string {
 	var s strings.Builder
@@ -454,6 +469,10 @@ func (r Rule) String() string {
 
 	for k, v := range r.Tags {
 		s.WriteString(fmt.Sprintf("%s:%s; ", k, v))
+	}
+	
+	for _, fb := range r.Flowbits {
+		s.WriteString(fmt.Sprintf("%s ", fb))
 	}
 
 	for _, ref := range r.References {

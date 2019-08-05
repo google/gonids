@@ -58,7 +58,8 @@ type Rule struct {
 	Vars map[string]*Var
 	// Metas is a slice of Metadata.
 	Metas Metadatas
-
+	// Flowbits is a slice of Flowbit.
+	Flowbits []*Flowbit
 	// Matchers are internally used to ensure relative matches are printed correctly.
 	// Make this private before checkin?
 	Matchers []orderedMatcher
@@ -79,6 +80,12 @@ type Var struct {
 type Metadata struct {
 	Key   string
 	Value string
+}
+
+// Flowbits consists of two parts. The first part describes the action it is going to perform, the second part is the name of the flowbit.
+type Flowbit struct {
+	Action	string
+	Value 	string
 }
 
 // Metadatas allows for a Stringer on []*Metadata
@@ -412,6 +419,20 @@ func (p PCRE) String() string {
 	return s.String()
 }
 
+// String returns a string for a Flowbit.
+func (fb Flowbit) String() string {
+	if !inSlice(fb.Action, []string{"noalert", "isset", "isnotset", "set", "unset", "toggle"}) {
+		return ""
+	}
+	var s strings.Builder
+	s.WriteString(fmt.Sprintf("flowbits:%s", fb.Action))
+	if fb.Value != "" {
+		s.WriteString(fmt.Sprintf(",%s", fb.Value))
+	} 
+	s.WriteString(";")
+	return s.String()
+}
+
 // String returns a string for a rule.
 func (r Rule) String() string {
 	var s strings.Builder
@@ -447,6 +468,10 @@ func (r Rule) String() string {
 
 	for k, v := range r.Tags {
 		s.WriteString(fmt.Sprintf("%s:%s; ", k, v))
+	}
+	
+	for _, fb := range r.Flowbits {
+		s.WriteString(fmt.Sprintf("%s ", fb))
 	}
 
 	for _, ref := range r.References {

@@ -384,6 +384,23 @@ func (r *Rule) option(key item, l *lexer) error {
 		r.Vars[name] = v
 		lastContent := r.Contents[len(r.Contents)-1]
 		lastContent.Options = append(lastContent.Options, &ContentOption{Name: key.value, Value: strings.Join(parts, ",")})
+	case key.value == "flowbits":
+		nextItem := l.nextItem()
+		parts := strings.Split(nextItem.value, ",")
+		if len(parts) < 1 {
+			return fmt.Errorf("couldn't parse flowbit string: %s", nextItem.value)
+		}
+		// Ensure all actions are of valid type.
+		if !inSlice(parts[0], []string{"noalert", "isset", "isnotset", "set", "unset", "toggle"}) {
+			return fmt.Errorf("invalid action for flowbit: %s", parts[0])
+		}
+		fb := &Flowbit{
+			Action: strings.TrimSpace(parts[0]),
+		}
+		if len(parts) == 2 {
+			fb.Value = strings.TrimSpace(parts[1])
+		}
+		r.Flowbits = append(r.Flowbits, fb)
 	}
 	return nil
 }

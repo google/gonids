@@ -537,6 +537,36 @@ func TestPCREString(t *testing.T) {
 	}
 }
 
+func TestFlowbitsString(t *testing.T) {
+	for _, tt := range[]struct {
+		name string
+		input *Flowbit
+		want string
+	}{
+		{
+			name: "action only",
+			input: &Flowbit{
+						Action: "noalert",
+						Value: "",
+			},
+			want: `flowbits:noalert;`,
+		},
+		{
+			name: "simple flowbits",
+			input: &Flowbit{
+						Action: "set",
+						Value: "EvilIP",
+			},
+			want: `flowbits:set,EvilIP;`,
+		},
+	} {
+		got := tt.input.String()
+		if got != tt.want {
+			t.Fatalf("%s: got %v -- expected %v", tt.name, got, tt.want)
+		}
+	}
+}
+
 func TestRuleString(t *testing.T) {
 	for _, tt := range []struct {
 		name  string
@@ -642,6 +672,35 @@ func TestRuleString(t *testing.T) {
 				},
 			},
 			want: `alert udp $HOME_NET any -> $EXTERNAL_NET any (msg:"foo"; content:"AA"; classtype:trojan-activity; sid:1337; rev:2;)`,
+		},
+		{
+			name: "rule with flowbits",
+			input: Rule{
+				Action:   "alert",
+				Protocol: "http",
+				Source: Network{
+					Nets:  []string{"$HOME_NET"},
+					Ports: []string{"any"},
+				},
+				Destination: Network{
+					Nets:  []string{"$EXTERNAL_NET"},
+					Ports: []string{"any"},
+				},
+				SID:         1223,
+				Revision:    3,
+				Description: "Flowbits test",
+				Flowbits: []*Flowbit{
+					&Flowbit{
+						Action: "set",
+						Value: "testbits",
+					},
+					&Flowbit{
+						Action: "noalert",
+						Value: "",
+					},
+				},
+			},
+			want: `alert http $HOME_NET any -> $EXTERNAL_NET any (msg:"Flowbits test"; flowbits:set,testbits; flowbits:noalert; sid:1223; rev:3;)`,
 		},
 	} {
 		got := tt.input.String()

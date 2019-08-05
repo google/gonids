@@ -82,10 +82,10 @@ type Metadata struct {
 	Value string
 }
 
-// Flowbits consists of two parts. The first part describes the action it is going to perform, the second part is the name of the flowbit.
+// Flowbit describes a flowbit. A flowbit consists of an Action, and optional Value.
 type Flowbit struct {
 	Action	string
-	Value 	string
+	Value	string
 }
 
 // Metadatas allows for a Stringer on []*Metadata

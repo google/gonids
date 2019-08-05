@@ -1139,6 +1139,56 @@ func TestParseRule(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "flowbits",
+			rule: `alert http $HOME_NET any -> $EXTERNAL_NET any (msg:"Flowbits test"; flow:to_server,established; content:"testflowbits"; http_uri; flowbits:set,testbits; flowbits:noalert; classtype:test_page; sid:1234; rev:2;)`,
+			want: &Rule{
+				Action:   "alert",
+				Protocol: "http",
+				Source: Network{
+					Nets:  []string{"$HOME_NET"},
+					Ports: []string{"any"},
+				},
+				Destination: Network{
+					Nets:  []string{"$EXTERNAL_NET"},
+					Ports: []string{"any"},
+				},
+				SID:         1234,
+				Revision:    2,
+				Description: "Flowbits test",
+				Tags: map[string]string{
+					"flow": "to_server,established", 
+					"classtype": "test_page",
+				},
+				Contents: Contents{
+					&Content{
+						Pattern:      []byte("testflowbits"),
+						Options: []*ContentOption{
+							&ContentOption{"http_uri", ""},
+						},
+					},
+					
+				},
+				Flowbits: []*Flowbit{
+					&Flowbit{
+						Action: "set",
+						Value: "testbits",
+					},
+					&Flowbit{
+						Action: "noalert",
+						Value: "",
+					},
+				},
+				Matchers: []orderedMatcher{
+					&Content{
+						Pattern:      []byte("testflowbits"),
+						Options: []*ContentOption{
+							&ContentOption{"http_uri", ""},
+						},
+					},
+				},
+			},
+		},
 		// Errors
 		{
 			name:    "invalid direction",
@@ -1168,6 +1218,11 @@ func TestParseRule(t *testing.T) {
 		{
 			name:    "byte_extract without content",
 			rule:    `alert tcp $EXTERNAL_NET 443 -> $HOME_NET any (msg:"byte_extract"; byte_extract:3,0,Certs.len,relative; sid:42; rev:1;)`,
+			wantErr: true,
+		},
+		{
+			name:    "invalid flowbits action",
+			rule:    `alert tcp $EXTERNAL_NET 443 -> $HOME_NET any (msg:"flowbits"; flowbits:TEST; sid:4321;)`,
 			wantErr: true,
 		},
 	} {

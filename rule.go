@@ -419,19 +419,18 @@ func (p PCRE) String() string {
 	return s.String()
 }
 
-//string returns a string for all of the flowbits
+// String returns a string for a Flowbit.
 func (fb Flowbit) String() string {
-	var s strings.Builder
-	if inSlice(fb.Action, []string{"noalert", "isset", "isnotset", "set", "unset", "toggle"}) {
-		s.WriteString("flowbits:")
-		if fb.Value == "" {
-			s.WriteString(fmt.Sprintf("%s;", fb.Action))
-		} else {
-			s.WriteString(fmt.Sprintf("%s,%s;", fb.Action, fb.Value))
-		}
-		return s.String()
+	if !inSlice(fb.Action, []string{"noalert", "isset", "isnotset", "set", "unset", "toggle"}) {
+		return ""
 	}
-	return ""
+	var s strings.Builder
+	s.WriteString(fmt.Sprintf("flowbits:%s", fb.Action))
+	if fb.Value != "" {
+		s.WriteString(fmt.Sprintf(",%s", fb.Value))
+	} 
+	s.WriteString(";")
+	return s.String()
 }
 
 // String returns a string for a rule.

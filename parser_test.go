@@ -1179,6 +1179,14 @@ func TestParseRule(t *testing.T) {
 						Value: "",
 					},
 				},
+				Matchers: []orderedMatcher{
+					&Content{
+						Pattern:      []byte("testflowbits"),
+						Options: []*ContentOption{
+							&ContentOption{"http_uri", ""},
+						},
+					},
+				},
 			},
 		},
 		// Errors

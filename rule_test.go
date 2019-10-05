@@ -319,6 +319,85 @@ func TestNetworkString(t *testing.T) {
 	}
 }
 
+func TestByteMatchString(t *testing.T) {
+	for _, tt := range []struct {
+		name  string
+		input ByteMatch
+		want  string
+	}{
+		{
+			name: "byte_test basic",
+			input: ByteMatch{
+				Kind:     test,
+				NumBytes: 3,
+				Operator: ">",
+				Value:    300,
+				Offset:   42,
+			},
+			want: `byte_test:3, >, 300, 42;`,
+		},
+		{
+			name: "byte_jump basic",
+			input: ByteMatch{
+				Kind:     jump,
+				NumBytes: 3,
+				Offset:   42,
+			},
+			want: `byte_jump:3, 42;`,
+		},
+		{
+			name: "byte_extract basic",
+			input: ByteMatch{
+				Kind:     extract,
+				NumBytes: 3,
+				Offset:   42,
+				Variable: "foobar",
+			},
+			want: `byte_extract:3, 42, foobar;`,
+		},
+		{
+			name: "byte_test options",
+			input: ByteMatch{
+				Kind:     test,
+				NumBytes: 3,
+				Operator: ">",
+				Value:    300,
+				Offset:   42,
+				Options:  []string{"string", "dec"},
+			},
+			want: `byte_test:3, >, 300, 42, string, dec;`,
+		},
+		{
+			name: "byte_jump options",
+			input: ByteMatch{
+				Kind:     jump,
+				NumBytes: 3,
+				Offset:   42,
+				Options:  []string{"relative", "post_offset 2", "bitmask 0x03f0"},
+			},
+			want: `byte_jump:3, 42, relative, post_offset 2, bitmask 0x03f0;`,
+		},
+		{
+			name: "byte_extract options",
+			input: ByteMatch{
+				Kind:     extract,
+				NumBytes: 3,
+				Offset:   42,
+				Variable: "foobar",
+				Options:  []string{"relative", "bitmask 0x03ff"},
+			},
+			want: `byte_extract:3, 42, foobar, relative, bitmask 0x03ff;`,
+		},
+		//byte_jump:2, 1, relative, post_offset 2, bitmask 0x03f0
+		// Do advanced byte_test with options here.
+	} {
+		got := tt.input.String()
+		if got != tt.want {
+			t.Fatalf("%s: got %v -- expected %v", tt.name, got, tt.want)
+		}
+	}
+}
+
 func TestContentString(t *testing.T) {
 	for _, tt := range []struct {
 		name  string
@@ -538,24 +617,24 @@ func TestPCREString(t *testing.T) {
 }
 
 func TestFlowbitsString(t *testing.T) {
-	for _, tt := range[]struct {
-		name string
+	for _, tt := range []struct {
+		name  string
 		input *Flowbit
-		want string
+		want  string
 	}{
 		{
 			name: "action only",
 			input: &Flowbit{
-						Action: "noalert",
-						Value: "",
+				Action: "noalert",
+				Value:  "",
 			},
 			want: `flowbits:noalert;`,
 		},
 		{
 			name: "simple flowbits",
 			input: &Flowbit{
-						Action: "set",
-						Value: "EvilIP",
+				Action: "set",
+				Value:  "EvilIP",
 			},
 			want: `flowbits:set,EvilIP;`,
 		},
@@ -692,11 +771,11 @@ func TestRuleString(t *testing.T) {
 				Flowbits: []*Flowbit{
 					&Flowbit{
 						Action: "set",
-						Value: "testbits",
+						Value:  "testbits",
 					},
 					&Flowbit{
 						Action: "noalert",
-						Value: "",
+						Value:  "",
 					},
 				},
 			},

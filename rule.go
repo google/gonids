@@ -84,8 +84,8 @@ type Metadata struct {
 
 // Flowbit describes a flowbit. A flowbit consists of an Action, and optional Value.
 type Flowbit struct {
-	Action	string
-	Value	string
+	Action string
+	Value  string
 }
 
 // Metadatas allows for a Stringer on []*Metadata
@@ -216,6 +216,42 @@ type Content struct {
 
 // Contents is used so we can have a target type for a Stringer.
 type Contents []*Content
+
+// byteMatcher describes the kinds of byte matches and comparisons that are supported.
+type byteMatcher int
+
+const (
+	extract byteMatcher = iota
+	test
+	jump
+)
+
+var byteMatchers = map[byteMatcher]string{
+	extract: "byte_extract",
+	jump:    "byte_jump",
+	test:    "byte_test",
+}
+
+// ByteMatch describes a byte matching operation, similar to a Content.
+type ByteMatch struct {
+	// DataPosition defaults to pkt_data state, can be modified to apply to file_data, base64_data locations.
+	// This value will apply to all following contents, to reset to default you must reset DataPosition during processing.
+	DataPosition DataPos
+	// Kind is a specific operation type we're taking.
+	Kind byteMatcher
+	// A variable name being extracted by byte_extract.
+	Variable string
+	// Number of bytes to operate on.
+	NumBytes int
+	// Operator for comparison in byte_test.
+	Operator string
+	// Value to compare against using byte_test.
+	Value int
+	// Offset within given buffer to operate on.
+	Offset int
+	// Other specifics required for jump/test here. This might make sense to pull out into a "ByteMatchOption" later.
+	Options []string
+}
 
 // PCRE describes a PCRE item of a rule.
 type PCRE struct {
@@ -368,6 +404,7 @@ func (c Content) String() string {
 }
 
 // String returns a string for all of the contents.
+// TODO(duane): Deprecate this, and probably remove the "Contents" type.
 func (cs Contents) String() string {
 	var s strings.Builder
 	d := pktData
@@ -379,6 +416,27 @@ func (cs Contents) String() string {
 		s.WriteString(fmt.Sprintf(" %s", c))
 	}
 	return strings.TrimSpace(s.String())
+}
+
+// String returns a string for a ByteMatch.
+func (b ByteMatch) String() string {
+	// TODO(duane): Implement stringer
+	var s strings.Builder
+	s.WriteString(fmt.Sprintf("%s:", byteMatchers[b.Kind]))
+	// byte_test example
+	switch b.Kind {
+	case extract:
+		s.WriteString(fmt.Sprintf("%d, %d, %s", b.NumBytes, b.Offset, b.Variable))
+	case jump:
+		s.WriteString(fmt.Sprintf("%d, %d", b.NumBytes, b.Offset))
+	case test:
+		s.WriteString(fmt.Sprintf("%d, %s, %d, %d", b.NumBytes, b.Operator, b.Value, b.Offset))
+	}
+	for _, o := range b.Options {
+		s.WriteString(fmt.Sprintf(", %s", o))
+	}
+	s.WriteString(";")
+	return s.String()
 }
 
 // String returns a string for all of the metadata values.
@@ -428,7 +486,7 @@ func (fb Flowbit) String() string {
 	s.WriteString(fmt.Sprintf("flowbits:%s", fb.Action))
 	if fb.Value != "" {
 		s.WriteString(fmt.Sprintf(",%s", fb.Value))
-	} 
+	}
 	s.WriteString(";")
 	return s.String()
 }
@@ -469,7 +527,7 @@ func (r Rule) String() string {
 	for k, v := range r.Tags {
 		s.WriteString(fmt.Sprintf("%s:%s; ", k, v))
 	}
-	
+
 	for _, fb := range r.Flowbits {
 		s.WriteString(fmt.Sprintf("%s ", fb))
 	}

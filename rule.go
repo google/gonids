@@ -52,10 +52,10 @@ type Rule struct {
 	Contents Contents
 	// PCREs is a slice of PCRE structs that represent the regular expressions in a rule.
 	PCREs []*PCRE
+	// ByteMatchers is a slice of ByteMatch structs.
+	ByteMatchers []*ByteMatch
 	// Tags is a map of tag names to tag values (e.g. classtype:trojan).
 	Tags map[string]string
-	// Vars is a map of variable names to variable values extracted via byte_extract.
-	Vars map[string]*Var
 	// Metas is a slice of Metadata.
 	Metas Metadatas
 	// Flowbits is a slice of Flowbit.
@@ -67,13 +67,6 @@ type Rule struct {
 
 type orderedMatcher interface {
 	String() string
-}
-
-// Var describes a variable extracted via byte_extract.
-type Var struct {
-	NumBytes int
-	Offset   int
-	Options  []string
 }
 
 // Metadata describes metadata tags in key-value struct.
@@ -221,15 +214,55 @@ type Contents []*Content
 type byteMatcher int
 
 const (
-	extract byteMatcher = iota
-	test
-	jump
+	bUnknown byteMatcher = iota
+	bExtract
+	bTest
+	bJump
 )
 
-var byteMatchers = map[byteMatcher]string{
-	extract: "byte_extract",
-	jump:    "byte_jump",
-	test:    "byte_test",
+var byteMatcherVals = map[byteMatcher]string{
+	bExtract: "byte_extract",
+	bJump:    "byte_jump",
+	bTest:    "byte_test",
+}
+
+// allByteMatcherNames returns a slice of valid byte_* keywords.
+func allByteMatcherNames() []string {
+	b := make([]string, len(byteMatcherVals))
+	var i int
+	for _, n := range byteMatcherVals {
+		b[i] = n
+		i++
+	}
+	return b
+}
+
+// Returns the string representation of a byte_* keyword.
+func (b byteMatcher) String() string {
+	return byteMatcherVals[b]
+}
+
+// Return byteMatcher iota for a String.
+func ByteMatcher(s string) (byteMatcher, error) {
+	for k, v := range byteMatcherVals {
+		if v == s {
+			return k, nil
+		}
+	}
+	return bUnknown, fmt.Errorf("%s is not a byte_* keyword", s)
+}
+
+// Returns the number of mandatory parameters for a byte_* keyword, -1 if unknown.
+func (b byteMatcher) minLen() int {
+	switch b {
+	case bExtract:
+		return 3
+	case bJump:
+		return 2
+	case bTest:
+		return 4
+	}
+	return -1
 }
 
 // ByteMatch describes a byte matching operation, similar to a Content.
@@ -372,6 +405,7 @@ func (f FastPattern) String() string {
 	return s.String()
 }
 
+// TODO(duane): REMOVE byte_extract from this.
 // String returns a string for a ContentOption.
 func (co ContentOption) String() string {
 	if inSlice(co.Name, []string{"byte_extract", "depth", "distance", "offset", "within"}) {
@@ -420,20 +454,20 @@ func (cs Contents) String() string {
 
 // String returns a string for a ByteMatch.
 func (b ByteMatch) String() string {
-	// TODO(duane): Implement stringer
+	// TODO(duane): Support dataPos?
 	var s strings.Builder
-	s.WriteString(fmt.Sprintf("%s:", byteMatchers[b.Kind]))
+	s.WriteString(fmt.Sprintf("%s:", byteMatcherVals[b.Kind]))
 	// byte_test example
 	switch b.Kind {
-	case extract:
-		s.WriteString(fmt.Sprintf("%d, %d, %s", b.NumBytes, b.Offset, b.Variable))
-	case jump:
-		s.WriteString(fmt.Sprintf("%d, %d", b.NumBytes, b.Offset))
-	case test:
-		s.WriteString(fmt.Sprintf("%d, %s, %d, %d", b.NumBytes, b.Operator, b.Value, b.Offset))
+	case bExtract:
+		s.WriteString(fmt.Sprintf("%d,%d,%s", b.NumBytes, b.Offset, b.Variable))
+	case bJump:
+		s.WriteString(fmt.Sprintf("%d,%d", b.NumBytes, b.Offset))
+	case bTest:
+		s.WriteString(fmt.Sprintf("%d,%s,%d,%d", b.NumBytes, b.Operator, b.Value, b.Offset))
 	}
 	for _, o := range b.Options {
-		s.WriteString(fmt.Sprintf(", %s", o))
+		s.WriteString(fmt.Sprintf(",%s", o))
 	}
 	s.WriteString(";")
 	return s.String()

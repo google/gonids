@@ -1035,9 +1035,6 @@ func TestParseRule(t *testing.T) {
 				Contents: Contents{
 					&Content{
 						Pattern: []byte{0xff, 0xfe},
-						Options: []*ContentOption{
-							&ContentOption{"byte_extract", "3,0,Certs.len,relative,little"},
-						},
 					},
 					&Content{
 						Pattern: []byte{0x55, 0x04, 0x0A, 0x0C, 0x0C},
@@ -1047,15 +1044,23 @@ func TestParseRule(t *testing.T) {
 						},
 					},
 				},
-				Vars: map[string]*Var{
-					"Certs.len": {3, 0, []string{"relative", "little"}},
+				ByteMatchers: []*ByteMatch{
+					&ByteMatch{
+						Kind:     bExtract,
+						NumBytes: 3,
+						Variable: "Certs.len",
+						Options:  []string{"relative", "little"},
+					},
 				},
 				Matchers: []orderedMatcher{
 					&Content{
 						Pattern: []byte{0xff, 0xfe},
-						Options: []*ContentOption{
-							&ContentOption{"byte_extract", "3,0,Certs.len,relative,little"},
-						},
+					},
+					&ByteMatch{
+						Kind:     bExtract,
+						NumBytes: 3,
+						Variable: "Certs.len",
+						Options:  []string{"relative", "little"},
 					},
 					&Content{
 						Pattern: []byte{0x55, 0x04, 0x0A, 0x0C, 0x0C},
@@ -1157,31 +1162,30 @@ func TestParseRule(t *testing.T) {
 				Revision:    2,
 				Description: "Flowbits test",
 				Tags: map[string]string{
-					"flow": "to_server,established", 
+					"flow":      "to_server,established",
 					"classtype": "test_page",
 				},
 				Contents: Contents{
 					&Content{
-						Pattern:      []byte("testflowbits"),
+						Pattern: []byte("testflowbits"),
 						Options: []*ContentOption{
 							&ContentOption{"http_uri", ""},
 						},
 					},
-					
 				},
 				Flowbits: []*Flowbit{
 					&Flowbit{
 						Action: "set",
-						Value: "testbits",
+						Value:  "testbits",
 					},
 					&Flowbit{
 						Action: "noalert",
-						Value: "",
+						Value:  "",
 					},
 				},
 				Matchers: []orderedMatcher{
 					&Content{
-						Pattern:      []byte("testflowbits"),
+						Pattern: []byte("testflowbits"),
 						Options: []*ContentOption{
 							&ContentOption{"http_uri", ""},
 						},
@@ -1213,11 +1217,6 @@ func TestParseRule(t *testing.T) {
 		{
 			name:    "invalid msg",
 			rule:    `alert udp $HOME_NET any -> $EXTERNAL_NET any (sid:2; msg; content:"A";)`,
-			wantErr: true,
-		},
-		{
-			name:    "byte_extract without content",
-			rule:    `alert tcp $EXTERNAL_NET 443 -> $HOME_NET any (msg:"byte_extract"; byte_extract:3,0,Certs.len,relative; sid:42; rev:1;)`,
 			wantErr: true,
 		},
 		{

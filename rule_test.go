@@ -328,68 +328,66 @@ func TestByteMatchString(t *testing.T) {
 		{
 			name: "byte_test basic",
 			input: ByteMatch{
-				Kind:     test,
+				Kind:     bTest,
 				NumBytes: 3,
 				Operator: ">",
 				Value:    300,
 				Offset:   42,
 			},
-			want: `byte_test:3, >, 300, 42;`,
+			want: `byte_test:3,>,300,42;`,
 		},
 		{
 			name: "byte_jump basic",
 			input: ByteMatch{
-				Kind:     jump,
+				Kind:     bJump,
 				NumBytes: 3,
 				Offset:   42,
 			},
-			want: `byte_jump:3, 42;`,
+			want: `byte_jump:3,42;`,
 		},
 		{
 			name: "byte_extract basic",
 			input: ByteMatch{
-				Kind:     extract,
+				Kind:     bExtract,
 				NumBytes: 3,
 				Offset:   42,
 				Variable: "foobar",
 			},
-			want: `byte_extract:3, 42, foobar;`,
+			want: `byte_extract:3,42,foobar;`,
 		},
 		{
 			name: "byte_test options",
 			input: ByteMatch{
-				Kind:     test,
+				Kind:     bTest,
 				NumBytes: 3,
 				Operator: ">",
 				Value:    300,
 				Offset:   42,
 				Options:  []string{"string", "dec"},
 			},
-			want: `byte_test:3, >, 300, 42, string, dec;`,
+			want: `byte_test:3,>,300,42,string,dec;`,
 		},
 		{
 			name: "byte_jump options",
 			input: ByteMatch{
-				Kind:     jump,
+				Kind:     bJump,
 				NumBytes: 3,
 				Offset:   42,
 				Options:  []string{"relative", "post_offset 2", "bitmask 0x03f0"},
 			},
-			want: `byte_jump:3, 42, relative, post_offset 2, bitmask 0x03f0;`,
+			want: `byte_jump:3,42,relative,post_offset 2,bitmask 0x03f0;`,
 		},
 		{
 			name: "byte_extract options",
 			input: ByteMatch{
-				Kind:     extract,
+				Kind:     bExtract,
 				NumBytes: 3,
 				Offset:   42,
 				Variable: "foobar",
 				Options:  []string{"relative", "bitmask 0x03ff"},
 			},
-			want: `byte_extract:3, 42, foobar, relative, bitmask 0x03ff;`,
+			want: `byte_extract:3,42,foobar,relative,bitmask 0x03ff;`,
 		},
-		//byte_jump:2, 1, relative, post_offset 2, bitmask 0x03f0
-		// Do advanced byte_test with options here.
 	} {
 		got := tt.input.String()
 		if got != tt.want {

@@ -284,13 +284,6 @@ func (r *Rule) option(key item, l *lexer) error {
 			return fmt.Errorf("no value for content option %s", key.value)
 		}
 
-		// check if the value is an integer value
-		if _, err := strconv.Atoi(nextItem.value); err != nil {
-			// check if it is the name of a var
-			if _, ok := r.Vars[nextItem.value]; !ok {
-				return fmt.Errorf("invalid value %s for option %s", nextItem.value, key.value)
-			}
-		}
 		lastContent := r.Contents[len(r.Contents)-1]
 		lastContent.Options = append(lastContent.Options, &ContentOption{Name: key.value, Value: nextItem.value})
 
@@ -343,47 +336,57 @@ func (r *Rule) option(key item, l *lexer) error {
 		} else {
 			return fmt.Errorf("invalid type %q for option content", nextItem.typ)
 		}
-	case key.value == "byte_extract":
-		if len(r.Contents) == 0 {
-			return fmt.Errorf("invalid content option %q with no content match", key.value)
+	case inSlice(key.value, allByteMatcherNames()):
+		// TODO(duane): Split this out into a unit-testable function.
+		b := new(ByteMatch)
+		if k, err := ByteMatcher(key.value); err != nil {
+			return fmt.Errorf("%s is not a support byte_* keyword", key.value)
+		} else {
+			b.Kind = k
 		}
+
 		nextItem := l.nextItem()
 		parts := strings.Split(nextItem.value, ",")
-		if len(parts) < 3 {
-			return fmt.Errorf("invalid byte_extract value: %s", nextItem.value)
+
+		// Num bytes is required for all byte_* keywords.
+		if len(parts) < 2 {
+			fmt.Errorf("%s keyword has %d parts. All byte_* keywords should have >2", key.value, len(parts))
 		}
-
-		v := new(Var)
-
 		n, err := strconv.Atoi(parts[0])
 		if err != nil {
-			return fmt.Errorf("byte_extract number of bytes is not an int: %s; %s", parts[0], err)
+			return fmt.Errorf("number of bytes is not an int: %s; %s", parts[0], err)
 		}
-		v.NumBytes = n
+		b.NumBytes = n
 
-		offset, err := strconv.Atoi(parts[1])
-		if err != nil {
-			return fmt.Errorf("byte_extract offset is not an int: %s; %s", parts[1], err)
+		switch key.value {
+		case bExtract.String():
+			// Validate that we have enough parts for a byte_extract.
+			if len(parts) < 3 {
+				return fmt.Errorf("invalid byte_extract value: %s", nextItem.value)
+			}
+
+			// Parse offset.
+			offset, err := strconv.Atoi(parts[1])
+			if err != nil {
+				return fmt.Errorf("byte_extract offset is not an int: %v; %s", parts[1], err)
+			}
+			b.Offset = offset
+
+			// Parse variable name.
+			name := parts[2]
+			b.Variable = name
+
+			// TODO(duane): Add parsing support for byte_jump and byte_test.
 		}
-		v.Offset = offset
 
-		name := parts[2]
-		if r.Vars == nil {
-			// Lazy init r.Vars if necessary
-			r.Vars = make(map[string]*Var)
-		} else if _, exists := r.Vars[name]; exists {
-			return fmt.Errorf("byte_extract var already declared: %s", name)
-		}
-
-		// options
-		for i, l := 3, len(parts); i < l; i++ {
+		// The rest of the options.
+		for i, l := b.Kind.minLen(), len(parts); i < l; i++ {
 			parts[i] = strings.TrimSpace(parts[i])
-			v.Options = append(v.Options, parts[i])
+			b.Options = append(b.Options, parts[i])
 		}
 
-		r.Vars[name] = v
-		lastContent := r.Contents[len(r.Contents)-1]
-		lastContent.Options = append(lastContent.Options, &ContentOption{Name: key.value, Value: strings.Join(parts, ",")})
+		r.ByteMatchers = append(r.ByteMatchers, b)
+		r.Matchers = append(r.Matchers, b)
 	case key.value == "flowbits":
 		nextItem := l.nextItem()
 		parts := strings.Split(nextItem.value, ",")

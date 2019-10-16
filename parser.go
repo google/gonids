@@ -175,7 +175,7 @@ func (r *Rule) option(key item, l *lexer) error {
 		panic("item is not an option key")
 	}
 	switch {
-	case inSlice(key.value, []string{"classtype", "flow", "threshold", "tag", "priority", "dsize", "byte_test"}):
+	case inSlice(key.value, []string{"classtype", "flow", "threshold", "tag", "priority", "dsize"}):
 		nextItem := l.nextItem()
 		if nextItem.typ != itemOptionValue {
 			return fmt.Errorf("no valid value for %s tag", key.value)
@@ -358,25 +358,40 @@ func (r *Rule) option(key item, l *lexer) error {
 		}
 		b.NumBytes = n
 
-		switch key.value {
-		case bExtract.String():
-			// Validate that we have enough parts for a byte_extract.
-			if len(parts) < 3 {
-				return fmt.Errorf("invalid byte_extract value: %s", nextItem.value)
-			}
+		if len(parts) < b.Kind.minLen() {
+			return fmt.Errorf("invalid %s value: %s", b.Kind, nextItem.value)
+		}
 
+		if key.value == bExtract.String() || key.value == bJump.String() {
 			// Parse offset.
 			offset, err := strconv.Atoi(parts[1])
 			if err != nil {
-				return fmt.Errorf("byte_extract offset is not an int: %v; %s", parts[1], err)
+				return fmt.Errorf("%s offset is not an int: %v; %s", b.Kind, parts[1], err)
 			}
 			b.Offset = offset
+		}
 
+		if key.value == bExtract.String() {
 			// Parse variable name.
 			name := parts[2]
 			b.Variable = name
+		}
 
-			// TODO(duane): Add parsing support for byte_jump and byte_test.
+		if key.value == bTest.String() {
+			// Parse operator
+			b.Operator = parts[1]
+			// Parse value
+			val, err := strconv.Atoi(parts[2])
+			if err != nil {
+				return fmt.Errorf("%s value is not an int: %v; %s", b.Kind, parts[1], err)
+			}
+			b.Value = val
+			// Parse offset.
+			offset, err := strconv.Atoi(parts[3])
+			if err != nil {
+				return fmt.Errorf("%s offset is not an int: %v; %s", b.Kind, parts[1], err)
+			}
+			b.Offset = offset
 		}
 
 		// The rest of the options.

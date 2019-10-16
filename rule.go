@@ -274,7 +274,7 @@ type ByteMatch struct {
 	Kind byteMatcher
 	// A variable name being extracted by byte_extract.
 	Variable string
-	// Number of bytes to operate on.
+	// Number of bytes to operate on. "bytes to convert" in Snort Manual.
 	NumBytes int
 	// Operator for comparison in byte_test.
 	Operator string
@@ -405,10 +405,9 @@ func (f FastPattern) String() string {
 	return s.String()
 }
 
-// TODO(duane): REMOVE byte_extract from this.
 // String returns a string for a ContentOption.
 func (co ContentOption) String() string {
-	if inSlice(co.Name, []string{"byte_extract", "depth", "distance", "offset", "within"}) {
+	if inSlice(co.Name, []string{"depth", "distance", "offset", "within"}) {
 		return fmt.Sprintf("%s:%v;", co.Name, co.Value)
 	}
 	return fmt.Sprintf("%s;", co.Name)

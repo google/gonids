@@ -1073,6 +1073,96 @@ func TestParseRule(t *testing.T) {
 			},
 		},
 		{
+			name: "byte_test",
+			rule: `alert tcp $EXTERNAL_NET 443 -> $HOME_NET any (msg:"byte_test"; content:"|ff fe|"; byte_test:5,<,65537,0,relative,string; sid:42; rev:1;)`,
+			want: &Rule{
+				Action:   "alert",
+				Protocol: "tcp",
+				Source: Network{
+					Nets:  []string{"$EXTERNAL_NET"},
+					Ports: []string{"443"},
+				},
+				Destination: Network{
+					Nets:  []string{"$HOME_NET"},
+					Ports: []string{"any"},
+				},
+				SID:         42,
+				Revision:    1,
+				Description: "byte_test",
+				Contents: Contents{
+					&Content{
+						Pattern: []byte{0xff, 0xfe},
+					},
+				},
+				ByteMatchers: []*ByteMatch{
+					&ByteMatch{
+						Kind:     bTest,
+						NumBytes: 5,
+						Operator: "<",
+						Value:    65537,
+						Offset:   0,
+						Options:  []string{"relative", "string"},
+					},
+				},
+				Matchers: []orderedMatcher{
+					&Content{
+						Pattern: []byte{0xff, 0xfe},
+					},
+					&ByteMatch{
+						Kind:     bTest,
+						NumBytes: 5,
+						Operator: "<",
+						Value:    65537,
+						Offset:   0,
+						Options:  []string{"relative", "string"},
+					},
+				},
+			},
+		},
+		{
+			name: "byte_jump",
+			rule: `alert tcp $EXTERNAL_NET 443 -> $HOME_NET any (msg:"byte_jump"; content:"|ff fe|"; byte_jump:4,0,relative,little,post_offset -1; sid:42; rev:1;)`,
+			want: &Rule{
+				Action:   "alert",
+				Protocol: "tcp",
+				Source: Network{
+					Nets:  []string{"$EXTERNAL_NET"},
+					Ports: []string{"443"},
+				},
+				Destination: Network{
+					Nets:  []string{"$HOME_NET"},
+					Ports: []string{"any"},
+				},
+				SID:         42,
+				Revision:    1,
+				Description: "byte_jump",
+				Contents: Contents{
+					&Content{
+						Pattern: []byte{0xff, 0xfe},
+					},
+				},
+				ByteMatchers: []*ByteMatch{
+					&ByteMatch{
+						Kind:     bJump,
+						NumBytes: 4,
+						Offset:   0,
+						Options:  []string{"relative", "little", "post_offset -1"},
+					},
+				},
+				Matchers: []orderedMatcher{
+					&Content{
+						Pattern: []byte{0xff, 0xfe},
+					},
+					&ByteMatch{
+						Kind:     bJump,
+						NumBytes: 4,
+						Offset:   0,
+						Options:  []string{"relative", "little", "post_offset -1"},
+					},
+				},
+			},
+		},
+		{
 			name: "content with backslash at end",
 			rule: `alert http $HOME_NET any -> $EXTERNAL_NET any (msg:"ending backslash rule"; content:"foo\"; sid:12345; rev:2;)`, want: &Rule{
 				Action:   "alert",

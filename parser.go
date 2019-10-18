@@ -267,8 +267,6 @@ func (r *Rule) option(key item, l *lexer) error {
 		} else {
 			return fmt.Errorf("invalid type %q for option content", nextItem.typ)
 		}
-	// TODO(duane): Find out if isdataat requires a content match, or if the match can be something else (byte_test).
-	// If this requires a content match, then support is to just add to this list.
 	case inSlice(key.value, []string{"http_cookie", "http_raw_cookie", "http_method", "http_header", "http_raw_header",
 		"http_uri", "http_raw_uri", "http_user_agent", "http_stat_code", "http_stat_msg",
 		"http_client_body", "http_server_body", "nocase"}):

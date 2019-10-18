@@ -340,31 +340,37 @@ func (r *Rule) option(key item, l *lexer) error {
 		// TODO(duane): Split this out into a unit-testable function.
 		b := new(ByteMatch)
 		if k, err := ByteMatcher(key.value); err != nil {
-			return fmt.Errorf("%s is not a support byte_* keyword", key.value)
+			return fmt.Errorf("%s is not a support byteMatcher keyword", key.value)
 		} else {
 			b.Kind = k
 		}
 
 		nextItem := l.nextItem()
+		if b.Kind == isDataAt && nextItem.typ == itemNot {
+			b.Negate = true
+			nextItem = l.nextItem()
+		}
+
 		parts := strings.Split(nextItem.value, ",")
 
-		// Num bytes is required for all byte_* keywords.
-		if len(parts) < 2 {
-			fmt.Errorf("%s keyword has %d parts. All byte_* keywords should have >2", key.value, len(parts))
+		// Num bytes is required for all byteMatcher keywords.
+		if len(parts) < 1 {
+			fmt.Errorf("%s keyword has %d parts", key.value, len(parts))
 		}
-		n, err := strconv.Atoi(parts[0])
+
+		n, err := strconv.Atoi(strings.TrimSpace(parts[0]))
 		if err != nil {
 			return fmt.Errorf("number of bytes is not an int: %s; %s", parts[0], err)
 		}
 		b.NumBytes = n
 
 		if len(parts) < b.Kind.minLen() {
-			return fmt.Errorf("invalid %s value: %s", b.Kind, nextItem.value)
+			return fmt.Errorf("invalid %s length: %d", b.Kind, len(parts))
 		}
 
 		if key.value == bExtract.String() || key.value == bJump.String() {
 			// Parse offset.
-			offset, err := strconv.Atoi(parts[1])
+			offset, err := strconv.Atoi(strings.TrimSpace(parts[1]))
 			if err != nil {
 				return fmt.Errorf("%s offset is not an int: %v; %s", b.Kind, parts[1], err)
 			}
@@ -378,16 +384,12 @@ func (r *Rule) option(key item, l *lexer) error {
 		}
 
 		if key.value == bTest.String() {
-			// Parse operator
-			b.Operator = parts[1]
-			// Parse value
-			val, err := strconv.Atoi(parts[2])
-			if err != nil {
-				return fmt.Errorf("%s value is not an int: %v; %s", b.Kind, parts[1], err)
-			}
-			b.Value = val
+			// Parse operator.
+			b.Operator = strings.TrimSpace(parts[1])
+			// Parse value. Can use a variable.
+			b.Value = strings.TrimSpace(parts[2])
 			// Parse offset.
-			offset, err := strconv.Atoi(parts[3])
+			offset, err := strconv.Atoi(strings.TrimSpace(parts[3]))
 			if err != nil {
 				return fmt.Errorf("%s offset is not an int: %v; %s", b.Kind, parts[1], err)
 			}

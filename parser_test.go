@@ -1163,6 +1163,67 @@ func TestParseRule(t *testing.T) {
 			},
 		},
 		{
+			name: "negate isdataat",
+			rule: `alert tcp $HOME_NET any -> $EXTERNAL_NET any (msg:"isdataat"; content:"aabb"; depth:4; byte_jump:2,3,post_offset -1; isdataat:!2,relative; sid:42; rev:1;)`,
+			want: &Rule{
+				Action:   "alert",
+				Protocol: "tcp",
+				Source: Network{
+					Nets:  []string{"$HOME_NET"},
+					Ports: []string{"any"},
+				},
+				Destination: Network{
+					Nets:  []string{"$EXTERNAL_NET"},
+					Ports: []string{"any"},
+				},
+				SID:         42,
+				Revision:    1,
+				Description: "isdataat",
+				Contents: Contents{
+					&Content{
+						Pattern: []byte("aabb"),
+						Options: []*ContentOption{
+							&ContentOption{"depth", "4"},
+						},
+					},
+				},
+				ByteMatchers: []*ByteMatch{
+					&ByteMatch{
+						Kind:     bJump,
+						NumBytes: 2,
+						Offset:   3,
+						Options:  []string{"post_offset -1"},
+					},
+					&ByteMatch{
+						Kind:     isDataAt,
+						Negate:   true,
+						NumBytes: 2,
+						Options:  []string{"relative"},
+					},
+				},
+				Matchers: []orderedMatcher{
+					&Content{
+						Pattern: []byte("aabb"),
+						Options: []*ContentOption{
+							&ContentOption{"depth", "4"},
+						},
+					},
+					&ByteMatch{
+						Kind:     bJump,
+						NumBytes: 2,
+						Offset:   3,
+						Options:  []string{"post_offset -1"},
+					},
+					&ByteMatch{
+						Kind:     isDataAt,
+						Negate:   true,
+						NumBytes: 2,
+						Options:  []string{"relative"},
+					},
+				},
+			},
+		},
+		{
 			name: "content with backslash at end",
 			rule: `alert http $HOME_NET any -> $EXTERNAL_NET any (msg:"ending backslash rule"; content:"foo\"; sid:12345; rev:2;)`, want: &Rule{
 				Action:   "alert",

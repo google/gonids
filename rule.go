@@ -285,7 +285,7 @@ type ByteMatch struct {
 	// Operator for comparison in byte_test.
 	Operator string
 	// Value to compare against using byte_test.
-	Value int
+	Value string
 	// Offset within given buffer to operate on.
 	Offset int
 	// Other specifics required for jump/test here. This might make sense to pull out into a "ByteMatchOption" later.
@@ -470,7 +470,7 @@ func (b ByteMatch) String() string {
 	case bJump:
 		s.WriteString(fmt.Sprintf("%d,%d", b.NumBytes, b.Offset))
 	case bTest:
-		s.WriteString(fmt.Sprintf("%d,%s,%d,%d", b.NumBytes, b.Operator, b.Value, b.Offset))
+		s.WriteString(fmt.Sprintf("%d,%s,%s,%d", b.NumBytes, b.Operator, b.Value, b.Offset))
 	case isDataAt:
 		if b.Negate {
 			s.WriteString("!")

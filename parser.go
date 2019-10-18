@@ -267,6 +267,8 @@ func (r *Rule) option(key item, l *lexer) error {
 		} else {
 			return fmt.Errorf("invalid type %q for option content", nextItem.typ)
 		}
+	// TODO(duane): Find out if isdataat requires a content match, or if the match can be something else (byte_test).
+	// If this requires a content match, then support is to just add to this list.
 	case inSlice(key.value, []string{"http_cookie", "http_raw_cookie", "http_method", "http_header", "http_raw_header",
 		"http_uri", "http_raw_uri", "http_user_agent", "http_stat_code", "http_stat_msg",
 		"http_client_body", "http_server_body", "nocase"}):
@@ -340,18 +342,24 @@ func (r *Rule) option(key item, l *lexer) error {
 		// TODO(duane): Split this out into a unit-testable function.
 		b := new(ByteMatch)
 		if k, err := ByteMatcher(key.value); err != nil {
-			return fmt.Errorf("%s is not a support byte_* keyword", key.value)
+			return fmt.Errorf("%s is not a support byteMatcher keyword", key.value)
 		} else {
 			b.Kind = k
 		}
 
 		nextItem := l.nextItem()
+		if b.Kind == isDataAt && nextItem.typ == itemNot {
+			b.Negate = true
+			nextItem = l.nextItem()
+		}
+
 		parts := strings.Split(nextItem.value, ",")
 
-		// Num bytes is required for all byte_* keywords.
-		if len(parts) < 2 {
-			fmt.Errorf("%s keyword has %d parts. All byte_* keywords should have >2", key.value, len(parts))
+		// Num bytes is required for all byteMatcher keywords.
+		if len(parts) < 1 {
+			fmt.Errorf("%s keyword has %d parts", key.value, len(parts))
 		}
+
 		n, err := strconv.Atoi(parts[0])
 		if err != nil {
 			return fmt.Errorf("number of bytes is not an int: %s; %s", parts[0], err)
@@ -359,7 +367,7 @@ func (r *Rule) option(key item, l *lexer) error {
 		b.NumBytes = n
 
 		if len(parts) < b.Kind.minLen() {
-			return fmt.Errorf("invalid %s value: %s", b.Kind, nextItem.value)
+			return fmt.Errorf("invalid %s length: %d", b.Kind, len(parts))
 		}
 
 		if key.value == bExtract.String() || key.value == bJump.String() {

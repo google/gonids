@@ -218,12 +218,14 @@ const (
 	bExtract
 	bTest
 	bJump
+	isDataAt
 )
 
 var byteMatcherVals = map[byteMatcher]string{
 	bExtract: "byte_extract",
 	bJump:    "byte_jump",
 	bTest:    "byte_test",
+	isDataAt: "isdataat",
 }
 
 // allByteMatcherNames returns a slice of valid byte_* keywords.
@@ -249,10 +251,10 @@ func ByteMatcher(s string) (byteMatcher, error) {
 			return k, nil
 		}
 	}
-	return bUnknown, fmt.Errorf("%s is not a byte_* keyword", s)
+	return bUnknown, fmt.Errorf("%s is not a byteMatcher* keyword", s)
 }
 
-// Returns the number of mandatory parameters for a byte_* keyword, -1 if unknown.
+// Returns the number of mandatory parameters for a byteMatcher keyword, -1 if unknown.
 func (b byteMatcher) minLen() int {
 	switch b {
 	case bExtract:
@@ -261,6 +263,8 @@ func (b byteMatcher) minLen() int {
 		return 2
 	case bTest:
 		return 4
+	case isDataAt:
+		return 1
 	}
 	return -1
 }
@@ -272,6 +276,8 @@ type ByteMatch struct {
 	DataPosition DataPos
 	// Kind is a specific operation type we're taking.
 	Kind byteMatcher
+	// Negate indicates negation of a value, currently only used for isdataat.
+	Negate bool
 	// A variable name being extracted by byte_extract.
 	Variable string
 	// Number of bytes to operate on. "bytes to convert" in Snort Manual.
@@ -454,9 +460,10 @@ func (cs Contents) String() string {
 // String returns a string for a ByteMatch.
 func (b ByteMatch) String() string {
 	// TODO(duane): Support dataPos?
+	// TODO(duane): Write tests.
 	var s strings.Builder
 	s.WriteString(fmt.Sprintf("%s:", byteMatcherVals[b.Kind]))
-	// byte_test example
+
 	switch b.Kind {
 	case bExtract:
 		s.WriteString(fmt.Sprintf("%d,%d,%s", b.NumBytes, b.Offset, b.Variable))
@@ -464,6 +471,11 @@ func (b ByteMatch) String() string {
 		s.WriteString(fmt.Sprintf("%d,%d", b.NumBytes, b.Offset))
 	case bTest:
 		s.WriteString(fmt.Sprintf("%d,%s,%d,%d", b.NumBytes, b.Operator, b.Value, b.Offset))
+	case isDataAt:
+		if b.Negate {
+			s.WriteString("!")
+		}
+		s.WriteString(fmt.Sprintf("%d", b.NumBytes))
 	}
 	for _, o := range b.Options {
 		s.WriteString(fmt.Sprintf(",%s", o))

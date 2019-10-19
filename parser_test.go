@@ -264,6 +264,41 @@ func TestParseRule(t *testing.T) {
 			},
 		},
 		{
+			name: "tls tag",
+			rule: `alert tls $HOME_NET any -> $EXTERNAL_NET any (msg:"tls_subject"; content:!"AA"; tls.subject:!"CN=*.googleusercontent.com"; classtype:foo; sid:1337; rev:1;)`,
+			want: &Rule{
+				Action:   "alert",
+				Protocol: "tls",
+				Source: Network{
+					Nets:  []string{"$HOME_NET"},
+					Ports: []string{"any"},
+				},
+				Destination: Network{
+					Nets:  []string{"$EXTERNAL_NET"},
+					Ports: []string{"any"},
+				},
+				SID:         1337,
+				Revision:    1,
+				Description: "tls_subject",
+				Contents: Contents{
+					&Content{
+						Pattern: []byte("AA"), Negate: true},
+				},
+				TLSTags: []*TLSTag{
+					&TLSTag{
+						Negate: true,
+						Key:    "tls.subject",
+						Value:  "CN=*.googleusercontent.com",
+					},
+				},
+				Tags: map[string]string{"classtype": "foo"},
+				Matchers: []orderedMatcher{
+					&Content{
+						Pattern: []byte("AA"), Negate: true},
+				},
+			},
+		},
+		{
 			name: "dsize",
 			rule: `alert udp $HOME_NET any -> $EXTERNAL_NET any (sid:1337; msg:"foo"; dsize:>19;)`,
 			want: &Rule{

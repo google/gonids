@@ -396,6 +396,55 @@ func TestByteMatchString(t *testing.T) {
 	}
 }
 
+func TestTLSTagString(t *testing.T) {
+	for _, tt := range []struct {
+		name  string
+		input TLSTag
+		want  string
+	}{
+		{
+			name: "simple quoted",
+			input: TLSTag{
+				Key:   "tls.subject",
+				Value: "CN=*.googleusercontent.com",
+			},
+			want: `tls.subject:"CN=*.googleusercontent.com";`,
+		},
+		{
+			name: "negated quoted",
+			input: TLSTag{
+				Negate: true,
+				Key:    "tls.issuerdn",
+				Value:  "CN=Google-Internet-Authority",
+			},
+			want: `tls.issuerdn:!"CN=Google-Internet-Authority";`,
+		},
+		{
+			name: "simple unquoted",
+			input: TLSTag{
+				Key:   "tls.version",
+				Value: "1.2",
+			},
+			want: "tls.version:1.2;",
+		},
+		// TODO(duane): Confirm if negation of this is valid.
+		{
+			name: "negated unquoted",
+			input: TLSTag{
+				Negate: true,
+				Key:    "tls.version",
+				Value:  "1.2",
+			},
+			want: "tls.version:!1.2;",
+		},
+	} {
+		got := tt.input.String()
+		if got != tt.want {
+			t.Fatalf("%s: got %v -- expected %v", tt.name, got, tt.want)
+		}
+	}
+}
+
 func TestContentString(t *testing.T) {
 	for _, tt := range []struct {
 		name  string

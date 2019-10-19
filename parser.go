@@ -201,7 +201,7 @@ func (r *Rule) option(key item, l *lexer) error {
 		if len(parts) != 3 {
 			return fmt.Errorf("invalid number of parts for stream_size: %d", len(parts))
 		}
-		num, err := strconv.Atoi(parts[2])
+		num, err := strconv.Atoi(strings.TrimSpace(parts[2]))
 		if err != nil {
 			return fmt.Errorf("comparison number is not an integer: %v", parts[2])
 		} else {

@@ -201,7 +201,7 @@ func (r *Rule) option(key item, l *lexer) error {
 		if len(parts) != 3 {
 			return fmt.Errorf("invalid number of parts for stream_size: %d", len(parts))
 		}
-		num, err := strconv.Atoi(parts[2])
+		num, err := strconv.Atoi(strings.TrimSpace(parts[2]))
 		if err != nil {
 			return fmt.Errorf("comparison number is not an integer: %v", parts[2])
 		} else {
@@ -367,7 +367,7 @@ func (r *Rule) option(key item, l *lexer) error {
 		// TODO(duane): Split this out into a unit-testable function.
 		b := new(ByteMatch)
 		if k, err := ByteMatcher(key.value); err != nil {
-			return fmt.Errorf("%s is not a support byteMatcher keyword", key.value)
+			return fmt.Errorf("%s is not a supported byteMatcher keyword", key.value)
 		} else {
 			b.Kind = k
 		}
@@ -431,6 +431,62 @@ func (r *Rule) option(key item, l *lexer) error {
 
 		r.ByteMatchers = append(r.ByteMatchers, b)
 		r.Matchers = append(r.Matchers, b)
+	case inSlice(key.value, allICMPMatchTypeNames()):
+		// TODO(duane): Factor out into unit testable function.
+		i := new(ICMPMatch)
+		if k, err := ICMPMatcher(key.value); err != nil {
+			return fmt.Errorf("%s is not a support icmpMatch keyword", key.value)
+		} else {
+			i.Kind = k
+		}
+
+		nextItem := l.nextItem()
+		switch {
+		case key.value == iType.String() || key.value == iCode.String():
+			switch {
+			// Simple case, no operators.
+			case !strings.ContainsAny(nextItem.value, "><"):
+				if num, err := strconv.Atoi(strings.TrimSpace(nextItem.value)); err != nil {
+					return fmt.Errorf("%v is not an integer", key.value)
+				} else {
+					i.Num = num
+				}
+
+			// Leading operator, single number.
+			case strings.HasPrefix(nextItem.value, ">") || strings.HasPrefix(nextItem.value, "<"):
+				i.Operator = nextItem.value[0:1]
+				if num, err := strconv.Atoi(strings.TrimSpace(strings.TrimLeft(nextItem.value, "><"))); err != nil {
+					return fmt.Errorf("%v is not an integer", key.value)
+				} else {
+					i.Num = num
+				}
+			// Min/Max center operator.
+			case strings.Contains(nextItem.value, "<>"):
+				i.Operator = "<>"
+				parts := strings.Split(nextItem.value, "<>")
+				if len(parts) != 2 {
+					return fmt.Errorf("must have exactly 2 parts for min/max operator. got %d", len(parts))
+				}
+				var min, max int
+				var err error
+				if min, err = strconv.Atoi(strings.TrimSpace(parts[0])); err != nil {
+					return fmt.Errorf("%v is not an integer.", strings.TrimSpace(parts[0]))
+				}
+				if max, err = strconv.Atoi(strings.TrimSpace(parts[1])); err != nil {
+					return fmt.Errorf("%v is not an integer.", strings.TrimSpace(parts[1]))
+				}
+				i.Min = min
+				i.Max = max
+			}
+
+		case key.value == iID.String() || key.value == iSeq.String():
+			if num, err := strconv.Atoi(strings.TrimSpace(nextItem.value)); err != nil {
+				fmt.Errorf("%s value is not an integer: %v", i.Kind, nextItem.value)
+			} else {
+				i.Num = num
+			}
+		}
+		r.ICMPMatchers = append(r.ICMPMatchers, i)
 	case key.value == "flowbits":
 		nextItem := l.nextItem()
 		parts := strings.Split(nextItem.value, ",")

@@ -342,6 +342,32 @@ func TestParseRule(t *testing.T) {
 			},
 		},
 		{
+			name: "icmp match",
+			rule: `alert icmp $HOME_NET any -> $EXTERNAL_NET any (msg:"foo"; itype:>10; sid:1337; rev:1;)`,
+			want: &Rule{
+				Action:   "alert",
+				Protocol: "icmp",
+				Source: Network{
+					Nets:  []string{"$HOME_NET"},
+					Ports: []string{"any"},
+				},
+				Destination: Network{
+					Nets:  []string{"$EXTERNAL_NET"},
+					Ports: []string{"any"},
+				},
+				SID:         1337,
+				Revision:    1,
+				Description: "foo",
+				ICMPMatchers: []*ICMPMatch{
+					&ICMPMatch{
+						Kind:     iType,
+						Operator: ">",
+						Num:      10,
+					},
+				},
+			},
+		},
+		{
 			name: "references",
 			rule: `alert udp $HOME_NET any -> $EXTERNAL_NET any (sid:1337; msg:"foo"; content:"A"; reference:cve,2014; reference:url,www.suricata-ids.org;)`,
 			want: &Rule{

@@ -445,6 +445,47 @@ func TestTLSTagString(t *testing.T) {
 	}
 }
 
+func TestICMPMatchString(t *testing.T) {
+	for _, tt := range []struct {
+		name  string
+		input *ICMPMatch
+		want  string
+	}{
+		{
+			name: "no operator",
+			input: &ICMPMatch{
+				Kind: iCode,
+				Num:  3,
+			},
+			want: `icode:3;`,
+		},
+		{
+			name: "single operator",
+			input: &ICMPMatch{
+				Kind:     iCode,
+				Operator: ">",
+				Num:      3,
+			},
+			want: `icode:>3;`,
+		},
+		{
+			name: "min and max",
+			input: &ICMPMatch{
+				Kind:     iType,
+				Operator: "<>",
+				Min:      1,
+				Max:      2,
+			},
+			want: `itype:1<>2;`,
+		},
+	} {
+		got := tt.input.String()
+		if got != tt.want {
+			t.Fatalf("%s: got %v -- expected %v", tt.name, got, tt.want)
+		}
+	}
+}
+
 func TestContentString(t *testing.T) {
 	for _, tt := range []struct {
 		name  string

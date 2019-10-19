@@ -56,6 +56,8 @@ type Rule struct {
 	ByteMatchers []*ByteMatch
 	// Tags is a map of tag names to tag values (e.g. classtype:trojan).
 	Tags map[string]string
+	// TLSTags is a slice of TLS related matches.
+	TLSTags []*TLSTag
 	// Metas is a slice of Metadata.
 	Metas Metadatas
 	// Flowbits is a slice of Flowbit.
@@ -323,6 +325,22 @@ type Reference struct {
 	Value string
 }
 
+// TODO(duane): Add support for tls_cert_nobefore, tls_cert_notafter, tls_cert_expired, tls_cert_valid.
+// Valid keywords for extracting TLS matches. Does not include tls.store, or sticky buffers.
+var tlsTags = []string{"ssl_version", "ssl_state", "tls.version", "tls.subject", "tls.issuerdn", "tls.fingerprint"}
+
+// TLSTag describes a TLS specific match (non-sticky buffer based).
+type TLSTag struct {
+	// Is the match negated (!).
+	Negate bool
+	// Key holds the thing we're inspecting (tls.version, tls.fingerprint, etc.).
+	Key string
+	// TODO(duane): Consider string -> []byte and handle hex input.
+	// TODO(duane): Consider supporting []struct if we can support things like: tls.version:!1.2,!1.3
+	// Value holds the value for the match.
+	Value string
+}
+
 // escape escapes special char used in regexp.
 func escape(r string) string {
 	return escapeRE.ReplaceAllString(r, `\$1`)
@@ -501,6 +519,21 @@ func (ms Metadatas) String() string {
 	return s.String()
 }
 
+func (t *TLSTag) String() string {
+	var s strings.Builder
+	s.WriteString(fmt.Sprintf("%s:", t.Key))
+	if t.Negate {
+		s.WriteString("!")
+	}
+	// Values for these get wrapped in `"`.
+	if inSlice(t.Key, []string{"tls.issuerdn", "tls.subject", "tls.fingerprint"}) {
+		s.WriteString(fmt.Sprintf(`"%s";`, t.Value))
+	} else {
+		s.WriteString(fmt.Sprintf("%s;", t.Value))
+	}
+	return s.String()
+}
+
 // String returns a string for a PCRE.
 func (p PCRE) String() string {
 	pattern := p.Pattern
@@ -565,8 +598,12 @@ func (r Rule) String() string {
 		}
 	}
 
+	if len(r.TLSTags) > 0 {
+		s.WriteString(fmt.Sprintf("%s ", r.TLSTags))
+	}
+
 	if len(r.Metas) > 0 {
-		s.WriteString((fmt.Sprintf("%s ", r.Metas)))
+		s.WriteString(fmt.Sprintf("%s ", r.Metas))
 	}
 
 	for k, v := range r.Tags {

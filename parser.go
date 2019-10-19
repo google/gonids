@@ -175,7 +175,7 @@ func (r *Rule) option(key item, l *lexer) error {
 		panic("item is not an option key")
 	}
 	switch {
-	case inSlice(key.value, []string{"classtype", "flow", "threshold", "tag", "priority", "dsize", "urilen"}):
+	case inSlice(key.value, []string{"classtype", "flow", "threshold", "tag", "priority", "dsize", "urilen", "tls.store"}):
 		nextItem := l.nextItem()
 		if nextItem.typ != itemOptionValue {
 			return fmt.Errorf("no valid value for %s tag", key.value)
@@ -184,6 +184,17 @@ func (r *Rule) option(key item, l *lexer) error {
 			r.Tags = make(map[string]string)
 		}
 		r.Tags[key.value] = nextItem.value
+	case inSlice(key.value, tlsTags):
+		t := &TLSTag{
+			Key: key.value,
+		}
+		nextItem := l.nextItem()
+		if nextItem.typ == itemNot {
+			t.Negate = true
+			nextItem = l.nextItem()
+		}
+		t.Value = nextItem.value
+		r.TLSTags = append(r.TLSTags, t)
 	case key.value == "reference":
 		nextItem := l.nextItem()
 		if nextItem.typ != itemOptionValue {

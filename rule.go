@@ -58,6 +58,8 @@ type Rule struct {
 	Tags map[string]string
 	// TLSTags is a slice of TLS related matches.
 	TLSTags []*TLSTag
+	// StreamMatch holds stream_size parameters.
+	StreamMatch *StreamCmp
 	// Metas is a slice of Metadata.
 	Metas Metadatas
 	// Flowbits is a slice of Flowbit.
@@ -341,6 +343,17 @@ type TLSTag struct {
 	Value string
 }
 
+// Support stream_size, flow_int??
+type StreamCmp struct {
+	// Direction of traffic to inspect: server, client, both, either.
+	Direction string
+	// Operator is the comparison operator to apply >, <, !=, etc.
+	Operator string
+	// TODO(duane): Can this number be a variable, if yes s/int/string.
+	// Number is the size to compare against
+	Number int
+}
+
 // escape escapes special char used in regexp.
 func escape(r string) string {
 	return escapeRE.ReplaceAllString(r, `\$1`)
@@ -534,6 +547,10 @@ func (t *TLSTag) String() string {
 	return s.String()
 }
 
+func (s *StreamCmp) String() string {
+	return fmt.Sprintf("stream_size:%s,%s,%d;", s.Direction, s.Operator, s.Number)
+}
+
 // String returns a string for a PCRE.
 func (p PCRE) String() string {
 	pattern := p.Pattern
@@ -596,6 +613,10 @@ func (r Rule) String() string {
 			}
 			s.WriteString(fmt.Sprintf("%s ", m))
 		}
+	}
+
+	if r.StreamMatch != nil {
+		s.WriteString(fmt.Sprintf("%s ", r.StreamMatch))
 	}
 
 	if len(r.TLSTags) > 0 {

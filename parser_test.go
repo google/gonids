@@ -318,6 +318,30 @@ func TestParseRule(t *testing.T) {
 			},
 		},
 		{
+			name: "stream_size",
+			rule: `alert tcp $HOME_NET any -> $EXTERNAL_NET any (msg:"foo"; stream_size:both,>,19; sid:1337; rev:1;)`,
+			want: &Rule{
+				Action:   "alert",
+				Protocol: "tcp",
+				Source: Network{
+					Nets:  []string{"$HOME_NET"},
+					Ports: []string{"any"},
+				},
+				Destination: Network{
+					Nets:  []string{"$EXTERNAL_NET"},
+					Ports: []string{"any"},
+				},
+				SID:         1337,
+				Revision:    1,
+				Description: "foo",
+				StreamMatch: &StreamCmp{
+					Direction: "both",
+					Operator:  ">",
+					Number:    19,
+				},
+			},
+		},
+		{
 			name: "references",
 			rule: `alert udp $HOME_NET any -> $EXTERNAL_NET any (sid:1337; msg:"foo"; content:"A"; reference:cve,2014; reference:url,www.suricata-ids.org;)`,
 			want: &Rule{

@@ -195,6 +195,22 @@ func (r *Rule) option(key item, l *lexer) error {
 		}
 		t.Value = nextItem.value
 		r.TLSTags = append(r.TLSTags, t)
+	case key.value == "stream_size":
+		nextItem := l.nextItem()
+		parts := strings.Split(nextItem.value, ",")
+		if len(parts) != 3 {
+			return fmt.Errorf("invalid number of parts for stream_size: %d", len(parts))
+		}
+		num, err := strconv.Atoi(parts[2])
+		if err != nil {
+			return fmt.Errorf("comparison number is not an integer: %v", parts[2])
+		} else {
+			r.StreamMatch = &StreamCmp{
+				Direction: parts[0],
+				Operator:  parts[1],
+				Number:    num,
+			}
+		}
 	case key.value == "reference":
 		nextItem := l.nextItem()
 		if nextItem.typ != itemOptionValue {

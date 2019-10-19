@@ -60,6 +60,8 @@ type Rule struct {
 	TLSTags []*TLSTag
 	// StreamMatch holds stream_size parameters.
 	StreamMatch *StreamCmp
+	// ICMPMatchers is a slice of ICMP matches.
+	ICMPMatchers []*ICMPMatch
 	// Metas is a slice of Metadata.
 	Metas Metadatas
 	// Flowbits is a slice of Flowbit.
@@ -258,6 +260,16 @@ func ByteMatcher(s string) (byteMatcher, error) {
 	return bUnknown, fmt.Errorf("%s is not a byteMatcher* keyword", s)
 }
 
+// ICMPMatcher returns an icmpMatchType or an error for a given string.
+func ICMPMatcher(s string) (icmpMatchType, error) {
+	for k, v := range icmpMatchTypeVals {
+		if v == s {
+			return k, nil
+		}
+	}
+	return iUnknown, fmt.Errorf("%s is not an icmp keyword", s)
+}
+
 // Returns the number of mandatory parameters for a byteMatcher keyword, -1 if unknown.
 func (b byteMatcher) minLen() int {
 	switch b {
@@ -294,6 +306,50 @@ type ByteMatch struct {
 	Offset int
 	// Other specifics required for jump/test here. This might make sense to pull out into a "ByteMatchOption" later.
 	Options []string
+}
+
+// icmpMatchType describes the type of ICMP matches and comparisons that are supported.
+type icmpMatchType int
+
+const (
+	iUnknown icmpMatchType = iota
+	iType
+	iCode
+	iID
+	iSeq
+)
+
+// icmpMatchTypeVals map icmp types to string representations.
+var icmpMatchTypeVals = map[icmpMatchType]string{
+	iType: "itype",
+	iCode: "icode",
+	iID:   "icmp_id",
+	iSeq:  "icmp_seq",
+}
+
+// allICMPMatchTypeNames returns a slice of string containg all ICMP match keywords.
+func allICMPMatchTypeNames() []string {
+	i := make([]string, len(icmpMatchTypeVals))
+	var j int
+	for _, n := range icmpMatchTypeVals {
+		i[j] = n
+		j++
+	}
+	return i
+}
+
+// String returns the string keyword for an icmpMatchType.
+func (i icmpMatchType) String() string {
+	return icmpMatchTypeVals[i]
+}
+
+// ICMPMatch holds the values to represent an ICMP Match.
+type ICMPMatch struct {
+	Kind     icmpMatchType
+	Min      int
+	Max      int
+	Num      int
+	Operator string
 }
 
 // PCRE describes a PCRE item of a rule.
@@ -515,6 +571,21 @@ func (b ByteMatch) String() string {
 	return s.String()
 }
 
+// String returns a string for an ICMP match.
+func (i ICMPMatch) String() string {
+	if i.Operator == "<>" {
+		return fmt.Sprintf("%s:%d%s%d;", i.Kind, i.Min, i.Operator, i.Max)
+	}
+	var s strings.Builder
+	s.WriteString(fmt.Sprintf("%s:", i.Kind))
+	if i.Operator != "" {
+		s.WriteString(i.Operator)
+	}
+	s.WriteString(fmt.Sprintf("%d;", i.Num))
+
+	return s.String()
+}
+
 // String returns a string for all of the metadata values.
 func (ms Metadatas) String() string {
 	var s strings.Builder
@@ -617,6 +688,12 @@ func (r Rule) String() string {
 
 	if r.StreamMatch != nil {
 		s.WriteString(fmt.Sprintf("%s ", r.StreamMatch))
+	}
+
+	if len(r.ICMPMatchers) > 0 {
+		for _, i := range r.ICMPMatchers {
+			s.WriteString(fmt.Sprintf("%s ", i))
+		}
 	}
 
 	if len(r.TLSTags) > 0 {

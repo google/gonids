@@ -175,7 +175,13 @@ func (r *Rule) option(key item, l *lexer) error {
 		panic("item is not an option key")
 	}
 	switch {
-	case inSlice(key.value, []string{"classtype", "flow", "threshold", "tag", "priority", "dsize", "urilen", "tls.store", "flags"}):
+	// TODO(duane): Many of these simple tags could be factored into nicer structures.
+	case inSlice(key.value, []string{"classtype", "flow", "tag", "priority", "dsize", "urilen", "app-layer-protocol",
+		"flags", "ttl", "ipopts", "ip_proto", "id", "geoip", "fragbits", "fragoffset", "tos",
+		"seq", "window", "ack",
+		"threshold", "detection_filter",
+		"dce_iface", "dce_opnum", "dce_stub_data",
+		"asn1"}):
 		nextItem := l.nextItem()
 		if nextItem.typ != itemOptionValue {
 			return fmt.Errorf("no valid value for %s tag", key.value)
@@ -184,6 +190,8 @@ func (r *Rule) option(key item, l *lexer) error {
 			r.Tags = make(map[string]string)
 		}
 		r.Tags[key.value] = nextItem.value
+	case inSlice(key.value, []string{"sameip", "tls.store", "ftpbounce"}):
+		r.Statements = append(r.Statements, key.value)
 	case inSlice(key.value, tlsTags):
 		t := &TLSTag{
 			Key: key.value,

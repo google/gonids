@@ -56,6 +56,8 @@ type Rule struct {
 	ByteMatchers []*ByteMatch
 	// Tags is a map of tag names to tag values (e.g. classtype:trojan).
 	Tags map[string]string
+	// Statements is a slice of string. These items are similar to Tags, but have no value. (e.g. 'sameip;')
+	Statements []string
 	// TLSTags is a slice of TLS related matches.
 	TLSTags []*TLSTag
 	// StreamMatch holds stream_size parameters.
@@ -708,6 +710,10 @@ func (r Rule) String() string {
 
 	for k, v := range r.Tags {
 		s.WriteString(fmt.Sprintf("%s:%s; ", k, v))
+	}
+
+	for _, v := range r.Statements {
+		s.WriteString(fmt.Sprintf("%s; ", v))
 	}
 
 	for _, fb := range r.Flowbits {

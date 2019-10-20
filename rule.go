@@ -697,7 +697,9 @@ func (r Rule) String() string {
 	}
 
 	if len(r.TLSTags) > 0 {
-		s.WriteString(fmt.Sprintf("%s ", r.TLSTags))
+		for _, t := range r.TLSTags {
+			s.WriteString(fmt.Sprintf("%s ", t))
+		}
 	}
 
 	if len(r.Metas) > 0 {

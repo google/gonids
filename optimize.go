@@ -17,6 +17,7 @@ package gonids
 
 import "strings"
 
+// OptimizeHTTP tunes an old style rule to leverage port agnostic HTTP detection.
 func (r *Rule) OptimizeHTTP() bool {
 	var modify bool
 	// Only attempt to modify rules that use HTTP buffers, but are not already HTTP.
@@ -59,6 +60,7 @@ func (r *Rule) OptimizeHTTP() bool {
 	return true
 }
 
+// MetadataModifier returns a metadata that identifies a given modification.
 func MetadataModifier(s string) *Metadata {
 	return &Metadata{Key: "gonids", Value: s}
 }

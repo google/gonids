@@ -175,7 +175,7 @@ func (r *Rule) option(key item, l *lexer) error {
 		panic("item is not an option key")
 	}
 	switch {
-	case inSlice(key.value, []string{"classtype", "flow", "threshold", "tag", "priority", "dsize", "urilen", "tls.store"}):
+	case inSlice(key.value, []string{"classtype", "flow", "threshold", "tag", "priority", "dsize", "urilen", "tls.store", "flags"}):
 		nextItem := l.nextItem()
 		if nextItem.typ != itemOptionValue {
 			return fmt.Errorf("no valid value for %s tag", key.value)
@@ -296,7 +296,7 @@ func (r *Rule) option(key item, l *lexer) error {
 		}
 	case inSlice(key.value, []string{"http_cookie", "http_raw_cookie", "http_method", "http_header", "http_raw_header",
 		"http_uri", "http_raw_uri", "http_user_agent", "http_stat_code", "http_stat_msg",
-		"http_client_body", "http_server_body", "http_host", "nocase"}):
+		"http_client_body", "http_server_body", "http_host", "nocase", "rawbytes"}):
 		if len(r.Contents) == 0 {
 			return fmt.Errorf("invalid content option %q with no content match", key.value)
 		}

@@ -195,6 +195,7 @@ func StickyBuffer(s string) (DataPos, error) {
 	return pktData, fmt.Errorf("%s is not a sticky buffer", s)
 }
 
+// isStickyBuffer returns true if the provided string is a known sticky buffer.
 func isStickyBuffer(s string) bool {
 	_, err := StickyBuffer(s)
 	return err == nil
@@ -218,52 +219,52 @@ type Content struct {
 // Contents is used so we can have a target type for a Stringer.
 type Contents []*Content
 
-// byteMatcher describes the kinds of byte matches and comparisons that are supported.
-type byteMatcher int
+// byteMatchType describes the kinds of byte matches and comparisons that are supported.
+type byteMatchType int
 
 const (
-	bUnknown byteMatcher = iota
+	bUnknown byteMatchType = iota
 	bExtract
 	bTest
 	bJump
 	isDataAt
 )
 
-var byteMatcherVals = map[byteMatcher]string{
+var byteMatchTypeVals = map[byteMatchType]string{
 	bExtract: "byte_extract",
 	bJump:    "byte_jump",
 	bTest:    "byte_test",
 	isDataAt: "isdataat",
 }
 
-// allByteMatcherNames returns a slice of valid byte_* keywords.
-func allByteMatcherNames() []string {
-	b := make([]string, len(byteMatcherVals))
+// allbyteMatchTypeNames returns a slice of valid byte_* keywords.
+func allbyteMatchTypeNames() []string {
+	b := make([]string, len(byteMatchTypeVals))
 	var i int
-	for _, n := range byteMatcherVals {
+	for _, n := range byteMatchTypeVals {
 		b[i] = n
 		i++
 	}
 	return b
 }
 
-// Returns the string representation of a byte_* keyword.
-func (b byteMatcher) String() string {
-	return byteMatcherVals[b]
+// String returns the string representation of a byte_* keyword.
+func (b byteMatchType) String() string {
+	return byteMatchTypeVals[b]
 }
 
-// Return byteMatcher iota for a String.
-func ByteMatcher(s string) (byteMatcher, error) {
-	for k, v := range byteMatcherVals {
+// byteMatcher returns a byteMatchType iota for a provided String.
+func byteMatcher(s string) (byteMatchType, error) {
+	for k, v := range byteMatchTypeVals {
 		if v == s {
 			return k, nil
 		}
 	}
-	return bUnknown, fmt.Errorf("%s is not a byteMatcher* keyword", s)
+	return bUnknown, fmt.Errorf("%s is not a byteMatchType* keyword", s)
 }
 
-// ICMPMatcher returns an icmpMatchType or an error for a given string.
-func ICMPMatcher(s string) (icmpMatchType, error) {
+// icmpMatcher returns an icmpMatchType or an error for a given string.
+func icmpMatcher(s string) (icmpMatchType, error) {
 	for k, v := range icmpMatchTypeVals {
 		if v == s {
 			return k, nil
@@ -272,8 +273,8 @@ func ICMPMatcher(s string) (icmpMatchType, error) {
 	return iUnknown, fmt.Errorf("%s is not an icmp keyword", s)
 }
 
-// Returns the number of mandatory parameters for a byteMatcher keyword, -1 if unknown.
-func (b byteMatcher) minLen() int {
+// Returns the number of mandatory parameters for a byteMatchType keyword, -1 if unknown.
+func (b byteMatchType) minLen() int {
 	switch b {
 	case bExtract:
 		return 3
@@ -293,7 +294,7 @@ type ByteMatch struct {
 	// This value will apply to all following contents, to reset to default you must reset DataPosition during processing.
 	DataPosition DataPos
 	// Kind is a specific operation type we're taking.
-	Kind byteMatcher
+	Kind byteMatchType
 	// Negate indicates negation of a value, currently only used for isdataat.
 	Negate bool
 	// A variable name being extracted by byte_extract.
@@ -401,7 +402,7 @@ type TLSTag struct {
 	Value string
 }
 
-// Support stream_size, flow_int??
+// StreamCmp represents a stream comparison (stream_size:>20).
 type StreamCmp struct {
 	// Direction of traffic to inspect: server, client, both, either.
 	Direction string
@@ -551,7 +552,7 @@ func (b ByteMatch) String() string {
 	// TODO(duane): Support dataPos?
 	// TODO(duane): Write tests.
 	var s strings.Builder
-	s.WriteString(fmt.Sprintf("%s:", byteMatcherVals[b.Kind]))
+	s.WriteString(fmt.Sprintf("%s:", byteMatchTypeVals[b.Kind]))
 
 	switch b.Kind {
 	case bExtract:

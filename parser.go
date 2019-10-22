@@ -212,12 +212,11 @@ func (r *Rule) option(key item, l *lexer) error {
 		num, err := strconv.Atoi(strings.TrimSpace(parts[2]))
 		if err != nil {
 			return fmt.Errorf("comparison number is not an integer: %v", parts[2])
-		} else {
-			r.StreamMatch = &StreamCmp{
-				Direction: parts[0],
-				Operator:  parts[1],
-				Number:    num,
-			}
+		}
+		r.StreamMatch = &StreamCmp{
+			Direction: parts[0],
+			Operator:  parts[1],
+			Number:    num,
 		}
 	case key.value == "reference":
 		nextItem := l.nextItem()
@@ -371,14 +370,14 @@ func (r *Rule) option(key item, l *lexer) error {
 		} else {
 			return fmt.Errorf("invalid type %q for option content", nextItem.typ)
 		}
-	case inSlice(key.value, allByteMatcherNames()):
+	case inSlice(key.value, allbyteMatchTypeNames()):
 		// TODO(duane): Split this out into a unit-testable function.
 		b := new(ByteMatch)
-		if k, err := ByteMatcher(key.value); err != nil {
-			return fmt.Errorf("%s is not a supported byteMatcher keyword", key.value)
-		} else {
-			b.Kind = k
+		k, err := byteMatcher(key.value)
+		if err != nil {
+			return fmt.Errorf("%s is not a supported byteMatchType keyword", key.value)
 		}
+		b.Kind = k
 
 		nextItem := l.nextItem()
 		if b.Kind == isDataAt && nextItem.typ == itemNot {
@@ -388,7 +387,7 @@ func (r *Rule) option(key item, l *lexer) error {
 
 		parts := strings.Split(nextItem.value, ",")
 
-		// Num bytes is required for all byteMatcher keywords.
+		// Num bytes is required for all byteMatchType keywords.
 		if len(parts) < 1 {
 			fmt.Errorf("%s keyword has %d parts", key.value, len(parts))
 		}
@@ -442,11 +441,11 @@ func (r *Rule) option(key item, l *lexer) error {
 	case inSlice(key.value, allICMPMatchTypeNames()):
 		// TODO(duane): Factor out into unit testable function.
 		i := new(ICMPMatch)
-		if k, err := ICMPMatcher(key.value); err != nil {
+		k, err := icmpMatcher(key.value)
+		if err != nil {
 			return fmt.Errorf("%s is not a support icmpMatch keyword", key.value)
-		} else {
-			i.Kind = k
 		}
+		i.Kind = k
 
 		nextItem := l.nextItem()
 		switch {
@@ -454,20 +453,21 @@ func (r *Rule) option(key item, l *lexer) error {
 			switch {
 			// Simple case, no operators.
 			case !strings.ContainsAny(nextItem.value, "><"):
-				if num, err := strconv.Atoi(strings.TrimSpace(nextItem.value)); err != nil {
+				num, err := strconv.Atoi(strings.TrimSpace(nextItem.value))
+				if err != nil {
 					return fmt.Errorf("%v is not an integer", key.value)
-				} else {
-					i.Num = num
 				}
+				i.Num = num
 
 			// Leading operator, single number.
 			case strings.HasPrefix(nextItem.value, ">") || strings.HasPrefix(nextItem.value, "<"):
 				i.Operator = nextItem.value[0:1]
-				if num, err := strconv.Atoi(strings.TrimSpace(strings.TrimLeft(nextItem.value, "><"))); err != nil {
+				num, err := strconv.Atoi(strings.TrimSpace(strings.TrimLeft(nextItem.value, "><")))
+				if err != nil {
 					return fmt.Errorf("%v is not an integer", key.value)
-				} else {
-					i.Num = num
 				}
+				i.Num = num
+
 			// Min/Max center operator.
 			case strings.Contains(nextItem.value, "<>"):
 				i.Operator = "<>"
@@ -477,11 +477,13 @@ func (r *Rule) option(key item, l *lexer) error {
 				}
 				var min, max int
 				var err error
-				if min, err = strconv.Atoi(strings.TrimSpace(parts[0])); err != nil {
-					return fmt.Errorf("%v is not an integer.", strings.TrimSpace(parts[0]))
+				min, err = strconv.Atoi(strings.TrimSpace(parts[0]))
+				if err != nil {
+					return fmt.Errorf("%v is not an integer", strings.TrimSpace(parts[0]))
 				}
-				if max, err = strconv.Atoi(strings.TrimSpace(parts[1])); err != nil {
-					return fmt.Errorf("%v is not an integer.", strings.TrimSpace(parts[1]))
+				max, err = strconv.Atoi(strings.TrimSpace(parts[1]))
+				if err != nil {
+					return fmt.Errorf("%v is not an integer", strings.TrimSpace(parts[1]))
 				}
 				i.Min = min
 				i.Max = max

@@ -62,8 +62,8 @@ type Rule struct {
 	TLSTags []*TLSTag
 	// StreamMatch holds stream_size parameters.
 	StreamMatch *StreamCmp
-	// ICMPMatchers is a slice of ICMP matches.
-	ICMPMatchers []*ICMPMatch
+	// LenMatchers is a slice of ICMP matches.
+	LenMatchers []*LenMatch
 	// Metas is a slice of Metadata.
 	Metas Metadatas
 	// Flowbits is a slice of Flowbit.
@@ -263,14 +263,14 @@ func byteMatcher(s string) (byteMatchType, error) {
 	return bUnknown, fmt.Errorf("%s is not a byteMatchType* keyword", s)
 }
 
-// icmpMatcher returns an icmpMatchType or an error for a given string.
-func icmpMatcher(s string) (icmpMatchType, error) {
-	for k, v := range icmpMatchTypeVals {
+// lenMatcher returns an lenMatchType or an error for a given string.
+func lenMatcher(s string) (lenMatchType, error) {
+	for k, v := range lenMatchTypeVals {
 		if v == s {
 			return k, nil
 		}
 	}
-	return iUnknown, fmt.Errorf("%s is not an icmp keyword", s)
+	return lUnknown, fmt.Errorf("%s is not an icmp keyword", s)
 }
 
 // Returns the number of mandatory parameters for a byteMatchType keyword, -1 if unknown.
@@ -311,44 +311,56 @@ type ByteMatch struct {
 	Options []string
 }
 
-// icmpMatchType describes the type of ICMP matches and comparisons that are supported.
-type icmpMatchType int
+// lenMatchType describes the type of ICMP matches and comparisons that are supported.
+type lenMatchType int
 
 const (
-	iUnknown icmpMatchType = iota
+	lUnknown lenMatchType = iota
 	iType
 	iCode
 	iID
 	iSeq
+	uriLen
+	dSize
+	ipTTL
+	ipID
+	tcpSeq
+	tcpACK
 )
 
-// icmpMatchTypeVals map icmp types to string representations.
-var icmpMatchTypeVals = map[icmpMatchType]string{
-	iType: "itype",
-	iCode: "icode",
-	iID:   "icmp_id",
-	iSeq:  "icmp_seq",
+// lenMatchTypeVals map len types to string representations.
+var lenMatchTypeVals = map[lenMatchType]string{
+	iType:  "itype",
+	iCode:  "icode",
+	iID:    "icmp_id",
+	iSeq:   "icmp_seq",
+	uriLen: "urilen",
+	dSize:  "dsize",
+	ipTTL:  "ttl",
+	ipID:   "id",
+	tcpSeq: "seq",
+	tcpACK: "ack",
 }
 
-// allICMPMatchTypeNames returns a slice of string containg all ICMP match keywords.
-func allICMPMatchTypeNames() []string {
-	i := make([]string, len(icmpMatchTypeVals))
+// allLenMatchTypeNames returns a slice of string containg all ICMP match keywords.
+func allLenMatchTypeNames() []string {
+	i := make([]string, len(lenMatchTypeVals))
 	var j int
-	for _, n := range icmpMatchTypeVals {
+	for _, n := range lenMatchTypeVals {
 		i[j] = n
 		j++
 	}
 	return i
 }
 
-// String returns the string keyword for an icmpMatchType.
-func (i icmpMatchType) String() string {
-	return icmpMatchTypeVals[i]
+// String returns the string keyword for an lenMatchType.
+func (i lenMatchType) String() string {
+	return lenMatchTypeVals[i]
 }
 
-// ICMPMatch holds the values to represent an ICMP Match.
-type ICMPMatch struct {
-	Kind     icmpMatchType
+// LenMatch holds the values to represent an ICMP Match.
+type LenMatch struct {
+	Kind     lenMatchType
 	Min      int
 	Max      int
 	Num      int
@@ -575,7 +587,7 @@ func (b ByteMatch) String() string {
 }
 
 // String returns a string for an ICMP match.
-func (i ICMPMatch) String() string {
+func (i LenMatch) String() string {
 	if i.Operator == "<>" {
 		return fmt.Sprintf("%s:%d%s%d;", i.Kind, i.Min, i.Operator, i.Max)
 	}
@@ -693,8 +705,8 @@ func (r Rule) String() string {
 		s.WriteString(fmt.Sprintf("%s ", r.StreamMatch))
 	}
 
-	if len(r.ICMPMatchers) > 0 {
-		for _, i := range r.ICMPMatchers {
+	if len(r.LenMatchers) > 0 {
+		for _, i := range r.LenMatchers {
 			s.WriteString(fmt.Sprintf("%s ", i))
 		}
 	}

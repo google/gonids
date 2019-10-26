@@ -15,28 +15,9 @@ limitations under the License.
 
 package gonids
 
-import "strings"
-
 // OptimizeHTTP tunes an old style rule to leverage port agnostic HTTP detection.
 func (r *Rule) OptimizeHTTP() bool {
-	var modify bool
-	// Only attempt to modify rules that use HTTP buffers, but are not already HTTP.
-	if r.Protocol == "http" {
-		return false
-	}
-	for _, c := range r.Contents {
-		if strings.HasPrefix(c.DataPosition.String(), "http_") {
-			modify = true
-			break
-		}
-		for _, co := range c.Options {
-			if strings.HasPrefix(co.Name, "http_") {
-				modify = true
-				break
-			}
-		}
-	}
-	if !modify {
+	if !r.ShouldBeHTTP() {
 		return false
 	}
 	// Switch protocol to HTTP.
@@ -58,6 +39,22 @@ func (r *Rule) OptimizeHTTP() bool {
 	// Annotate rule to indicate modification
 	r.Metas = append(r.Metas, MetadataModifier("http_optimize"))
 	return true
+}
+
+// SnortURILenFix will optimize a urilen keyword from a Snort rule for Suricata.
+func (r *Rule) SnortURILenFix() {
+	// Update this once we parse urilen in a better structure.
+	for tag, val := range r.Tags {
+		if tag != "urilen" {
+			continue
+		}
+		// Parse out int[operator]int
+		// rex := regexp.MustCompile(val, "<>]+""), etc.
+		// fmt.Println(rex.Split(foo, -1))
+		// This omits the operator, so we need to do something about that too.
+
+		// Then min -1, max +1 to make the equivalent value.
+	}
 }
 
 // MetadataModifier returns a metadata that identifies a given modification.

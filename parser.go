@@ -176,9 +176,9 @@ func (r *Rule) option(key item, l *lexer) error {
 	}
 	switch {
 	// TODO(duane): Many of these simple tags could be factored into nicer structures.
-	case inSlice(key.value, []string{"classtype", "flow", "tag", "priority", "dsize", "urilen", "app-layer-protocol",
-		"flags", "ttl", "ipopts", "ip_proto", "id", "geoip", "fragbits", "fragoffset", "tos",
-		"seq", "window", "ack",
+	case inSlice(key.value, []string{"classtype", "flow", "tag", "priority", "app-layer-protocol",
+		"flags", "ipopts", "ip_proto", "geoip", "fragbits", "fragoffset", "tos",
+		"window",
 		"threshold", "detection_filter",
 		"dce_iface", "dce_opnum", "dce_stub_data",
 		"asn1"}):
@@ -438,65 +438,55 @@ func (r *Rule) option(key item, l *lexer) error {
 
 		r.ByteMatchers = append(r.ByteMatchers, b)
 		r.Matchers = append(r.Matchers, b)
-	case inSlice(key.value, allICMPMatchTypeNames()):
+	case inSlice(key.value, allLenMatchTypeNames()):
 		// TODO(duane): Factor out into unit testable function.
-		i := new(ICMPMatch)
-		k, err := icmpMatcher(key.value)
+		m := new(LenMatch)
+		k, err := lenMatcher(key.value)
 		if err != nil {
-			return fmt.Errorf("%s is not a support icmpMatch keyword", key.value)
+			return fmt.Errorf("%s is not a support lenMatch keyword", key.value)
 		}
-		i.Kind = k
+		m.Kind = k
 
 		nextItem := l.nextItem()
 		switch {
-		case key.value == iType.String() || key.value == iCode.String():
-			switch {
-			// Simple case, no operators.
-			case !strings.ContainsAny(nextItem.value, "><"):
-				num, err := strconv.Atoi(strings.TrimSpace(nextItem.value))
-				if err != nil {
-					return fmt.Errorf("%v is not an integer", key.value)
-				}
-				i.Num = num
-
-			// Leading operator, single number.
-			case strings.HasPrefix(nextItem.value, ">") || strings.HasPrefix(nextItem.value, "<"):
-				i.Operator = nextItem.value[0:1]
-				num, err := strconv.Atoi(strings.TrimSpace(strings.TrimLeft(nextItem.value, "><")))
-				if err != nil {
-					return fmt.Errorf("%v is not an integer", key.value)
-				}
-				i.Num = num
-
-			// Min/Max center operator.
-			case strings.Contains(nextItem.value, "<>"):
-				i.Operator = "<>"
-				parts := strings.Split(nextItem.value, "<>")
-				if len(parts) != 2 {
-					return fmt.Errorf("must have exactly 2 parts for min/max operator. got %d", len(parts))
-				}
-				var min, max int
-				var err error
-				min, err = strconv.Atoi(strings.TrimSpace(parts[0]))
-				if err != nil {
-					return fmt.Errorf("%v is not an integer", strings.TrimSpace(parts[0]))
-				}
-				max, err = strconv.Atoi(strings.TrimSpace(parts[1]))
-				if err != nil {
-					return fmt.Errorf("%v is not an integer", strings.TrimSpace(parts[1]))
-				}
-				i.Min = min
-				i.Max = max
+		// Simple case, no operators.
+		case !strings.ContainsAny(nextItem.value, "><"):
+			num, err := strconv.Atoi(strings.TrimSpace(nextItem.value))
+			if err != nil {
+				return fmt.Errorf("%v is not an integer", key.value)
 			}
+			m.Num = num
 
-		case key.value == iID.String() || key.value == iSeq.String():
-			if num, err := strconv.Atoi(strings.TrimSpace(nextItem.value)); err != nil {
-				fmt.Errorf("%s value is not an integer: %v", i.Kind, nextItem.value)
-			} else {
-				i.Num = num
+		// Leading operator, single number.
+		case strings.HasPrefix(nextItem.value, ">") || strings.HasPrefix(nextItem.value, "<"):
+			m.Operator = nextItem.value[0:1]
+			num, err := strconv.Atoi(strings.TrimSpace(strings.TrimLeft(nextItem.value, "><")))
+			if err != nil {
+				return fmt.Errorf("%v is not an integer", key.value)
 			}
+			m.Num = num
+
+		// Min/Max center operator.
+		case strings.Contains(nextItem.value, "<>"):
+			m.Operator = "<>"
+			parts := strings.Split(nextItem.value, "<>")
+			if len(parts) != 2 {
+				return fmt.Errorf("must have exactly 2 parts for min/max operator. got %d", len(parts))
+			}
+			var min, max int
+			var err error
+			min, err = strconv.Atoi(strings.TrimSpace(parts[0]))
+			if err != nil {
+				return fmt.Errorf("%v is not an integer", strings.TrimSpace(parts[0]))
+			}
+			max, err = strconv.Atoi(strings.TrimSpace(parts[1]))
+			if err != nil {
+				return fmt.Errorf("%v is not an integer", strings.TrimSpace(parts[1]))
+			}
+			m.Min = min
+			m.Max = max
 		}
-		r.ICMPMatchers = append(r.ICMPMatchers, i)
+		r.LenMatchers = append(r.LenMatchers, m)
 	case key.value == "flowbits":
 		nextItem := l.nextItem()
 		parts := strings.Split(nextItem.value, ",")

@@ -314,7 +314,13 @@ func TestParseRule(t *testing.T) {
 				},
 				SID:         1337,
 				Description: "foo",
-				Tags:        map[string]string{"dsize": ">19"},
+				LenMatchers: []*LenMatch{
+					{
+						Kind:     dSize,
+						Operator: ">",
+						Num:      19,
+					},
+				},
 			},
 		},
 		{
@@ -358,7 +364,7 @@ func TestParseRule(t *testing.T) {
 				SID:         1337,
 				Revision:    1,
 				Description: "foo",
-				ICMPMatchers: []*ICMPMatch{
+				LenMatchers: []*LenMatch{
 					{
 						Kind:     iType,
 						Operator: ">",

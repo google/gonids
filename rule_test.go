@@ -448,12 +448,12 @@ func TestTLSTagString(t *testing.T) {
 func TestICMPMatchString(t *testing.T) {
 	for _, tt := range []struct {
 		name  string
-		input *ICMPMatch
+		input *LenMatch
 		want  string
 	}{
 		{
 			name: "no operator",
-			input: &ICMPMatch{
+			input: &LenMatch{
 				Kind: iCode,
 				Num:  3,
 			},
@@ -461,7 +461,7 @@ func TestICMPMatchString(t *testing.T) {
 		},
 		{
 			name: "single operator",
-			input: &ICMPMatch{
+			input: &LenMatch{
 				Kind:     iCode,
 				Operator: ">",
 				Num:      3,
@@ -470,7 +470,7 @@ func TestICMPMatchString(t *testing.T) {
 		},
 		{
 			name: "min and max",
-			input: &ICMPMatch{
+			input: &LenMatch{
 				Kind:     iType,
 				Operator: "<>",
 				Min:      1,
@@ -519,7 +519,7 @@ func TestContentString(t *testing.T) {
 			input: Content{
 				Pattern: []byte("AA"),
 				Options: []*ContentOption{
-					&ContentOption{
+					{
 						Name: "http_uri",
 					},
 				},
@@ -531,10 +531,10 @@ func TestContentString(t *testing.T) {
 			input: Content{
 				Pattern: []byte("AA"),
 				Options: []*ContentOption{
-					&ContentOption{
+					{
 						Name: "http_uri",
 					},
-					&ContentOption{
+					{
 						Name:  "depth",
 						Value: "0",
 					},
@@ -547,10 +547,10 @@ func TestContentString(t *testing.T) {
 			input: Content{
 				Pattern: []byte("AA"),
 				Options: []*ContentOption{
-					&ContentOption{
+					{
 						Name: "http_uri",
 					},
-					&ContentOption{
+					{
 						Name:  "depth",
 						Value: "0",
 					},
@@ -637,11 +637,11 @@ func TestContentsString(t *testing.T) {
 						Enabled: true,
 					},
 					Options: []*ContentOption{
-						&ContentOption{
+						{
 							Name:  "offset",
 							Value: "10",
 						},
-						&ContentOption{
+						{
 							Name:  "depth",
 							Value: "50",
 						},
@@ -791,7 +791,7 @@ func TestRuleString(t *testing.T) {
 					},
 				},
 				PCREs: []*PCRE{
-					&PCRE{
+					{
 						Pattern: []byte("foo.*bar"),
 						Options: []byte("Ui"),
 					},
@@ -857,11 +857,11 @@ func TestRuleString(t *testing.T) {
 				Revision:    3,
 				Description: "Flowbits test",
 				Flowbits: []*Flowbit{
-					&Flowbit{
+					{
 						Action: "set",
 						Value:  "testbits",
 					},
-					&Flowbit{
+					{
 						Action: "noalert",
 						Value:  "",
 					},

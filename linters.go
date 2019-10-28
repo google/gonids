@@ -24,7 +24,7 @@ func (r *Rule) ShouldBeHTTP() bool {
 		return false
 	}
 	// If we look at http buffers or sticky buffers, we should use the HTTP protocol.
-	for _, c := range r.Contents {
+	for _, c := range r.Contents() {
 		if strings.HasPrefix(c.DataPosition.String(), "http_") {
 			return true
 		}

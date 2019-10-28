@@ -580,103 +580,6 @@ func TestContentString(t *testing.T) {
 	}
 }
 
-func TestContentsString(t *testing.T) {
-	for _, tt := range []struct {
-		name  string
-		input Contents
-		want  string
-	}{
-		{
-			name: "single simple content",
-			input: Contents{
-				&Content{
-					Pattern: []byte("AA"),
-				},
-			},
-			want: `content:"AA";`,
-		},
-		{
-			name: "multiple simple contents",
-			input: Contents{
-				&Content{
-					Pattern: []byte("AA"),
-				},
-				&Content{
-					Pattern: []byte("BB"),
-				},
-				&Content{
-					Pattern: []byte("CC"),
-				},
-			},
-			want: `content:"AA"; content:"BB"; content:"CC";`,
-		},
-		{
-			name: "single sticky buffer",
-			input: Contents{
-				&Content{
-					DataPosition: base64Data,
-					Pattern:      []byte("AA"),
-				},
-			},
-			want: `base64_data; content:"AA";`,
-		},
-		{
-			name: "changing sticky buffer",
-			input: Contents{
-				&Content{
-					DataPosition: base64Data,
-					Pattern:      []byte("AA"),
-				},
-				&Content{
-					DataPosition: pktData,
-					Pattern:      []byte("BB"),
-				},
-				&Content{
-					DataPosition: httpAccept,
-					Pattern:      []byte("CC"),
-				},
-			},
-			want: `base64_data; content:"AA"; pkt_data; content:"BB"; http_accept; content:"CC";`,
-		},
-		{
-			name: "changing sticky buffer and complex content",
-			input: Contents{
-				&Content{
-					DataPosition: base64Data,
-					Pattern:      []byte("AA"),
-					FastPattern: FastPattern{
-						Enabled: true,
-					},
-					Options: []*ContentOption{
-						{
-							Name:  "offset",
-							Value: "10",
-						},
-						{
-							Name:  "depth",
-							Value: "50",
-						},
-					},
-				},
-				&Content{
-					DataPosition: pktData,
-					Pattern:      []byte("BB"),
-				},
-				&Content{
-					DataPosition: httpAccept,
-					Pattern:      []byte("CC"),
-				},
-			},
-			want: `base64_data; content:"AA"; offset:10; depth:50; fast_pattern; pkt_data; content:"BB"; http_accept; content:"CC";`,
-		},
-	} {
-		got := tt.input.String()
-		if got != tt.want {
-			t.Fatalf("%s: got %v -- expected %v", tt.name, got, tt.want)
-		}
-	}
-}
-
 func TestPCREString(t *testing.T) {
 	for _, tt := range []struct {
 		name  string
@@ -767,11 +670,6 @@ func TestRuleString(t *testing.T) {
 				SID:         1337,
 				Revision:    2,
 				Description: "foo",
-				Contents: Contents{
-					&Content{
-						Pattern: []byte("AA"),
-					},
-				},
 				Matchers: []orderedMatcher{
 					&Content{
 						Pattern: []byte("AA"),
@@ -796,11 +694,6 @@ func TestRuleString(t *testing.T) {
 				SID:         1337,
 				Revision:    2,
 				Description: "foo",
-				Contents: Contents{
-					&Content{
-						Pattern: []byte("AA"),
-					},
-				},
 				PCREs: []*PCRE{
 					{
 						Pattern: []byte("foo.*bar"),
@@ -835,11 +728,6 @@ func TestRuleString(t *testing.T) {
 				SID:         1337,
 				Revision:    2,
 				Description: "foo",
-				Contents: Contents{
-					&Content{
-						Pattern: []byte("AA"),
-					},
-				},
 				Tags: map[string]string{
 					"classtype": "trojan-activity",
 				},

@@ -364,7 +364,6 @@ func (r *Rule) option(key item, l *lexer) error {
 				return err
 			}
 			p.Negate = negate
-			r.PCREs = append(r.PCREs, p)
 			r.Matchers = append(r.Matchers, p)
 		} else {
 			return fmt.Errorf("invalid type %q for option content", nextItem.typ)

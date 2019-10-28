@@ -694,12 +694,6 @@ func TestRuleString(t *testing.T) {
 				SID:         1337,
 				Revision:    2,
 				Description: "foo",
-				PCREs: []*PCRE{
-					{
-						Pattern: []byte("foo.*bar"),
-						Options: []byte("Ui"),
-					},
-				},
 				Matchers: []orderedMatcher{
 					&Content{
 						Pattern: []byte("AA"),

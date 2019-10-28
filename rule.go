@@ -46,8 +46,6 @@ type Rule struct {
 	// References contains references associated to the rule (e.g. CVE number).
 	References []*Reference
 	// Contents are all the decoded content matches.
-	PCREs []*PCRE
-	// Tags is a map of tag names to tag values (e.g. classtype:trojan).
 	Tags map[string]string
 	// Statements is a slice of string. These items are similar to Tags, but have no value. (e.g. 'sameip;')
 	Statements []string
@@ -476,6 +474,17 @@ func (r *Rule) ByteMatchers() []*ByteMatch {
 		}
 	}
 	return bs
+}
+
+// PCREs returns all *PCRE for a rule.
+func (r *Rule) PCREs() []*PCRE {
+	var ps []*PCRE
+	for _, m := range r.Matchers {
+		if p, ok := m.(*PCRE); ok {
+			ps = append(ps, p)
+		}
+	}
+	return ps
 }
 
 func netString(netPart []string) string {

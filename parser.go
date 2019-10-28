@@ -435,7 +435,6 @@ func (r *Rule) option(key item, l *lexer) error {
 			b.Options = append(b.Options, parts[i])
 		}
 
-		r.ByteMatchers = append(r.ByteMatchers, b)
 		r.Matchers = append(r.Matchers, b)
 	case inSlice(key.value, allLenMatchTypeNames()):
 		// TODO: Factor out into unit testable function.

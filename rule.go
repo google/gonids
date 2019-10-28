@@ -47,8 +47,6 @@ type Rule struct {
 	References []*Reference
 	// Contents are all the decoded content matches.
 	PCREs []*PCRE
-	// ByteMatchers is a slice of ByteMatch structs.
-	ByteMatchers []*ByteMatch
 	// Tags is a map of tag names to tag values (e.g. classtype:trojan).
 	Tags map[string]string
 	// Statements is a slice of string. These items are similar to Tags, but have no value. (e.g. 'sameip;')
@@ -458,7 +456,7 @@ func (r *Rule) CVE() string {
 	return ""
 }
 
-// Contents returns a []*Content for a rule.
+// Contents returns all *Content for a rule.
 func (r *Rule) Contents() []*Content {
 	var cs []*Content
 	for _, m := range r.Matchers {
@@ -467,6 +465,17 @@ func (r *Rule) Contents() []*Content {
 		}
 	}
 	return cs
+}
+
+// ByteMatchers returns all *ByteMatch for a rule.
+func (r *Rule) ByteMatchers() []*ByteMatch {
+	var bs []*ByteMatch
+	for _, m := range r.Matchers {
+		if b, ok := m.(*ByteMatch); ok {
+			bs = append(bs, b)
+		}
+	}
+	return bs
 }
 
 func netString(netPart []string) string {

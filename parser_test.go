@@ -324,6 +324,33 @@ func TestParseRule(t *testing.T) {
 			},
 		},
 		{
+			name: "urilen options",
+			rule: `alert http $HOME_NET any -> $EXTERNAL_NET any (sid:1337; msg:"foo"; urilen:2<>7,raw;)`,
+			want: &Rule{
+				Action:   "alert",
+				Protocol: "http",
+				Source: Network{
+					Nets:  []string{"$HOME_NET"},
+					Ports: []string{"any"},
+				},
+				Destination: Network{
+					Nets:  []string{"$EXTERNAL_NET"},
+					Ports: []string{"any"},
+				},
+				SID:         1337,
+				Description: "foo",
+				LenMatchers: []*LenMatch{
+					{
+						Kind:     uriLen,
+						Operator: "<>",
+						Min:      2,
+						Max:      7,
+						Options:  []string{"raw"},
+					},
+				},
+			},
+		},
+		{
 			name: "stream_size",
 			rule: `alert tcp $HOME_NET any -> $EXTERNAL_NET any (msg:"foo"; stream_size:both,>,19; sid:1337; rev:1;)`,
 			want: &Rule{

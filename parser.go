@@ -175,7 +175,7 @@ func (r *Rule) option(key item, l *lexer) error {
 		panic("item is not an option key")
 	}
 	switch {
-	// TODO(duane): Many of these simple tags could be factored into nicer structures.
+	// TODO: Many of these simple tags could be factored into nicer structures.
 	case inSlice(key.value, []string{"classtype", "flow", "tag", "priority", "app-layer-protocol",
 		"flags", "ipopts", "ip_proto", "geoip", "fragbits", "fragoffset", "tos",
 		"window",
@@ -371,7 +371,7 @@ func (r *Rule) option(key item, l *lexer) error {
 			return fmt.Errorf("invalid type %q for option content", nextItem.typ)
 		}
 	case inSlice(key.value, allbyteMatchTypeNames()):
-		// TODO(duane): Split this out into a unit-testable function.
+		// TODO: Split this out into a unit-testable function.
 		b := new(ByteMatch)
 		k, err := byteMatcher(key.value)
 		if err != nil {
@@ -439,7 +439,8 @@ func (r *Rule) option(key item, l *lexer) error {
 		r.ByteMatchers = append(r.ByteMatchers, b)
 		r.Matchers = append(r.Matchers, b)
 	case inSlice(key.value, allLenMatchTypeNames()):
-		// TODO(duane): Factor out into unit testable function.
+		// TODO: Factor out into unit testable function.
+		// TODO: Add unit tests for each state, and each state with options.
 		m := new(LenMatch)
 		k, err := lenMatcher(key.value)
 		if err != nil {
@@ -451,7 +452,9 @@ func (r *Rule) option(key item, l *lexer) error {
 		switch {
 		// Simple case, no operators.
 		case !strings.ContainsAny(nextItem.value, "><"):
-			num, err := strconv.Atoi(strings.TrimSpace(nextItem.value))
+			// Ignore options after ','.
+			numTmp := strings.Split(nextItem.value, ",")[0]
+			num, err := strconv.Atoi(strings.TrimSpace(numTmp))
 			if err != nil {
 				return fmt.Errorf("%v is not an integer", key.value)
 			}
@@ -460,7 +463,11 @@ func (r *Rule) option(key item, l *lexer) error {
 		// Leading operator, single number.
 		case strings.HasPrefix(nextItem.value, ">") || strings.HasPrefix(nextItem.value, "<"):
 			m.Operator = nextItem.value[0:1]
-			num, err := strconv.Atoi(strings.TrimSpace(strings.TrimLeft(nextItem.value, "><")))
+			// Strip leading < or >.
+			numTmp := strings.TrimLeft(nextItem.value, "><")
+			// Ignore options after ','.
+			numTmp = strings.Split(numTmp, ",")[0]
+			num, err := strconv.Atoi(strings.TrimSpace(numTmp))
 			if err != nil {
 				return fmt.Errorf("%v is not an integer", key.value)
 			}
@@ -479,12 +486,18 @@ func (r *Rule) option(key item, l *lexer) error {
 			if err != nil {
 				return fmt.Errorf("%v is not an integer", strings.TrimSpace(parts[0]))
 			}
-			max, err = strconv.Atoi(strings.TrimSpace(parts[1]))
+			maxTmp := strings.Split(parts[1], ",")[0]
+			max, err = strconv.Atoi(strings.TrimSpace(maxTmp))
 			if err != nil {
-				return fmt.Errorf("%v is not an integer", strings.TrimSpace(parts[1]))
+				return fmt.Errorf("%v is not an integer", strings.TrimSpace(maxTmp))
 			}
+			// Do stuff to handle options here.
 			m.Min = min
 			m.Max = max
+		}
+		// Parse options:
+		if strings.Contains(nextItem.value, ",") {
+			m.Options = strings.Split(nextItem.value, ",")[1:]
 		}
 		r.LenMatchers = append(r.LenMatchers, m)
 	case key.value == "flowbits":
@@ -504,9 +517,6 @@ func (r *Rule) option(key item, l *lexer) error {
 			fb.Value = strings.TrimSpace(parts[1])
 		}
 		r.Flowbits = append(r.Flowbits, fb)
-	// TODO(duane): Remove this before any commits.
-	default:
-		fmt.Println(key.value)
 	}
 	return nil
 }

@@ -19,7 +19,6 @@ import "strings"
 
 // ShouldBeHTTP returns true if a rule looks like the protocol should be http, but is not.
 func (r *Rule) ShouldBeHTTP() bool {
-	var isHTTP bool
 	// If the rule is already HTTP, then stop looking.
 	if r.Protocol == "http" {
 		return false
@@ -27,15 +26,13 @@ func (r *Rule) ShouldBeHTTP() bool {
 	// If we look at http buffers or sticky buffers, we should use the HTTP protocol.
 	for _, c := range r.Contents {
 		if strings.HasPrefix(c.DataPosition.String(), "http_") {
-			isHTTP = true
-			break
+			return true
 		}
 		for _, co := range c.Options {
 			if strings.HasPrefix(co.Name, "http_") {
-				isHTTP = true
-				break
+				return true
 			}
 		}
 	}
-	return isHTTP
+	return false
 }

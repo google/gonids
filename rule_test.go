@@ -445,7 +445,7 @@ func TestTLSTagString(t *testing.T) {
 	}
 }
 
-func TestICMPMatchString(t *testing.T) {
+func TestLenMatchString(t *testing.T) {
 	for _, tt := range []struct {
 		name  string
 		input *LenMatch
@@ -477,6 +477,17 @@ func TestICMPMatchString(t *testing.T) {
 				Max:      2,
 			},
 			want: `itype:1<>2;`,
+		},
+		{
+			name: "options",
+			input: &LenMatch{
+				Kind:     uriLen,
+				Operator: "<>",
+				Min:      1,
+				Max:      2,
+				Options:  []string{"raw"},
+			},
+			want: `urilen:1<>2,raw;`,
 		},
 	} {
 		got := tt.input.String()

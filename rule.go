@@ -358,13 +358,15 @@ func (i lenMatchType) String() string {
 	return lenMatchTypeVals[i]
 }
 
-// LenMatch holds the values to represent an ICMP Match.
+// LenMatch holds the values to represent an Length Match.
+// TODO: Support options ',raw'
 type LenMatch struct {
 	Kind     lenMatchType
 	Min      int
 	Max      int
 	Num      int
 	Operator string
+	Options  []string
 }
 
 // PCRE describes a PCRE item of a rule.
@@ -588,16 +590,21 @@ func (b ByteMatch) String() string {
 
 // String returns a string for an ICMP match.
 func (i LenMatch) String() string {
-	if i.Operator == "<>" {
-		return fmt.Sprintf("%s:%d%s%d;", i.Kind, i.Min, i.Operator, i.Max)
-	}
+	// TODO: support options in this.
 	var s strings.Builder
 	s.WriteString(fmt.Sprintf("%s:", i.Kind))
-	if i.Operator != "" {
-		s.WriteString(i.Operator)
+	switch {
+	case i.Operator == "<>":
+		s.WriteString(fmt.Sprintf("%d%s%d", i.Min, i.Operator, i.Max))
+	case i.Operator != "":
+		s.WriteString(fmt.Sprintf("%s%d", i.Operator, i.Num))
+	default:
+		s.WriteString(fmt.Sprintf("%d", i.Num))
 	}
-	s.WriteString(fmt.Sprintf("%d;", i.Num))
-
+	for _, o := range i.Options {
+		s.WriteString(fmt.Sprintf(",%s", o))
+	}
+	s.WriteString(";")
 	return s.String()
 }
 

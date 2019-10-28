@@ -666,12 +666,6 @@ func TestParseRule(t *testing.T) {
 				Revision:    6,
 				Description: "VRT BLACKLIST URI request for known malicious URI - /tongji.js",
 				References:  []*Reference{{Type: "url", Value: "labs.snort.org/docs/17904.html"}},
-				PCREs: []*PCRE{
-					{
-						Pattern: []byte(`Host\x3a[^\r\n]*?\.tongji`),
-						Options: []byte("Hi"),
-					},
-				},
 				Tags: map[string]string{
 					"flow":      "to_server,established",
 					"classtype": "trojan-activity",
@@ -724,12 +718,6 @@ func TestParseRule(t *testing.T) {
 					{
 						Type:  "url",
 						Value: "www.google.com"},
-				},
-				PCREs: []*PCRE{
-					{
-						Pattern: []byte("foo.*bar"),
-						Options: []byte("Ui"),
-					},
 				},
 				Tags: map[string]string{
 					"flow":      "to_server,established",
@@ -860,13 +848,6 @@ func TestParseRule(t *testing.T) {
 				SID:         12345,
 				Revision:    1,
 				Description: "Negated PCRE",
-				PCREs: []*PCRE{
-					{
-						Pattern: []byte("foo.*bar"),
-						Negate:  true,
-						Options: []byte("Ui"),
-					},
-				},
 				Matchers: []orderedMatcher{
 					&PCRE{
 						Pattern: []byte("foo.*bar"),
@@ -893,12 +874,6 @@ func TestParseRule(t *testing.T) {
 				SID:         12345,
 				Revision:    1,
 				Description: "PCRE with quote",
-				PCREs: []*PCRE{
-					{
-						Pattern: []byte(`=[."]\w{8}\.jar`),
-						Options: []byte("Hi"),
-					},
-				},
 				Matchers: []orderedMatcher{
 					&PCRE{
 						Pattern: []byte(`=[."]\w{8}\.jar`),
@@ -1084,12 +1059,6 @@ func TestParseRule(t *testing.T) {
 				SID:         1,
 				Revision:    1,
 				Description: "check order",
-				PCREs: []*PCRE{
-					{
-						Pattern: []byte(`this.*`),
-						Options: []byte("R"),
-					},
-				},
 				Matchers: []orderedMatcher{
 					&Content{
 						Pattern: []byte("1"),

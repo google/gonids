@@ -42,19 +42,33 @@ func (r *Rule) OptimizeHTTP() bool {
 }
 
 // SnortURILenFix will optimize a urilen keyword from a Snort rule for Suricata.
-func (r *Rule) SnortURILenFix() {
+func (r *Rule) SnortURILenFix() bool {
+	var modified bool
 	// Update this once we parse urilen in a better structure.
-	for tag, val := range r.Tags {
-		if tag != "urilen" {
-			continue
+	for _, l := range r.LenMatchers {
+		if l.Kind == uriLen && l.Operator == "<>" {
+			l.Min--
+			l.Max++
+			modified = true
 		}
-		// Parse out int[operator]int
-		// rex := regexp.MustCompile(val, "<>]+""), etc.
-		// fmt.Println(rex.Split(foo, -1))
-		// This omits the operator, so we need to do something about that too.
-
-		// Then min -1, max +1 to make the equivalent value.
+		setRaw := true
+		for _, o := range l.Options {
+			if o == "norm" || o == "raw" {
+				// If Snort rule specified norm or raw, trust author.
+				setRaw = false
+				break
+			}
+		}
+		// If author did not specify, set 'raw'.
+		if setRaw {
+			modified = true
+			l.Options = append(l.Options, "raw")
+		}
 	}
+	if modified {
+		r.Metas = append(r.Metas, MetadataModifier("snort_urilen"))
+	}
+	return modified
 }
 
 // MetadataModifier returns a metadata that identifies a given modification.

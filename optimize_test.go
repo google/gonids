@@ -50,7 +50,7 @@ func TestOptimizeHTTP(t *testing.T) {
 					&Content{
 						Pattern: []byte("AA"),
 						Options: []*ContentOption{
-							&ContentOption{"http_header", ""},
+							{"http_header", ""},
 						},
 					},
 				},
@@ -69,7 +69,7 @@ func TestOptimizeHTTP(t *testing.T) {
 					&Content{
 						Pattern: []byte("AA"),
 						Options: []*ContentOption{
-							&ContentOption{"http_header", ""},
+							{"http_header", ""},
 						},
 					},
 				},
@@ -128,6 +128,139 @@ func TestOptimizeHTTP(t *testing.T) {
 		},
 	} {
 		gotMod := tt.input.OptimizeHTTP()
+		// Expected modification.
+		if gotMod != tt.wantMod {
+			t.Fatalf("%s: gotMod %v; expected %v", tt.name, gotMod, tt.wantMod)
+		}
+		// Actual modifications correctness.
+		if tt.wantMod && !reflect.DeepEqual(tt.output, tt.input) {
+			t.Fatalf("got:\n%v\nwant:\n%v", tt.input, tt.output)
+		}
+	}
+}
+
+func TestSnortURILenFix(t *testing.T) {
+	for _, tt := range []struct {
+		name    string
+		input   *Rule
+		output  *Rule
+		wantMod bool
+	}{
+		{
+			name: "urilen exact raw",
+			input: &Rule{
+				LenMatchers: []*LenMatch{
+					{
+						Kind:    uriLen,
+						Num:     3,
+						Options: []string{"raw"},
+					},
+				},
+			},
+			wantMod: false,
+		},
+		{
+			name: "urilen exact norm",
+			input: &Rule{
+				LenMatchers: []*LenMatch{
+					{
+						Kind:    uriLen,
+						Num:     3,
+						Options: []string{"norm"},
+					},
+				},
+			},
+			wantMod: false,
+		},
+		{
+			name: "urilen range",
+			input: &Rule{
+				LenMatchers: []*LenMatch{
+					{
+						Kind:     uriLen,
+						Min:      3,
+						Max:      7,
+						Operator: "<>",
+					},
+				},
+			},
+			output: &Rule{
+				LenMatchers: []*LenMatch{
+					{
+						Kind:     uriLen,
+						Min:      2,
+						Max:      8,
+						Operator: "<>",
+						Options:  []string{"raw"},
+					},
+				},
+				Metas: Metadatas{
+					&Metadata{
+						Key:   "gonids",
+						Value: "snort_urilen"},
+				},
+			},
+			wantMod: true,
+		},
+		{
+			name: "urilen exact",
+			input: &Rule{
+				LenMatchers: []*LenMatch{
+					{
+						Kind: uriLen,
+						Num:  3,
+					},
+				},
+			},
+			output: &Rule{
+				LenMatchers: []*LenMatch{
+					{
+						Kind:    uriLen,
+						Num:     3,
+						Options: []string{"raw"},
+					},
+				},
+				Metas: Metadatas{
+					&Metadata{
+						Key:   "gonids",
+						Value: "snort_urilen"},
+				},
+			},
+			wantMod: true,
+		},
+		{
+			name: "urilen range norm",
+			input: &Rule{
+				LenMatchers: []*LenMatch{
+					{
+						Kind:     uriLen,
+						Min:      3,
+						Max:      7,
+						Operator: "<>",
+						Options:  []string{"norm"},
+					},
+				},
+			},
+			output: &Rule{
+				LenMatchers: []*LenMatch{
+					{
+						Kind:     uriLen,
+						Min:      2,
+						Max:      8,
+						Operator: "<>",
+						Options:  []string{"norm"},
+					},
+				},
+				Metas: Metadatas{
+					&Metadata{
+						Key:   "gonids",
+						Value: "snort_urilen"},
+				},
+			},
+			wantMod: true,
+		},
+	} {
+		gotMod := tt.input.SnortURILenFix()
 		// Expected modification.
 		if gotMod != tt.wantMod {
 			t.Fatalf("%s: gotMod %v; expected %v", tt.name, gotMod, tt.wantMod)

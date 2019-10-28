@@ -586,7 +586,6 @@ func (b ByteMatch) String() string {
 
 // String returns a string for an ICMP match.
 func (i LenMatch) String() string {
-	// TODO: support options in this.
 	var s strings.Builder
 	s.WriteString(fmt.Sprintf("%s:", i.Kind))
 	switch {

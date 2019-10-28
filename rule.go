@@ -330,7 +330,7 @@ var lenMatchTypeVals = map[lenMatchType]string{
 	tcpACK: "ack",
 }
 
-// allLenMatchTypeNames returns a slice of string containg all ICMP match keywords.
+// allLenMatchTypeNames returns a slice of string containing all ICMP match keywords.
 func allLenMatchTypeNames() []string {
 	i := make([]string, len(lenMatchTypeVals))
 	var j int

@@ -45,9 +45,6 @@ type Rule struct {
 	Description string
 	// References contains references associated to the rule (e.g. CVE number).
 	References []*Reference
-	// TODO: Define some structure for tracking checks that do not directly apply
-	// to a content. urilen, dsize, etc. Various buffers, and directions need structured
-	// places to live.
 	// Contents are all the decoded content matches.
 	Contents Contents
 	// PCREs is a slice of PCRE structs that represent the regular expressions in a rule.
@@ -358,13 +355,14 @@ func (i lenMatchType) String() string {
 	return lenMatchTypeVals[i]
 }
 
-// LenMatch holds the values to represent an ICMP Match.
+// LenMatch holds the values to represent an Length Match.
 type LenMatch struct {
 	Kind     lenMatchType
 	Min      int
 	Max      int
 	Num      int
 	Operator string
+	Options  []string
 }
 
 // PCRE describes a PCRE item of a rule.
@@ -398,7 +396,7 @@ type Reference struct {
 	Value string
 }
 
-// TODO(duane): Add support for tls_cert_nobefore, tls_cert_notafter, tls_cert_expired, tls_cert_valid.
+// TODO: Add support for tls_cert_nobefore, tls_cert_notafter, tls_cert_expired, tls_cert_valid.
 // Valid keywords for extracting TLS matches. Does not include tls.store, or sticky buffers.
 var tlsTags = []string{"ssl_version", "ssl_state", "tls.version", "tls.subject", "tls.issuerdn", "tls.fingerprint"}
 
@@ -408,8 +406,8 @@ type TLSTag struct {
 	Negate bool
 	// Key holds the thing we're inspecting (tls.version, tls.fingerprint, etc.).
 	Key string
-	// TODO(duane): Consider string -> []byte and handle hex input.
-	// TODO(duane): Consider supporting []struct if we can support things like: tls.version:!1.2,!1.3
+	// TODO: Consider string -> []byte and handle hex input.
+	// TODO: Consider supporting []struct if we can support things like: tls.version:!1.2,!1.3
 	// Value holds the value for the match.
 	Value string
 }
@@ -420,7 +418,7 @@ type StreamCmp struct {
 	Direction string
 	// Operator is the comparison operator to apply >, <, !=, etc.
 	Operator string
-	// TODO(duane): Can this number be a variable, if yes s/int/string.
+	// TODO: Can this number be a variable, if yes s/int/string.
 	// Number is the size to compare against
 	Number int
 }
@@ -545,7 +543,7 @@ func (c Content) String() string {
 }
 
 // String returns a string for all of the contents.
-// TODO(duane): Deprecate this, and probably remove the "Contents" type.
+// TODO: Deprecate this, and probably remove the "Contents" type.
 func (cs Contents) String() string {
 	var s strings.Builder
 	d := pktData
@@ -561,8 +559,8 @@ func (cs Contents) String() string {
 
 // String returns a string for a ByteMatch.
 func (b ByteMatch) String() string {
-	// TODO(duane): Support dataPos?
-	// TODO(duane): Write tests.
+	// TODO: Support dataPos?
+	// TODO: Write tests.
 	var s strings.Builder
 	s.WriteString(fmt.Sprintf("%s:", byteMatchTypeVals[b.Kind]))
 
@@ -588,16 +586,20 @@ func (b ByteMatch) String() string {
 
 // String returns a string for an ICMP match.
 func (i LenMatch) String() string {
-	if i.Operator == "<>" {
-		return fmt.Sprintf("%s:%d%s%d;", i.Kind, i.Min, i.Operator, i.Max)
-	}
 	var s strings.Builder
 	s.WriteString(fmt.Sprintf("%s:", i.Kind))
-	if i.Operator != "" {
-		s.WriteString(i.Operator)
+	switch {
+	case i.Operator == "<>":
+		s.WriteString(fmt.Sprintf("%d%s%d", i.Min, i.Operator, i.Max))
+	case i.Operator != "":
+		s.WriteString(fmt.Sprintf("%s%d", i.Operator, i.Num))
+	default:
+		s.WriteString(fmt.Sprintf("%d", i.Num))
 	}
-	s.WriteString(fmt.Sprintf("%d;", i.Num))
-
+	for _, o := range i.Options {
+		s.WriteString(fmt.Sprintf(",%s", o))
+	}
+	s.WriteString(";")
 	return s.String()
 }
 

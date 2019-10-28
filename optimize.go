@@ -15,28 +15,9 @@ limitations under the License.
 
 package gonids
 
-import "strings"
-
 // OptimizeHTTP tunes an old style rule to leverage port agnostic HTTP detection.
 func (r *Rule) OptimizeHTTP() bool {
-	var modify bool
-	// Only attempt to modify rules that use HTTP buffers, but are not already HTTP.
-	if r.Protocol == "http" {
-		return false
-	}
-	for _, c := range r.Contents {
-		if strings.HasPrefix(c.DataPosition.String(), "http_") {
-			modify = true
-			break
-		}
-		for _, co := range c.Options {
-			if strings.HasPrefix(co.Name, "http_") {
-				modify = true
-				break
-			}
-		}
-	}
-	if !modify {
+	if !r.ShouldBeHTTP() {
 		return false
 	}
 	// Switch protocol to HTTP.
@@ -58,6 +39,36 @@ func (r *Rule) OptimizeHTTP() bool {
 	// Annotate rule to indicate modification
 	r.Metas = append(r.Metas, MetadataModifier("http_optimize"))
 	return true
+}
+
+// SnortURILenFix will optimize a urilen keyword from a Snort rule for Suricata.
+func (r *Rule) SnortURILenFix() bool {
+	var modified bool
+	// Update this once we parse urilen in a better structure.
+	for _, l := range r.LenMatchers {
+		if l.Kind == uriLen && l.Operator == "<>" {
+			l.Min--
+			l.Max++
+			modified = true
+		}
+		setRaw := true
+		for _, o := range l.Options {
+			if o == "norm" || o == "raw" {
+				// If Snort rule specified norm or raw, trust author.
+				setRaw = false
+				break
+			}
+		}
+		// If author did not specify, set 'raw'.
+		if setRaw {
+			modified = true
+			l.Options = append(l.Options, "raw")
+		}
+	}
+	if modified {
+		r.Metas = append(r.Metas, MetadataModifier("snort_urilen"))
+	}
+	return modified
 }
 
 // MetadataModifier returns a metadata that identifies a given modification.

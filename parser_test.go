@@ -924,14 +924,6 @@ func TestParseRule(t *testing.T) {
 				SID:         42,
 				Revision:    1,
 				Description: "byte_extract",
-				ByteMatchers: []*ByteMatch{
-					{
-						Kind:     bExtract,
-						NumBytes: 3,
-						Variable: "Certs.len",
-						Options:  []string{"relative", "little"},
-					},
-				},
 				Matchers: []orderedMatcher{
 					&Content{
 						Pattern: []byte{0xff, 0xfe},
@@ -969,16 +961,6 @@ func TestParseRule(t *testing.T) {
 				SID:         42,
 				Revision:    1,
 				Description: "byte_test",
-				ByteMatchers: []*ByteMatch{
-					{
-						Kind:     bTest,
-						NumBytes: 5,
-						Operator: "<",
-						Value:    "65537",
-						Offset:   0,
-						Options:  []string{"relative", "string"},
-					},
-				},
 				Matchers: []orderedMatcher{
 					&Content{
 						Pattern: []byte{0xff, 0xfe},
@@ -1011,14 +993,6 @@ func TestParseRule(t *testing.T) {
 				SID:         42,
 				Revision:    1,
 				Description: "byte_jump",
-				ByteMatchers: []*ByteMatch{
-					{
-						Kind:     bJump,
-						NumBytes: 4,
-						Offset:   0,
-						Options:  []string{"relative", "little", "post_offset -1"},
-					},
-				},
 				Matchers: []orderedMatcher{
 					&Content{
 						Pattern: []byte{0xff, 0xfe},
@@ -1049,20 +1023,6 @@ func TestParseRule(t *testing.T) {
 				SID:         42,
 				Revision:    1,
 				Description: "isdataat",
-				ByteMatchers: []*ByteMatch{
-					{
-						Kind:     bJump,
-						NumBytes: 2,
-						Offset:   3,
-						Options:  []string{"post_offset -1"},
-					},
-					{
-						Kind:     isDataAt,
-						Negate:   true,
-						NumBytes: 2,
-						Options:  []string{"relative"},
-					},
-				},
 				Matchers: []orderedMatcher{
 					&Content{
 						Pattern: []byte("aabb"),

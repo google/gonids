@@ -46,12 +46,6 @@ type Rule struct {
 	// References contains references associated to the rule (e.g. CVE number).
 	References []*Reference
 	// Contents are all the decoded content matches.
-	Contents Contents
-	// PCREs is a slice of PCRE structs that represent the regular expressions in a rule.
-	PCREs []*PCRE
-	// ByteMatchers is a slice of ByteMatch structs.
-	ByteMatchers []*ByteMatch
-	// Tags is a map of tag names to tag values (e.g. classtype:trojan).
 	Tags map[string]string
 	// Statements is a slice of string. These items are similar to Tags, but have no value. (e.g. 'sameip;')
 	Statements []string
@@ -212,9 +206,6 @@ type Content struct {
 	// Options are the option associated to the content (e.g. http_header).
 	Options []*ContentOption
 }
-
-// Contents is used so we can have a target type for a Stringer.
-type Contents []*Content
 
 // byteMatchType describes the kinds of byte matches and comparisons that are supported.
 type byteMatchType int
@@ -441,7 +432,7 @@ func within(options []*ContentOption) string {
 // RE returns all content matches as a single and simple regexp.
 func (r *Rule) RE() string {
 	var re string
-	for _, c := range r.Contents {
+	for _, c := range r.Contents() {
 		// TODO: handle pcre, depth, offset, distance.
 		if d, err := strconv.Atoi(within(c.Options)); err == nil && d > 0 {
 			re += fmt.Sprintf(".{0,%d}", d)
@@ -461,6 +452,39 @@ func (r *Rule) CVE() string {
 		}
 	}
 	return ""
+}
+
+// Contents returns all *Content for a rule.
+func (r *Rule) Contents() []*Content {
+	var cs []*Content
+	for _, m := range r.Matchers {
+		if c, ok := m.(*Content); ok {
+			cs = append(cs, c)
+		}
+	}
+	return cs
+}
+
+// ByteMatchers returns all *ByteMatch for a rule.
+func (r *Rule) ByteMatchers() []*ByteMatch {
+	var bs []*ByteMatch
+	for _, m := range r.Matchers {
+		if b, ok := m.(*ByteMatch); ok {
+			bs = append(bs, b)
+		}
+	}
+	return bs
+}
+
+// PCREs returns all *PCRE for a rule.
+func (r *Rule) PCREs() []*PCRE {
+	var ps []*PCRE
+	for _, m := range r.Matchers {
+		if p, ok := m.(*PCRE); ok {
+			ps = append(ps, p)
+		}
+	}
+	return ps
 }
 
 func netString(netPart []string) string {
@@ -540,21 +564,6 @@ func (c Content) String() string {
 	}
 
 	return s.String()
-}
-
-// String returns a string for all of the contents.
-// TODO: Deprecate this, and probably remove the "Contents" type.
-func (cs Contents) String() string {
-	var s strings.Builder
-	d := pktData
-	for _, c := range cs {
-		if d != c.DataPosition {
-			d = c.DataPosition
-			s.WriteString(fmt.Sprintf(" %s;", d))
-		}
-		s.WriteString(fmt.Sprintf(" %s", c))
-	}
-	return strings.TrimSpace(s.String())
 }
 
 // String returns a string for a ByteMatch.

@@ -296,7 +296,6 @@ func (r *Rule) option(key item, l *lexer) error {
 				Negate:       negate,
 				Options:      options,
 			}
-			r.Contents = append(r.Contents, con)
 			r.Matchers = append(r.Matchers, con)
 		} else {
 			return fmt.Errorf("invalid type %q for option content", nextItem.typ)
@@ -304,13 +303,13 @@ func (r *Rule) option(key item, l *lexer) error {
 	case inSlice(key.value, []string{"http_cookie", "http_raw_cookie", "http_method", "http_header", "http_raw_header",
 		"http_uri", "http_raw_uri", "http_user_agent", "http_stat_code", "http_stat_msg",
 		"http_client_body", "http_server_body", "http_host", "nocase", "rawbytes"}):
-		if len(r.Contents) == 0 {
+		if len(r.Contents()) == 0 {
 			return fmt.Errorf("invalid content option %q with no content match", key.value)
 		}
-		lastContent := r.Contents[len(r.Contents)-1]
+		lastContent := r.Contents()[len(r.Contents())-1]
 		lastContent.Options = append(lastContent.Options, &ContentOption{Name: key.value})
 	case inSlice(key.value, []string{"depth", "distance", "offset", "within"}):
-		if len(r.Contents) == 0 {
+		if len(r.Contents()) == 0 {
 			return fmt.Errorf("invalid content option %q with no content match", key.value)
 		}
 		nextItem := l.nextItem()
@@ -318,11 +317,11 @@ func (r *Rule) option(key item, l *lexer) error {
 			return fmt.Errorf("no value for content option %s", key.value)
 		}
 
-		lastContent := r.Contents[len(r.Contents)-1]
+		lastContent := r.Contents()[len(r.Contents())-1]
 		lastContent.Options = append(lastContent.Options, &ContentOption{Name: key.value, Value: nextItem.value})
 
 	case key.value == "fast_pattern":
-		if len(r.Contents) == 0 {
+		if len(r.Contents()) == 0 {
 			return fmt.Errorf("invalid content option %q with no content match", key.value)
 		}
 		var (
@@ -350,7 +349,7 @@ func (r *Rule) option(key item, l *lexer) error {
 				length = i
 			}
 		}
-		lastContent := r.Contents[len(r.Contents)-1]
+		lastContent := r.Contents()[len(r.Contents())-1]
 		lastContent.FastPattern = FastPattern{true, only, offset, length}
 	case key.value == "pcre":
 		nextItem := l.nextItem()
@@ -365,7 +364,6 @@ func (r *Rule) option(key item, l *lexer) error {
 				return err
 			}
 			p.Negate = negate
-			r.PCREs = append(r.PCREs, p)
 			r.Matchers = append(r.Matchers, p)
 		} else {
 			return fmt.Errorf("invalid type %q for option content", nextItem.typ)
@@ -436,7 +434,6 @@ func (r *Rule) option(key item, l *lexer) error {
 			b.Options = append(b.Options, parts[i])
 		}
 
-		r.ByteMatchers = append(r.ByteMatchers, b)
 		r.Matchers = append(r.Matchers, b)
 	case inSlice(key.value, allLenMatchTypeNames()):
 		// TODO: Factor out into unit testable function.

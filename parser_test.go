@@ -76,11 +76,6 @@ func TestParseRule(t *testing.T) {
 				SID:         1337,
 				Revision:    2,
 				Description: "foo",
-				Contents: Contents{
-					&Content{
-						Pattern: []byte("AA"),
-					},
-				},
 				Matchers: []orderedMatcher{
 					&Content{
 						Pattern: []byte("AA"),
@@ -106,11 +101,6 @@ func TestParseRule(t *testing.T) {
 				SID:         1337,
 				Revision:    2,
 				Description: "foo",
-				Contents: Contents{
-					&Content{
-						Pattern: []byte("AA"),
-					},
-				},
 				Matchers: []orderedMatcher{
 					&Content{
 						Pattern: []byte("AA"),
@@ -136,11 +126,6 @@ func TestParseRule(t *testing.T) {
 				SID:           1337,
 				Revision:      2,
 				Description:   "foo",
-				Contents: Contents{
-					&Content{
-						Pattern: []byte("AA"),
-					},
-				},
 				Matchers: []orderedMatcher{
 					&Content{
 						Pattern: []byte("AA"),
@@ -164,10 +149,6 @@ func TestParseRule(t *testing.T) {
 				},
 				SID:         1337,
 				Description: "foo",
-				Contents: Contents{
-					&Content{
-						Pattern: []byte("AA"), Negate: true},
-				},
 				Matchers: []orderedMatcher{
 					&Content{
 						Pattern: []byte("AA"), Negate: true},
@@ -190,14 +171,6 @@ func TestParseRule(t *testing.T) {
 				},
 				SID:         1337,
 				Description: "foo",
-				Contents: Contents{
-					&Content{
-						Pattern: []byte("AA"),
-					},
-					&Content{
-						Pattern: []byte("BB"),
-					},
-				},
 				Matchers: []orderedMatcher{
 					&Content{
 						Pattern: []byte("AA"),
@@ -224,11 +197,6 @@ func TestParseRule(t *testing.T) {
 				},
 				SID:         1337,
 				Description: "foo",
-				Contents: Contents{
-					&Content{
-						Pattern: []byte{'A', 0x42, 0x43, 'D', 0x45},
-					},
-				},
 				Matchers: []orderedMatcher{
 					&Content{
 						Pattern: []byte{'A', 0x42, 0x43, 'D', 0x45},
@@ -252,11 +220,7 @@ func TestParseRule(t *testing.T) {
 				},
 				SID:         1337,
 				Description: "foo",
-				Contents: Contents{
-					&Content{
-						Pattern: []byte("AA"), Negate: true},
-				},
-				Tags: map[string]string{"classtype": "foo"},
+				Tags:        map[string]string{"classtype": "foo"},
 				Matchers: []orderedMatcher{
 					&Content{
 						Pattern: []byte("AA"), Negate: true},
@@ -280,10 +244,6 @@ func TestParseRule(t *testing.T) {
 				SID:         1337,
 				Revision:    1,
 				Description: "tls_subject",
-				Contents: Contents{
-					&Content{
-						Pattern: []byte("AA"), Negate: true},
-				},
 				TLSTags: []*TLSTag{
 					{
 						Negate: true,
@@ -416,11 +376,6 @@ func TestParseRule(t *testing.T) {
 				},
 				SID:         1337,
 				Description: "foo",
-				Contents: Contents{
-					&Content{
-						Pattern: []byte("A"),
-					},
-				},
 				References: []*Reference{
 					{Type: "cve", Value: "2014"},
 					{Type: "url", Value: "www.suricata-ids.org"},
@@ -448,16 +403,6 @@ func TestParseRule(t *testing.T) {
 				},
 				SID:         1337,
 				Description: "foo",
-				Contents: Contents{
-					&Content{
-						Pattern: []byte("AA"),
-						Negate:  true,
-						Options: []*ContentOption{
-							{"http_header", ""},
-							{"offset", "3"},
-						},
-					},
-				},
 				Matchers: []orderedMatcher{
 					&Content{
 						Pattern: []byte("AA"),
@@ -486,21 +431,6 @@ func TestParseRule(t *testing.T) {
 				},
 				SID:         1,
 				Description: "a",
-				Contents: Contents{
-					&Content{
-						Pattern: []byte("A"),
-						Options: []*ContentOption{
-							{"http_header", ""},
-						},
-						FastPattern: FastPattern{Enabled: true},
-					},
-					&Content{
-						Pattern: []byte("B"),
-						Options: []*ContentOption{
-							{"http_uri", ""},
-						},
-					},
-				},
 				Matchers: []orderedMatcher{
 					&Content{
 						Pattern: []byte("A"),
@@ -534,22 +464,6 @@ func TestParseRule(t *testing.T) {
 				},
 				SID:         1,
 				Description: "a",
-				Contents: Contents{
-					&Content{
-						Pattern: []byte("A"),
-						Options: []*ContentOption{
-							{"http_header", ""},
-							{"nocase", ""},
-						},
-						FastPattern: FastPattern{Enabled: true, Offset: 0, Length: 42},
-					},
-					&Content{
-						Pattern: []byte("B"),
-						Options: []*ContentOption{
-							{"http_uri", ""},
-						},
-					},
-				},
 				Matchers: []orderedMatcher{
 					&Content{
 						Pattern: []byte("A"),
@@ -584,23 +498,6 @@ func TestParseRule(t *testing.T) {
 				},
 				SID:         1,
 				Description: "a",
-				Contents: Contents{
-					&Content{
-						DataPosition: fileData,
-						Pattern:      []byte("A"),
-						Options: []*ContentOption{
-							{"http_header", ""},
-							{"nocase", ""},
-						},
-					},
-					&Content{
-						DataPosition: fileData,
-						Pattern:      []byte("B"),
-						Options: []*ContentOption{
-							{"http_uri", ""},
-						},
-					},
-				},
 				Matchers: []orderedMatcher{
 					&Content{
 						DataPosition: fileData,
@@ -637,14 +534,6 @@ func TestParseRule(t *testing.T) {
 				SID:         12345,
 				Revision:    1,
 				Description: "broken rule",
-				Contents: Contents{
-					&Content{
-						Pattern: []byte("A"),
-					},
-					&Content{
-						Pattern: []byte("B"),
-					},
-				},
 				Matchers: []orderedMatcher{
 					&Content{
 						Pattern: []byte("A"),
@@ -671,30 +560,6 @@ func TestParseRule(t *testing.T) {
 				},
 				SID:         1,
 				Description: "a",
-				Contents: Contents{
-					&Content{
-						DataPosition: fileData,
-						Pattern:      []byte("A"),
-						Options: []*ContentOption{
-							{"http_header", ""},
-							{"nocase", ""},
-						},
-					},
-					&Content{
-						DataPosition: fileData,
-						Pattern:      []byte("B"),
-						Options: []*ContentOption{
-							{"http_uri", ""},
-						},
-					},
-					&Content{
-						DataPosition: pktData,
-						Pattern:      []byte("C"),
-						Options: []*ContentOption{
-							{"http_uri", ""},
-						},
-					},
-				},
 				Matchers: []orderedMatcher{
 					&Content{
 						DataPosition: fileData,
@@ -737,23 +602,6 @@ func TestParseRule(t *testing.T) {
 				},
 				SID:         1,
 				Description: "a",
-				Contents: Contents{
-					&Content{
-						DataPosition: httpRequestLine,
-						Pattern:      []byte("A"),
-					},
-					&Content{
-						DataPosition: httpRequestLine,
-						Pattern:      []byte("B"),
-					},
-					&Content{
-						DataPosition: pktData,
-						Pattern:      []byte("C"),
-						Options: []*ContentOption{
-							{"http_uri", ""},
-						},
-					},
-				},
 				Matchers: []orderedMatcher{
 					&Content{
 						DataPosition: httpRequestLine,
@@ -790,15 +638,6 @@ func TestParseRule(t *testing.T) {
 				SID:         1234,
 				Revision:    1,
 				Description: "DNS Query for google.com",
-				Contents: Contents{
-					&Content{
-						DataPosition: dnsQuery,
-						Pattern:      []byte("google.com"),
-						Options: []*ContentOption{
-							{"nocase", ""},
-						},
-					},
-				},
 				Matchers: []orderedMatcher{
 					&Content{
 						DataPosition: dnsQuery,
@@ -827,27 +666,6 @@ func TestParseRule(t *testing.T) {
 				Revision:    6,
 				Description: "VRT BLACKLIST URI request for known malicious URI - /tongji.js",
 				References:  []*Reference{{Type: "url", Value: "labs.snort.org/docs/17904.html"}},
-				Contents: Contents{
-					&Content{
-						Pattern: []byte("/tongji.js"),
-						Options: []*ContentOption{
-							{"http_uri", ""},
-						},
-						FastPattern: FastPattern{Enabled: true, Only: true},
-					},
-					&Content{
-						Pattern: append([]byte("Host"), 0x3a, 0x20),
-						Options: []*ContentOption{
-							{"http_header", ""},
-						},
-					},
-				},
-				PCREs: []*PCRE{
-					{
-						Pattern: []byte(`Host\x3a[^\r\n]*?\.tongji`),
-						Options: []byte("Hi"),
-					},
-				},
 				Tags: map[string]string{
 					"flow":      "to_server,established",
 					"classtype": "trojan-activity",
@@ -901,20 +719,6 @@ func TestParseRule(t *testing.T) {
 						Type:  "url",
 						Value: "www.google.com"},
 				},
-				Contents: Contents{
-					&Content{
-						Pattern: []byte("blah"),
-						Options: []*ContentOption{
-							{"http_uri", ""},
-						},
-					},
-				},
-				PCREs: []*PCRE{
-					{
-						Pattern: []byte("foo.*bar"),
-						Options: []byte("Ui"),
-					},
-				},
 				Tags: map[string]string{
 					"flow":      "to_server,established",
 					"classtype": "trojan-activity",
@@ -953,17 +757,6 @@ func TestParseRule(t *testing.T) {
 						Type:  "url",
 						Value: "doc.emergingthreats.net/2009256"},
 				},
-				Contents: Contents{
-					&Content{
-						Pattern: []byte{0x31, 0xc9, 0xb1, 0xfc, 0x80, 0x73, 0x0c},
-					},
-					&Content{
-						Pattern: []byte{0x43, 0xe2, 0x8b, 0x9f},
-						Options: []*ContentOption{
-							{"distance", "0"},
-						},
-					},
-				},
 				Tags: map[string]string{"flow": "established", "classtype": "shellcode-detect"},
 				Metas: Metadatas{
 					&Metadata{Key: "created_at", Value: "2010_07_30"},
@@ -999,38 +792,7 @@ func TestParseRule(t *testing.T) {
 				SID:         2025692,
 				Revision:    2,
 				Description: "ET CURRENT_EVENTS Chase Account Phish Landing Oct 22",
-				Contents: Contents{
-					&Content{
-						Pattern:      []byte("<title>Sign in</title>"),
-						DataPosition: fileData,
-					},
-					&Content{
-						Pattern:      []byte("name=chalbhai"),
-						DataPosition: fileData,
-						Options: []*ContentOption{
-							{"nocase", ""},
-							{"distance", "0"},
-						},
-						FastPattern: FastPattern{Enabled: true},
-					},
-					&Content{
-						Pattern:      []byte{0x72, 0x65, 0x71, 0x75, 0x69, 0x72, 0x65, 0x64, 0x20, 0x74, 0x69, 0x74, 0x6c, 0x65, 0x3d, 0x22, 0x50, 0x6c, 0x65, 0x61, 0x73, 0x65, 0x20, 0x45, 0x6e, 0x74, 0x65, 0x72, 0x20, 0x52, 0x69, 0x67, 0x68, 0x74, 0x20, 0x56, 0x61, 0x6c, 0x75, 0x65, 0x22},
-						DataPosition: fileData,
-						Options: []*ContentOption{
-							{"nocase", ""},
-							{"distance", "0"},
-						},
-					},
-					&Content{
-						Pattern:      []byte{0x72, 0x65, 0x71, 0x75, 0x69, 0x72, 0x65, 0x64, 0x20, 0x74, 0x69, 0x74, 0x6c, 0x65, 0x3d, 0x22, 0x50, 0x6c, 0x65, 0x61, 0x73, 0x65, 0x20, 0x45, 0x6e, 0x74, 0x65, 0x72, 0x20, 0x52, 0x69, 0x67, 0x68, 0x74, 0x20, 0x56, 0x61, 0x6c, 0x75, 0x65, 0x22},
-						DataPosition: fileData,
-						Options: []*ContentOption{
-							{"nocase", ""},
-							{"distance", "0"},
-						},
-					},
-				},
-				Tags: map[string]string{"flow": "established,from_server", "classtype": "trojan-activity"},
+				Tags:        map[string]string{"flow": "established,from_server", "classtype": "trojan-activity"},
 				Metas: Metadatas{
 					&Metadata{Key: "former_category", Value: "CURRENT_EVENTS"},
 					&Metadata{Key: "created_at", Value: "2015_10_22"},
@@ -1086,13 +848,6 @@ func TestParseRule(t *testing.T) {
 				SID:         12345,
 				Revision:    1,
 				Description: "Negated PCRE",
-				PCREs: []*PCRE{
-					{
-						Pattern: []byte("foo.*bar"),
-						Negate:  true,
-						Options: []byte("Ui"),
-					},
-				},
 				Matchers: []orderedMatcher{
 					&PCRE{
 						Pattern: []byte("foo.*bar"),
@@ -1119,12 +874,6 @@ func TestParseRule(t *testing.T) {
 				SID:         12345,
 				Revision:    1,
 				Description: "PCRE with quote",
-				PCREs: []*PCRE{
-					{
-						Pattern: []byte(`=[."]\w{8}\.jar`),
-						Options: []byte("Hi"),
-					},
-				},
 				Matchers: []orderedMatcher{
 					&PCRE{
 						Pattern: []byte(`=[."]\w{8}\.jar`),
@@ -1150,26 +899,6 @@ func TestParseRule(t *testing.T) {
 				SID:         42,
 				Revision:    1,
 				Description: "byte_extract",
-				Contents: Contents{
-					&Content{
-						Pattern: []byte{0xff, 0xfe},
-					},
-					&Content{
-						Pattern: []byte{0x55, 0x04, 0x0A, 0x0C, 0x0C},
-						Options: []*ContentOption{
-							{"distance", "3"},
-							{"within", "Certs.len"},
-						},
-					},
-				},
-				ByteMatchers: []*ByteMatch{
-					{
-						Kind:     bExtract,
-						NumBytes: 3,
-						Variable: "Certs.len",
-						Options:  []string{"relative", "little"},
-					},
-				},
 				Matchers: []orderedMatcher{
 					&Content{
 						Pattern: []byte{0xff, 0xfe},
@@ -1207,21 +936,6 @@ func TestParseRule(t *testing.T) {
 				SID:         42,
 				Revision:    1,
 				Description: "byte_test",
-				Contents: Contents{
-					&Content{
-						Pattern: []byte{0xff, 0xfe},
-					},
-				},
-				ByteMatchers: []*ByteMatch{
-					{
-						Kind:     bTest,
-						NumBytes: 5,
-						Operator: "<",
-						Value:    "65537",
-						Offset:   0,
-						Options:  []string{"relative", "string"},
-					},
-				},
 				Matchers: []orderedMatcher{
 					&Content{
 						Pattern: []byte{0xff, 0xfe},
@@ -1254,19 +968,6 @@ func TestParseRule(t *testing.T) {
 				SID:         42,
 				Revision:    1,
 				Description: "byte_jump",
-				Contents: Contents{
-					&Content{
-						Pattern: []byte{0xff, 0xfe},
-					},
-				},
-				ByteMatchers: []*ByteMatch{
-					{
-						Kind:     bJump,
-						NumBytes: 4,
-						Offset:   0,
-						Options:  []string{"relative", "little", "post_offset -1"},
-					},
-				},
 				Matchers: []orderedMatcher{
 					&Content{
 						Pattern: []byte{0xff, 0xfe},
@@ -1297,28 +998,6 @@ func TestParseRule(t *testing.T) {
 				SID:         42,
 				Revision:    1,
 				Description: "isdataat",
-				Contents: Contents{
-					&Content{
-						Pattern: []byte("aabb"),
-						Options: []*ContentOption{
-							{"depth", "4"},
-						},
-					},
-				},
-				ByteMatchers: []*ByteMatch{
-					{
-						Kind:     bJump,
-						NumBytes: 2,
-						Offset:   3,
-						Options:  []string{"post_offset -1"},
-					},
-					{
-						Kind:     isDataAt,
-						Negate:   true,
-						NumBytes: 2,
-						Options:  []string{"relative"},
-					},
-				},
 				Matchers: []orderedMatcher{
 					&Content{
 						Pattern: []byte("aabb"),
@@ -1357,11 +1036,6 @@ func TestParseRule(t *testing.T) {
 				SID:         12345,
 				Revision:    2,
 				Description: "ending backslash rule",
-				Contents: Contents{
-					&Content{
-						Pattern: []byte{0x66, 0x6f, 0x6f, 0x5c},
-					},
-				},
 				Matchers: []orderedMatcher{
 					&Content{
 						Pattern: []byte{0x66, 0x6f, 0x6f, 0x5c},
@@ -1385,20 +1059,6 @@ func TestParseRule(t *testing.T) {
 				SID:         1,
 				Revision:    1,
 				Description: "check order",
-				Contents: Contents{
-					&Content{
-						Pattern: []byte("1"),
-					},
-					&Content{
-						Pattern: []byte("2"),
-					},
-				},
-				PCREs: []*PCRE{
-					{
-						Pattern: []byte(`this.*`),
-						Options: []byte("R"),
-					},
-				},
 				Matchers: []orderedMatcher{
 					&Content{
 						Pattern: []byte("1"),
@@ -1433,14 +1093,6 @@ func TestParseRule(t *testing.T) {
 				Tags: map[string]string{
 					"flow":      "to_server,established",
 					"classtype": "test_page",
-				},
-				Contents: Contents{
-					&Content{
-						Pattern: []byte("testflowbits"),
-						Options: []*ContentOption{
-							{"http_uri", ""},
-						},
-					},
 				},
 				Flowbits: []*Flowbit{
 					{

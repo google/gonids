@@ -44,7 +44,7 @@ func TestShouldBeHTTP(t *testing.T) {
 					Nets:  []string{"$EXTERNAL_NET"},
 					Ports: []string{"$HTTP_PORTS"},
 				},
-				Contents: Contents{
+				Matchers: []orderedMatcher{
 					&Content{
 						Pattern: []byte("AA"),
 						Options: []*ContentOption{
@@ -67,7 +67,7 @@ func TestShouldBeHTTP(t *testing.T) {
 					Nets:  []string{"$EXTERNAL_NET"},
 					Ports: []string{"$HTTP_PORTS"},
 				},
-				Contents: Contents{
+				Matchers: []orderedMatcher{
 					&Content{
 						DataPosition: httpProtocol,
 						Pattern:      []byte("AA"),

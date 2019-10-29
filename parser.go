@@ -75,6 +75,67 @@ func parsePCRE(s string) (*PCRE, error) {
 	}, nil
 }
 
+// parseLenMatch parses the a LenMatch (like urilen).
+func parseLenMatch(s string) (*LenMatch, error) {
+	m := new(LenMatch)
+	switch {
+	// Simple case, no operators.
+	case !strings.ContainsAny(s, "><"):
+		// Ignore options after ','.
+		numTmp := strings.Split(s, ",")[0]
+		num, err := strconv.Atoi(strings.TrimSpace(numTmp))
+		if err != nil {
+			return nil, fmt.Errorf("%v is not an integer", s)
+		}
+		m.Num = num
+
+	// Leading operator, single number.
+	case strings.HasPrefix(s, ">") || strings.HasPrefix(s, "<"):
+		m.Operator = s[0:1]
+		// Strip leading < or >.
+		numTmp := strings.TrimLeft(s, "><")
+		// Ignore options after ','.
+		numTmp = strings.Split(numTmp, ",")[0]
+		num, err := strconv.Atoi(strings.TrimSpace(numTmp))
+		if err != nil {
+			return nil, fmt.Errorf("%v is not an integer", s)
+		}
+		m.Num = num
+
+	// Min/Max center operator.
+	case strings.Contains(s, "<>"):
+		m.Operator = "<>"
+		parts := strings.Split(s, "<>")
+		if len(parts) != 2 {
+			return nil, fmt.Errorf("must have exactly 2 parts for min/max operator. got %d", len(parts))
+		}
+		var min, max int
+		var err error
+		min, err = strconv.Atoi(strings.TrimSpace(parts[0]))
+		if err != nil {
+			return nil, fmt.Errorf("%v is not an integer", strings.TrimSpace(parts[0]))
+		}
+		maxTmp := strings.Split(parts[1], ",")[0]
+		max, err = strconv.Atoi(strings.TrimSpace(maxTmp))
+		if err != nil {
+			return nil, fmt.Errorf("%v is not an integer", strings.TrimSpace(maxTmp))
+		}
+		// Do stuff to handle options here.
+		m.Min = min
+		m.Max = max
+	}
+
+	// Parse options:
+	if strings.Contains(s, ",") {
+		opts := strings.Split(s, ",")[1:]
+		for i, o := range opts {
+			opts[i] = strings.TrimSpace(o)
+		}
+		m.Options = opts
+	}
+	return m, nil
+}
+
 func unquote(s string) string {
 	if strings.IndexByte(s, '"') < 0 {
 		return s
@@ -436,66 +497,16 @@ func (r *Rule) option(key item, l *lexer) error {
 
 		r.Matchers = append(r.Matchers, b)
 	case inSlice(key.value, allLenMatchTypeNames()):
-		// TODO: Factor out into unit testable function.
-		// TODO: Add unit tests for each state, and each state with options.
-		m := new(LenMatch)
 		k, err := lenMatcher(key.value)
 		if err != nil {
 			return fmt.Errorf("%s is not a support lenMatch keyword", key.value)
 		}
-		m.Kind = k
-
 		nextItem := l.nextItem()
-		switch {
-		// Simple case, no operators.
-		case !strings.ContainsAny(nextItem.value, "><"):
-			// Ignore options after ','.
-			numTmp := strings.Split(nextItem.value, ",")[0]
-			num, err := strconv.Atoi(strings.TrimSpace(numTmp))
-			if err != nil {
-				return fmt.Errorf("%v is not an integer", key.value)
-			}
-			m.Num = num
-
-		// Leading operator, single number.
-		case strings.HasPrefix(nextItem.value, ">") || strings.HasPrefix(nextItem.value, "<"):
-			m.Operator = nextItem.value[0:1]
-			// Strip leading < or >.
-			numTmp := strings.TrimLeft(nextItem.value, "><")
-			// Ignore options after ','.
-			numTmp = strings.Split(numTmp, ",")[0]
-			num, err := strconv.Atoi(strings.TrimSpace(numTmp))
-			if err != nil {
-				return fmt.Errorf("%v is not an integer", key.value)
-			}
-			m.Num = num
-
-		// Min/Max center operator.
-		case strings.Contains(nextItem.value, "<>"):
-			m.Operator = "<>"
-			parts := strings.Split(nextItem.value, "<>")
-			if len(parts) != 2 {
-				return fmt.Errorf("must have exactly 2 parts for min/max operator. got %d", len(parts))
-			}
-			var min, max int
-			var err error
-			min, err = strconv.Atoi(strings.TrimSpace(parts[0]))
-			if err != nil {
-				return fmt.Errorf("%v is not an integer", strings.TrimSpace(parts[0]))
-			}
-			maxTmp := strings.Split(parts[1], ",")[0]
-			max, err = strconv.Atoi(strings.TrimSpace(maxTmp))
-			if err != nil {
-				return fmt.Errorf("%v is not an integer", strings.TrimSpace(maxTmp))
-			}
-			// Do stuff to handle options here.
-			m.Min = min
-			m.Max = max
+		m, err := parseLenMatch(nextItem.value)
+		if err != nil {
+			return fmt.Errorf("could not parse LenMatch: %v", err)
 		}
-		// Parse options:
-		if strings.Contains(nextItem.value, ",") {
-			m.Options = strings.Split(nextItem.value, ",")[1:]
-		}
+		m.Kind = k
 		r.LenMatchers = append(r.LenMatchers, m)
 	case key.value == "flowbits":
 		nextItem := l.nextItem()

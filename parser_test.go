@@ -47,6 +47,109 @@ func TestParseContent(t *testing.T) {
 	}
 }
 
+func TestParseLenMatch(t *testing.T) {
+	for _, tt := range []struct {
+		name    string
+		input   string
+		want    *LenMatch
+		wantErr bool
+	}{
+		{
+			name:  "basic num",
+			input: "6",
+			want: &LenMatch{
+				Num: 6,
+			},
+		},
+		{
+			name:  "less than",
+			input: "<6",
+			want: &LenMatch{
+				Num:      6,
+				Operator: "<",
+			},
+		},
+		{
+			name:  "greater than",
+			input: ">6",
+			want: &LenMatch{
+				Num:      6,
+				Operator: ">",
+			},
+		},
+		{
+			name:  "range",
+			input: "4<>6",
+			want: &LenMatch{
+				Min:      4,
+				Max:      6,
+				Operator: "<>",
+			},
+		},
+		{
+			name:  "basic num, option",
+			input: "6,raw",
+			want: &LenMatch{
+				Num:     6,
+				Options: []string{"raw"},
+			},
+		},
+		{
+			name:  "less than, option",
+			input: "<6,raw",
+			want: &LenMatch{
+				Num:      6,
+				Operator: "<",
+				Options:  []string{"raw"},
+			},
+		},
+		{
+			name:  "greater than, option",
+			input: ">6,raw",
+			want: &LenMatch{
+				Num:      6,
+				Operator: ">",
+				Options:  []string{"raw"},
+			},
+		},
+		{
+			name:  "range, option",
+			input: "4<>6,raw",
+			want: &LenMatch{
+				Min:      4,
+				Max:      6,
+				Operator: "<>",
+				Options:  []string{"raw"},
+			},
+		},
+		{
+			name:  "range, option with spaces",
+			input: "4<>6,    raw",
+			want: &LenMatch{
+				Min:      4,
+				Max:      6,
+				Operator: "<>",
+				Options:  []string{"raw"},
+			},
+		},
+		{
+			name:  "range, multi-option with spaces",
+			input: "4<>6,    raw,  foo , bar",
+			want: &LenMatch{
+				Min:      4,
+				Max:      6,
+				Operator: "<>",
+				Options:  []string{"raw", "foo", "bar"},
+			},
+		},
+	} {
+		got, err := parseLenMatch(tt.input)
+		if !reflect.DeepEqual(got, tt.want) || (err != nil) != tt.wantErr {
+			t.Fatalf("%s: got %v,%v; expected %v,%v", tt.name, got, err, tt.want, tt.wantErr)
+		}
+	}
+}
+
 func TestParseRule(t *testing.T) {
 	for _, tt := range []struct {
 		name    string

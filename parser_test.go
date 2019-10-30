@@ -51,20 +51,25 @@ func TestParseLenMatch(t *testing.T) {
 	for _, tt := range []struct {
 		name    string
 		input   string
+		kind    lenMatchType
 		want    *LenMatch
 		wantErr bool
 	}{
 		{
 			name:  "basic num",
 			input: "6",
+			kind:  uriLen,
 			want: &LenMatch{
-				Num: 6,
+				Kind: uriLen,
+				Num:  6,
 			},
 		},
 		{
 			name:  "less than",
 			input: "<6",
+			kind:  uriLen,
 			want: &LenMatch{
+				Kind:     uriLen,
 				Num:      6,
 				Operator: "<",
 			},
@@ -72,7 +77,9 @@ func TestParseLenMatch(t *testing.T) {
 		{
 			name:  "greater than",
 			input: ">6",
+			kind:  uriLen,
 			want: &LenMatch{
+				Kind:     uriLen,
 				Num:      6,
 				Operator: ">",
 			},
@@ -80,7 +87,9 @@ func TestParseLenMatch(t *testing.T) {
 		{
 			name:  "range",
 			input: "4<>6",
+			kind:  uriLen,
 			want: &LenMatch{
+				Kind:     uriLen,
 				Min:      4,
 				Max:      6,
 				Operator: "<>",
@@ -89,7 +98,9 @@ func TestParseLenMatch(t *testing.T) {
 		{
 			name:  "basic num, option",
 			input: "6,raw",
+			kind:  uriLen,
 			want: &LenMatch{
+				Kind:    uriLen,
 				Num:     6,
 				Options: []string{"raw"},
 			},
@@ -97,7 +108,9 @@ func TestParseLenMatch(t *testing.T) {
 		{
 			name:  "less than, option",
 			input: "<6,raw",
+			kind:  uriLen,
 			want: &LenMatch{
+				Kind:     uriLen,
 				Num:      6,
 				Operator: "<",
 				Options:  []string{"raw"},
@@ -106,7 +119,9 @@ func TestParseLenMatch(t *testing.T) {
 		{
 			name:  "greater than, option",
 			input: ">6,raw",
+			kind:  uriLen,
 			want: &LenMatch{
+				Kind:     uriLen,
 				Num:      6,
 				Operator: ">",
 				Options:  []string{"raw"},
@@ -115,7 +130,9 @@ func TestParseLenMatch(t *testing.T) {
 		{
 			name:  "range, option",
 			input: "4<>6,raw",
+			kind:  uriLen,
 			want: &LenMatch{
+				Kind:     uriLen,
 				Min:      4,
 				Max:      6,
 				Operator: "<>",
@@ -125,7 +142,9 @@ func TestParseLenMatch(t *testing.T) {
 		{
 			name:  "range, option with spaces",
 			input: "4<>6,    raw",
+			kind:  uriLen,
 			want: &LenMatch{
+				Kind:     uriLen,
 				Min:      4,
 				Max:      6,
 				Operator: "<>",
@@ -135,7 +154,9 @@ func TestParseLenMatch(t *testing.T) {
 		{
 			name:  "range, multi-option with spaces",
 			input: "4<>6,    raw,  foo , bar",
+			kind:  uriLen,
 			want: &LenMatch{
+				Kind:     uriLen,
 				Min:      4,
 				Max:      6,
 				Operator: "<>",
@@ -143,7 +164,7 @@ func TestParseLenMatch(t *testing.T) {
 			},
 		},
 	} {
-		got, err := parseLenMatch(tt.input)
+		got, err := parseLenMatch(tt.kind, tt.input)
 		if !reflect.DeepEqual(got, tt.want) || (err != nil) != tt.wantErr {
 			t.Fatalf("%s: got %v,%v; expected %v,%v", tt.name, got, err, tt.want, tt.wantErr)
 		}

@@ -76,8 +76,9 @@ func parsePCRE(s string) (*PCRE, error) {
 }
 
 // parseLenMatch parses the a LenMatch (like urilen).
-func parseLenMatch(s string) (*LenMatch, error) {
+func parseLenMatch(k lenMatchType, s string) (*LenMatch, error) {
 	m := new(LenMatch)
+	m.Kind = k
 	switch {
 	// Simple case, no operators.
 	case !strings.ContainsAny(s, "><"):
@@ -502,11 +503,10 @@ func (r *Rule) option(key item, l *lexer) error {
 			return fmt.Errorf("%s is not a support lenMatch keyword", key.value)
 		}
 		nextItem := l.nextItem()
-		m, err := parseLenMatch(nextItem.value)
+		m, err := parseLenMatch(k, nextItem.value)
 		if err != nil {
 			return fmt.Errorf("could not parse LenMatch: %v", err)
 		}
-		m.Kind = k
 		r.LenMatchers = append(r.LenMatchers, m)
 	case key.value == "flowbits":
 		nextItem := l.nextItem()

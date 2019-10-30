@@ -171,6 +171,108 @@ func TestParseLenMatch(t *testing.T) {
 	}
 }
 
+func TestParseByteMatch(t *testing.T) {
+	for _, tt := range []struct {
+		name    string
+		input   string
+		kind    byteMatchType
+		want    *ByteMatch
+		wantErr bool
+	}{
+		{
+			name:  "basic byte_extract",
+			input: "3,0,Certs.len",
+			kind:  bExtract,
+			want: &ByteMatch{
+				Kind:     bExtract,
+				NumBytes: 3,
+				Variable: "Certs.len",
+			},
+		},
+		{
+			name:  "byte_extract with options",
+			input: "3,0,Certs.len, relative ,little",
+			kind:  bExtract,
+			want: &ByteMatch{
+				Kind:     bExtract,
+				NumBytes: 3,
+				Variable: "Certs.len",
+				Options:  []string{"relative", "little"},
+			},
+		},
+		{
+			name:  "basic byte_jump",
+			input: "3,0",
+			kind:  bJump,
+			want: &ByteMatch{
+				Kind:     bJump,
+				NumBytes: 3,
+				Offset:   0,
+			},
+		},
+		{
+			name:  "byte_jump with options",
+			input: "3,0, relative, little",
+			kind:  bJump,
+			want: &ByteMatch{
+				Kind:     bJump,
+				NumBytes: 3,
+				Offset:   0,
+				Options:  []string{"relative", "little"},
+			},
+		},
+		{
+			name:  "basic byte_test",
+			input: "2,=,0x01,0",
+			kind:  bTest,
+			want: &ByteMatch{
+				Kind:     bTest,
+				NumBytes: 2,
+				Operator: "=",
+				Offset:   0,
+				Value:    "0x01",
+			},
+		},
+		{
+			name:  "byte_test with options",
+			input: "4,=,1337,1,relative,string,dec",
+			kind:  bTest,
+			want: &ByteMatch{
+				Kind:     bTest,
+				NumBytes: 4,
+				Operator: "=",
+				Value:    "1337",
+				Offset:   1,
+				Options:  []string{"relative", "string", "dec"},
+			},
+		},
+		{
+			name:  "isdataat",
+			input: "4",
+			kind:  isDataAt,
+			want: &ByteMatch{
+				Kind:     isDataAt,
+				NumBytes: 4,
+			},
+		},
+		{
+			name:  "isdataat with options",
+			input: "4,relative",
+			kind:  isDataAt,
+			want: &ByteMatch{
+				Kind:     isDataAt,
+				NumBytes: 4,
+				Options:  []string{"relative"},
+			},
+		},
+	} {
+		got, err := parseByteMatch(tt.kind, tt.input)
+		if !reflect.DeepEqual(got, tt.want) || (err != nil) != tt.wantErr {
+			t.Fatalf("%s: got %v,%v; expected %v,%v", tt.name, got, err, tt.want, tt.wantErr)
+		}
+	}
+}
+
 func TestParseRule(t *testing.T) {
 	for _, tt := range []struct {
 		name    string

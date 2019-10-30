@@ -110,3 +110,21 @@ func (r *Rule) ExpensivePCRE() bool {
 	// Don't flag a rule if we haven't defined a condition that's interesting.
 	return false
 }
+
+// SnortHTTPHeader returns true if a content contains double CRLF at the end.
+func (r *Rule) SnortHTTPHeader() bool {
+	cs := r.Contents()
+	if len(cs) < 1 {
+		return false
+	}
+	for _, c := range cs {
+		for _, o := range c.Options {
+			if o.Name == "http_header" {
+				if strings.HasSuffix(string(c.Pattern), "\r\n\r\n") {
+					return true
+				}
+			}
+		}
+	}
+	return false
+}

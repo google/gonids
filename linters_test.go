@@ -275,3 +275,116 @@ func TestExpensivePCRE(t *testing.T) {
 		}
 	}
 }
+
+func TestSnortHTTPHeader(t *testing.T) {
+	for _, tt := range []struct {
+		name  string
+		input *Rule
+		want  bool
+	}{
+		{
+			name: "has trailing CRLF CRLF",
+			input: &Rule{
+				Protocol: "http",
+				Source: Network{
+					Nets:  []string{"$HOME_NET"},
+					Ports: []string{"any"},
+				},
+				Destination: Network{
+					Nets:  []string{"$EXTERNAL_NET"},
+					Ports: []string{"$HTTP_PORTS"},
+				},
+				Matchers: []orderedMatcher{
+					&Content{
+						Pattern: []byte("AAAAAAAAAA\r\n\r\n"),
+						Options: []*ContentOption{
+							{"http_header", ""},
+						},
+					},
+				},
+			},
+			want: true,
+		},
+		{
+			name: "multiple content trailing CRLF CRLF",
+			input: &Rule{
+				Protocol: "http",
+				Source: Network{
+					Nets:  []string{"$HOME_NET"},
+					Ports: []string{"any"},
+				},
+				Destination: Network{
+					Nets:  []string{"$EXTERNAL_NET"},
+					Ports: []string{"$HTTP_PORTS"},
+				},
+				Matchers: []orderedMatcher{
+					&Content{
+						Pattern: []byte("BBBBBB"),
+						Options: []*ContentOption{
+							{"http_header", ""},
+						},
+					},
+					&Content{
+						Pattern: []byte("AAAAAAAAAA\r\n\r\n"),
+						Options: []*ContentOption{
+							{"http_header", ""},
+						},
+					},
+				},
+			},
+			want: true,
+		},
+		{
+			name: "no trailing CRLF",
+			input: &Rule{
+				Protocol: "http",
+				Source: Network{
+					Nets:  []string{"$HOME_NET"},
+					Ports: []string{"any"},
+				},
+				Destination: Network{
+					Nets:  []string{"$EXTERNAL_NET"},
+					Ports: []string{"$HTTP_PORTS"},
+				},
+				Matchers: []orderedMatcher{
+					&Content{
+						Pattern: []byte("BBBBBB"),
+						Options: []*ContentOption{
+							{"http_header", ""},
+						},
+					},
+				},
+			},
+			want: false,
+		},
+		{
+			name: "one trailing CRLF",
+			input: &Rule{
+				Protocol: "http",
+				Source: Network{
+					Nets:  []string{"$HOME_NET"},
+					Ports: []string{"any"},
+				},
+				Destination: Network{
+					Nets:  []string{"$EXTERNAL_NET"},
+					Ports: []string{"$HTTP_PORTS"},
+				},
+				Matchers: []orderedMatcher{
+					&Content{
+						Pattern: []byte("BBBBBB\r\n"),
+						Options: []*ContentOption{
+							{"http_header", ""},
+						},
+					},
+				},
+			},
+			want: false,
+		},
+	} {
+		got := tt.input.SnortHTTPHeader()
+		// Expected modification.
+		if got != tt.want {
+			t.Fatalf("%s: got %v; want %v", tt.name, got, tt.want)
+		}
+	}
+}

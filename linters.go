@@ -40,13 +40,13 @@ func (r *Rule) ShouldBeHTTP() bool {
 }
 
 // TODO: See if ET folks have any data around this.
-// Minimum lenght of a content to be considered safe for use with a PCRE.
+// Minimum length of a content to be considered safe for use with a PCRE.
 const minPCREContentLen = 5
 
 // Some of these may be caught by min length check, but including for completeness.
 // All lower case for case insenstive checks.
 // Many of this come from: https://github.com/EmergingThreats/IDSDeathBlossom/blob/master/config/fpblacklist.txt
-var commonStrings = []string{"get",
+var bannedContents = []string{"get",
 	"post",
 	"/",
 	"user-agent",
@@ -99,7 +99,7 @@ func (r *Rule) ExpensivePCRE() bool {
 	// If all content matches are common strings, also not good.
 	common := true
 	for _, c := range cs {
-		if !inSlice(strings.ToLower(strings.Trim(string(c.Pattern), "\r\n :/?")), commonStrings) {
+		if !inSlice(strings.ToLower(strings.Trim(string(c.Pattern), "\r\n :/?")), bannedContents) {
 			return false
 		}
 	}

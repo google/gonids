@@ -75,7 +75,7 @@ func parsePCRE(s string) (*PCRE, error) {
 	}, nil
 }
 
-// parseLenMatch parses the a LenMatch (like urilen).
+// parseLenMatch parses a LenMatch (like urilen).
 func parseLenMatch(k lenMatchType, s string) (*LenMatch, error) {
 	m := new(LenMatch)
 	m.Kind = k
@@ -135,6 +135,66 @@ func parseLenMatch(k lenMatchType, s string) (*LenMatch, error) {
 		m.Options = opts
 	}
 	return m, nil
+}
+
+// TODO: all the unit tests.
+// parseByteMatch parses a ByteMatch.
+func parseByteMatch(k byteMatchType, s string) (*ByteMatch, error) {
+	b := new(ByteMatch)
+	b.Kind = k
+
+	parts := strings.Split(s, ",")
+
+	// Num bytes is required for all byteMatchType keywords.
+	if len(parts) < 1 {
+		return nil, fmt.Errorf("%s keyword has %d parts", s, len(parts))
+	}
+
+	n, err := strconv.Atoi(strings.TrimSpace(parts[0]))
+	if err != nil {
+		return nil, fmt.Errorf("number of bytes is not an int: %s; %s", parts[0], err)
+	}
+	b.NumBytes = n
+
+	if len(parts) < b.Kind.minLen() {
+		return nil, fmt.Errorf("invalid %s length: %d", b.Kind, len(parts))
+	}
+
+	if k == bExtract || k == bJump {
+		// Parse offset.
+		offset, err := strconv.Atoi(strings.TrimSpace(parts[1]))
+		if err != nil {
+			return nil, fmt.Errorf("%s offset is not an int: %v; %s", b.Kind, parts[1], err)
+		}
+		b.Offset = offset
+	}
+
+	if k == bExtract {
+		// Parse variable name.
+		name := parts[2]
+		b.Variable = name
+	}
+
+	if k == bTest {
+		// Parse operator.
+		b.Operator = strings.TrimSpace(parts[1])
+		// Parse value. Can use a variable.
+		b.Value = strings.TrimSpace(parts[2])
+		// Parse offset.
+		offset, err := strconv.Atoi(strings.TrimSpace(parts[3]))
+		if err != nil {
+			return nil, fmt.Errorf("%s offset is not an int: %v; %s", b.Kind, parts[1], err)
+		}
+		b.Offset = offset
+	}
+
+	// The rest of the options.
+	for i, l := b.Kind.minLen(), len(parts); i < l; i++ {
+		parts[i] = strings.TrimSpace(parts[i])
+		b.Options = append(b.Options, parts[i])
+	}
+
+	return b, nil
 }
 
 func unquote(s string) string {
@@ -431,70 +491,24 @@ func (r *Rule) option(key item, l *lexer) error {
 			return fmt.Errorf("invalid type %q for option content", nextItem.typ)
 		}
 	case inSlice(key.value, allbyteMatchTypeNames()):
-		// TODO: Split this out into a unit-testable function.
-		b := new(ByteMatch)
 		k, err := byteMatcher(key.value)
 		if err != nil {
 			return fmt.Errorf("%s is not a supported byteMatchType keyword", key.value)
 		}
-		b.Kind = k
 
+		// Handle negation logic here, don't want to pass lexer to parseByteMatch.
 		nextItem := l.nextItem()
-		if b.Kind == isDataAt && nextItem.typ == itemNot {
-			b.Negate = true
+		var negate bool
+		if k == isDataAt && nextItem.typ == itemNot {
+			negate = true
 			nextItem = l.nextItem()
 		}
-
-		parts := strings.Split(nextItem.value, ",")
-
-		// Num bytes is required for all byteMatchType keywords.
-		if len(parts) < 1 {
-			fmt.Errorf("%s keyword has %d parts", key.value, len(parts))
-		}
-
-		n, err := strconv.Atoi(strings.TrimSpace(parts[0]))
+		// How to handle the 'negate' bit?
+		b, err := parseByteMatch(k, nextItem.value)
 		if err != nil {
-			return fmt.Errorf("number of bytes is not an int: %s; %s", parts[0], err)
+			return fmt.Errorf("could not parse byteMatch: %v", err)
 		}
-		b.NumBytes = n
-
-		if len(parts) < b.Kind.minLen() {
-			return fmt.Errorf("invalid %s length: %d", b.Kind, len(parts))
-		}
-
-		if key.value == bExtract.String() || key.value == bJump.String() {
-			// Parse offset.
-			offset, err := strconv.Atoi(strings.TrimSpace(parts[1]))
-			if err != nil {
-				return fmt.Errorf("%s offset is not an int: %v; %s", b.Kind, parts[1], err)
-			}
-			b.Offset = offset
-		}
-
-		if key.value == bExtract.String() {
-			// Parse variable name.
-			name := parts[2]
-			b.Variable = name
-		}
-
-		if key.value == bTest.String() {
-			// Parse operator.
-			b.Operator = strings.TrimSpace(parts[1])
-			// Parse value. Can use a variable.
-			b.Value = strings.TrimSpace(parts[2])
-			// Parse offset.
-			offset, err := strconv.Atoi(strings.TrimSpace(parts[3]))
-			if err != nil {
-				return fmt.Errorf("%s offset is not an int: %v; %s", b.Kind, parts[1], err)
-			}
-			b.Offset = offset
-		}
-
-		// The rest of the options.
-		for i, l := b.Kind.minLen(), len(parts); i < l; i++ {
-			parts[i] = strings.TrimSpace(parts[i])
-			b.Options = append(b.Options, parts[i])
-		}
+		b.Negate = negate
 
 		r.Matchers = append(r.Matchers, b)
 	case inSlice(key.value, allLenMatchTypeNames()):

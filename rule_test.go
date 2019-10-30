@@ -872,3 +872,185 @@ func TestStickyBuffer(t *testing.T) {
 
 	}
 }
+
+func TestInsertMatcher(t *testing.T) {
+	for _, tt := range []struct {
+		name    string
+		input   *Rule
+		matcher orderedMatcher
+		pos     int
+		want    *Rule
+		wantErr bool
+	}{
+		{
+			name: "basic test",
+			input: &Rule{
+				Matchers: []orderedMatcher{
+					&Content{
+						Pattern: []byte("foo"),
+					},
+				},
+			},
+			matcher: &Content{
+				Pattern: []byte("bar"),
+			},
+			pos: 0,
+			want: &Rule{
+				Matchers: []orderedMatcher{
+					&Content{
+						Pattern: []byte("bar"),
+					},
+					&Content{
+						Pattern: []byte("foo"),
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "insert end",
+			input: &Rule{
+				Matchers: []orderedMatcher{
+					&Content{
+						Pattern: []byte("foo"),
+					},
+				},
+			},
+			matcher: &Content{
+				Pattern: []byte("bar"),
+			},
+			pos: 1,
+			want: &Rule{
+				Matchers: []orderedMatcher{
+					&Content{
+						Pattern: []byte("foo"),
+					},
+					&Content{
+						Pattern: []byte("bar"),
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "insert middle",
+			input: &Rule{
+				Matchers: []orderedMatcher{
+					&Content{
+						Pattern: []byte("foo"),
+					},
+					&Content{
+						Pattern: []byte("bar"),
+					},
+				},
+			},
+			matcher: &Content{
+				Pattern: []byte("baz"),
+			},
+			pos: 1,
+			want: &Rule{
+				Matchers: []orderedMatcher{
+					&Content{
+						Pattern: []byte("foo"),
+					},
+					&Content{
+						Pattern: []byte("baz"),
+					},
+					&Content{
+						Pattern: []byte("bar"),
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "insert different type",
+			input: &Rule{
+				Matchers: []orderedMatcher{
+					&Content{
+						Pattern: []byte("foo"),
+					},
+					&Content{
+						Pattern: []byte("bar"),
+					},
+				},
+			},
+			matcher: &ByteMatch{
+				Kind:     isDataAt,
+				Negate:   true,
+				NumBytes: 1,
+			},
+			pos: 1,
+			want: &Rule{
+				Matchers: []orderedMatcher{
+					&Content{
+						Pattern: []byte("foo"),
+					},
+					&ByteMatch{
+						Kind:     isDataAt,
+						Negate:   true,
+						NumBytes: 1,
+					},
+					&Content{
+						Pattern: []byte("bar"),
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "index too small",
+
+			input: &Rule{
+				Matchers: []orderedMatcher{
+					&Content{
+						Pattern: []byte("foo"),
+					},
+				},
+			},
+			matcher: &Content{
+				Pattern: []byte("bar"),
+			},
+			pos: -1,
+			want: &Rule{
+				Matchers: []orderedMatcher{
+					&Content{
+						Pattern: []byte("foo"),
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "index too large",
+
+			input: &Rule{
+				Matchers: []orderedMatcher{
+					&Content{
+						Pattern: []byte("foo"),
+					},
+				},
+			},
+			matcher: &Content{
+				Pattern: []byte("bar"),
+			},
+			pos: 4,
+			want: &Rule{
+				Matchers: []orderedMatcher{
+					&Content{
+						Pattern: []byte("foo"),
+					},
+				},
+			},
+			wantErr: true,
+		},
+	} {
+		gotErr := tt.input.InsertMatcher(tt.matcher, tt.pos)
+		if tt.wantErr != (gotErr != nil) {
+			t.Fatalf("gotErr=%v; wantErr=%v", gotErr != nil, tt.wantErr)
+		}
+		if !reflect.DeepEqual(tt.input, tt.want) {
+			t.Fatalf("got:\n%v\nwant:%v\n", tt.input, tt.want)
+		}
+	}
+}

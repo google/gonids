@@ -137,7 +137,6 @@ func parseLenMatch(k lenMatchType, s string) (*LenMatch, error) {
 	return m, nil
 }
 
-// TODO: all the unit tests.
 // parseByteMatch parses a ByteMatch.
 func parseByteMatch(k byteMatchType, s string) (*ByteMatch, error) {
 	b := new(ByteMatch)

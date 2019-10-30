@@ -793,3 +793,18 @@ func (c *Content) FormatPattern() string {
 	}
 	return buffer.String()
 }
+
+// InsertMatcher will insert an ordered matcher at a position specified.
+func (r *Rule) InsertMatcher(m orderedMatcher, pos int) error {
+	if pos < 0 {
+		return fmt.Errorf("cannot insert matcher, position %d < 0", pos)
+	}
+	if pos > len(r.Matchers) {
+		return fmt.Errorf("cannot insert matcher, position %d > %d", pos, len(r.Matchers))
+	}
+
+	r.Matchers = append(r.Matchers, &Content{})
+	copy(r.Matchers[pos+1:], r.Matchers[pos:])
+	r.Matchers[pos] = m
+	return nil
+}

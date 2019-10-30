@@ -238,6 +238,35 @@ func TestExpensivePCRE(t *testing.T) {
 			},
 			want: true,
 		},
+		{
+			name: "Banned complex content, with long content",
+			input: &Rule{
+				Protocol: "http",
+				Source: Network{
+					Nets:  []string{"$HOME_NET"},
+					Ports: []string{"any"},
+				},
+				Destination: Network{
+					Nets:  []string{"$EXTERNAL_NET"},
+					Ports: []string{"$HTTP_PORTS"},
+				},
+				Matchers: []orderedMatcher{
+					&Content{
+						Pattern: []byte("\r\nUser-Agent: "),
+						Options: []*ContentOption{
+							{"http_header", ""},
+						},
+					},
+					&Content{
+						Pattern: []byte("SuperLongUniqueAwesome"),
+					},
+					&PCRE{
+						Pattern: []byte("f.*bar"),
+					},
+				},
+			},
+			want: false,
+		},
 	} {
 		got := tt.input.ExpensivePCRE()
 		// Expected modification.

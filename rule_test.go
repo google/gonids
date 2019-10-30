@@ -1044,6 +1044,32 @@ func TestInsertMatcher(t *testing.T) {
 			},
 			wantErr: true,
 		},
+		{
+			name: "effectively append",
+
+			input: &Rule{
+				Matchers: []orderedMatcher{
+					&Content{
+						Pattern: []byte("foo"),
+					},
+				},
+			},
+			matcher: &Content{
+				Pattern: []byte("bar"),
+			},
+			pos: 1,
+			want: &Rule{
+				Matchers: []orderedMatcher{
+					&Content{
+						Pattern: []byte("foo"),
+					},
+					&Content{
+						Pattern: []byte("bar"),
+					},
+				},
+			},
+			wantErr: false,
+		},
 	} {
 		gotErr := tt.input.InsertMatcher(tt.matcher, tt.pos)
 		if tt.wantErr != (gotErr != nil) {

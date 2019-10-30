@@ -271,3 +271,117 @@ func TestSnortURILenFix(t *testing.T) {
 		}
 	}
 }
+
+func TestSnortHTTPHeaderFix(t *testing.T) {
+	for _, tt := range []struct {
+		name    string
+		input   *Rule
+		output  *Rule
+		wantMod bool
+	}{
+		{
+			name: "basic test",
+			input: &Rule{
+				Matchers: []orderedMatcher{
+					&Content{
+						Pattern: []byte("foobar\r\n\r\n"),
+						Options: []*ContentOption{
+							{"http_header", ""},
+						},
+					},
+				},
+			},
+			output: &Rule{
+				Matchers: []orderedMatcher{
+					&Content{
+						Pattern: []byte("foobar\r\n"),
+						Options: []*ContentOption{
+							{"http_header", ""},
+						},
+					},
+					&ByteMatch{
+						Kind:     isDataAt,
+						Negate:   true,
+						NumBytes: 1,
+					},
+				},
+				Metas: Metadatas{
+					&Metadata{
+						Key:   "gonids",
+						Value: "snort_http_header"},
+				},
+			},
+
+			wantMod: true,
+		},
+		{
+			name: "insert middle",
+			input: &Rule{
+				Matchers: []orderedMatcher{
+					&Content{
+						Pattern: []byte("foo"),
+						Options: []*ContentOption{
+							{"http_header", ""},
+						},
+					},
+					&Content{
+						Pattern: []byte("bar\r\n\r\n"),
+						Options: []*ContentOption{
+							{"http_header", ""},
+						},
+					},
+					&Content{
+						Pattern: []byte("baz"),
+						Options: []*ContentOption{
+							{"http_header", ""},
+						},
+					},
+				},
+			},
+			output: &Rule{
+				Matchers: []orderedMatcher{
+					&Content{
+						Pattern: []byte("foo"),
+						Options: []*ContentOption{
+							{"http_header", ""},
+						},
+					},
+					&Content{
+						Pattern: []byte("bar\r\n"),
+						Options: []*ContentOption{
+							{"http_header", ""},
+						},
+					},
+					&ByteMatch{
+						Kind:     isDataAt,
+						Negate:   true,
+						NumBytes: 1,
+					},
+					&Content{
+						Pattern: []byte("baz"),
+						Options: []*ContentOption{
+							{"http_header", ""},
+						},
+					},
+				},
+				Metas: Metadatas{
+					&Metadata{
+						Key:   "gonids",
+						Value: "snort_http_header"},
+				},
+			},
+
+			wantMod: true,
+		},
+	} {
+		gotMod := tt.input.SnortHTTPHeaderFix()
+		// Expected modification.
+		if gotMod != tt.wantMod {
+			t.Fatalf("%s: gotMod %v; expected %v", tt.name, gotMod, tt.wantMod)
+		}
+		// Actual modifications correctness.
+		if tt.wantMod && !reflect.DeepEqual(tt.output, tt.input) {
+			t.Fatalf("got:\n%v\nwant:\n%v", tt.input, tt.output)
+		}
+	}
+}

@@ -16,6 +16,7 @@ limitations under the License.
 package gonids
 
 import (
+	"bytes"
 	"strings"
 )
 
@@ -111,18 +112,26 @@ func (r *Rule) ExpensivePCRE() bool {
 	return false
 }
 
-// SnortHTTPHeader returns true if a content contains double CRLF at the end.
+// SnortHTTPHeader returns true if any content contains double CRLF at the end.
 func (r *Rule) SnortHTTPHeader() bool {
 	cs := r.Contents()
 	if len(cs) < 1 {
 		return false
 	}
 	for _, c := range cs {
-		for _, o := range c.Options {
-			if o.Name == "http_header" {
-				if strings.HasSuffix(string(c.Pattern), "\r\n\r\n") {
-					return true
-				}
+		if c.SnortHTTPHeader() {
+			return true
+		}
+	}
+	return false
+}
+
+// SnortHTTPHeader returns true if a specific content contains double CRLF at the end.
+func (c Content) SnortHTTPHeader() bool {
+	for _, o := range c.Options {
+		if o.Name == "http_header" {
+			if bytes.HasSuffix(c.Pattern, []byte("\r\n\r\n")) {
+				return true
 			}
 		}
 	}

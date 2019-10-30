@@ -15,6 +15,10 @@ limitations under the License.
 
 package gonids
 
+import (
+	"bytes"
+)
+
 // OptimizeHTTP tunes an old style rule to leverage port agnostic HTTP detection.
 func (r *Rule) OptimizeHTTP() bool {
 	if !r.ShouldBeHTTP() {
@@ -67,6 +71,29 @@ func (r *Rule) SnortURILenFix() bool {
 	}
 	if modified {
 		r.Metas = append(r.Metas, MetadataModifier("snort_urilen"))
+	}
+	return modified
+}
+
+// SnortHTTPHeaderFix will fix broken http_header matches.
+func (r *Rule) SnortHTTPHeaderFix() bool {
+	var modified bool
+	if !r.SnortHTTPHeader() {
+		return false
+	}
+	for i, m := range r.Matchers {
+		// If this is a content, check it out.
+		if c, ok := m.(*Content); ok {
+			if c.SnortHTTPHeader() {
+				modified = true
+				c.Pattern = bytes.TrimSuffix(c.Pattern, []byte("\r\n"))
+				r.InsertMatcher(&ByteMatch{Kind: isDataAt, Negate: true, NumBytes: 1}, i+1)
+			}
+		}
+	}
+
+	if modified {
+		r.Metas = append(r.Metas, MetadataModifier("snort_http_header"))
 	}
 	return modified
 }

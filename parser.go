@@ -41,6 +41,11 @@ var metaSplitRE = regexp.MustCompile(`,\s*`)
 // encoded content.
 func parseContent(content string) ([]byte, error) {
 	// Decode and replace all occurrences of hexadecimal content.
+	defer func() {
+		if r := recover(); r != nil {
+			return []byte{}, r
+		}
+	}()
 	b := hexRE.ReplaceAllStringFunc(content,
 		func(h string) string {
 			r, err := hex.DecodeString(strings.Replace(strings.Trim(h, "|"), " ", "", -1))

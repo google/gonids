@@ -41,10 +41,10 @@ var metaSplitRE = regexp.MustCompile(`,\s*`)
 // encoded content.
 func parseContent(content string) ([]byte, error) {
 	// Decode and replace all occurrences of hexadecimal content.
+	var errpanic error
 	defer func() {
-		if r := recover(); r != nil {
-			return []byte{}, r
-		}
+		r := recover()
+		errpanic = r
 	}()
 	b := hexRE.ReplaceAllStringFunc(content,
 		func(h string) string {
@@ -54,7 +54,7 @@ func parseContent(content string) ([]byte, error) {
 			}
 			return string(r)
 		})
-	return []byte(b), nil
+	return []byte(b), errpanic
 }
 
 // parsePCRE parses the components of a PCRE. Returns PCRE struct.

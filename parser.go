@@ -44,7 +44,9 @@ func parseContent(content string) ([]byte, error) {
 	var errpanic error
 	defer func() {
 		r := recover()
-		errpanic = r
+		if r != nil {
+			errpanic = fmt.Errorf("recovered from panic: %v", r)
+		}
 	}()
 	b := hexRE.ReplaceAllStringFunc(content,
 		func(h string) string {

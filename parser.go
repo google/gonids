@@ -476,6 +476,8 @@ func (r *Rule) option(key item, l *lexer) error {
 				}
 				length = i
 			}
+		} else if nextItem.typ == itemError {
+			return errors.New(nextItem.value)
 		}
 		lastContent := r.Contents()[len(r.Contents())-1]
 		lastContent.FastPattern = FastPattern{true, only, offset, length}

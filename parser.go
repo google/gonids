@@ -225,7 +225,7 @@ func (r *Rule) comment(key item, l *lexer) error {
 		panic("item is not a comment")
 	}
 	// Pop off all leading # and space, try to parse as rule
-	rule, err := ParseRule(strings.TrimLeft(key.value, "# "))
+	rule, err := ParseRule(strings.TrimLeft(key.value, "# \t"))
 
 	// If there was an error this means the comment is not a rule.
 	if err != nil {

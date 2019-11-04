@@ -173,13 +173,17 @@ func (l *lexer) errorf(format string, args ...interface{}) stateFn {
 }
 
 func (l *lexer) unexpectedEOF() stateFn {
-	l.items <- item{itemError, "unexpected EOF"}
+	close(l.items)
 	return nil
 }
 
 // nextItem returns the next item from the input.
 func (l *lexer) nextItem() item {
-	return <-l.items
+	r, more := <-l.items
+	if !more {
+		return item{itemError, "unexpected EOF"}
+	}
+	return r
 }
 
 // lex initializes and runs a new scanner for the input string.

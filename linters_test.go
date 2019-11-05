@@ -77,8 +77,7 @@ func TestShouldBeHTTP(t *testing.T) {
 			want: true,
 		},
 	} {
-		got := tt.input.OptimizeHTTP()
-		// Expected modification.
+		got := tt.input.ShouldBeHTTP()
 		if got != tt.want {
 			t.Fatalf("%s: got %v; want %v", tt.name, got, tt.want)
 		}
@@ -269,7 +268,6 @@ func TestExpensivePCRE(t *testing.T) {
 		},
 	} {
 		got := tt.input.ExpensivePCRE()
-		// Expected modification.
 		if got != tt.want {
 			t.Fatalf("%s: got %v; want %v", tt.name, got, tt.want)
 		}
@@ -382,7 +380,117 @@ func TestSnortHTTPHeader(t *testing.T) {
 		},
 	} {
 		got := tt.input.SnortHTTPHeader()
-		// Expected modification.
+		if got != tt.want {
+			t.Fatalf("%s: got %v; want %v", tt.name, got, tt.want)
+		}
+	}
+}
+
+func TestNoReferences(t *testing.T) {
+	for _, tt := range []struct {
+		name  string
+		input *Rule
+		want  bool
+	}{
+		{
+			name: "has a reference",
+			input: &Rule{
+				References: []*Reference{
+					{
+						Type:  "md5",
+						Value: "68b329da9893e34099c7d8ad5cb9c940",
+					},
+				},
+			},
+			want: false,
+		},
+		{
+			name: "has multiple reference",
+			input: &Rule{
+				References: []*Reference{
+					{
+						Type:  "md5",
+						Value: "68b329da9893e34099c7d8ad5cb9c940",
+					},
+					{
+						Type:  "md5",
+						Value: "68b329da9893e34099c7d8ad5cb9c941",
+					},
+				},
+			},
+			want: false,
+		},
+		{
+			name: "has no reference",
+			input: &Rule{
+				References: []*Reference{},
+			},
+			want: true,
+		},
+	} {
+		got := tt.input.NoReferences()
+		if got != tt.want {
+			t.Fatalf("%s: got %v; want %v", tt.name, got, tt.want)
+		}
+	}
+}
+
+func TestOnlyShortContents(t *testing.T) {
+	for _, tt := range []struct {
+		name  string
+		input *Rule
+		want  bool
+	}{
+		{
+			name: "long enough content",
+			input: &Rule{
+				Matchers: []orderedMatcher{
+					&Content{
+						Pattern: []byte("AAAAAAAAAA\r\n\r\n"),
+					},
+				},
+			},
+			want: false,
+		},
+		{
+			name: "one long one short",
+			input: &Rule{
+				Matchers: []orderedMatcher{
+					&Content{
+						Pattern: []byte("AAAAAAAAAA\r\n\r\n"),
+					},
+					&Content{
+						Pattern: []byte("AAAA"),
+					},
+				},
+			},
+			want: false,
+		},
+		{
+			name: "short content",
+			input: &Rule{
+				Matchers: []orderedMatcher{
+					&Content{
+						Pattern: []byte("AAAA"),
+					},
+				},
+			},
+			want: true,
+		},
+		{
+			name: "short content and non-content",
+			input: &Rule{
+				Matchers: []orderedMatcher{
+					&Content{
+						Pattern: []byte("AAAA"),
+					},
+					&ByteMatch{},
+				},
+			},
+			want: false,
+		},
+	} {
+		got := tt.input.OnlyShortContents()
 		if got != tt.want {
 			t.Fatalf("%s: got %v; want %v", tt.name, got, tt.want)
 		}

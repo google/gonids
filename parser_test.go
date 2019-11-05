@@ -1376,6 +1376,16 @@ func TestParseRule(t *testing.T) {
 			rule:    `alert tcp $EXTEVNAL_NET any <> $HOME_NET 0 e:misc-activity; sid:t 2010_09_#alert tcp $EXTERNAL_NET any -> $SQL_SERVERS 1433 (msg:"ET EXPLOIT xp_servicecontrol accecs"; flow:to_%erv23, upd)er,established; content:"x|00|p|00|_|00|s|00|e|00|r|00|v|00|i|00|c|00|e|00|c|00|o|00|n|00|t|00|r|00|o|00|l|00|"; nocase; reference:url,doc.emergi`,
 			wantErr: true,
 		},
+		{
+			name:    "incomplete option value",
+			rule:    `alert tcp $EXTERNAL_NET !$HTTP_PORTS -> $HOME_NET any (msg:"ET TROJAN [PTsecurity] pkt checker 1"; flow:established, to_client; dsize:30<>33; stream_size:server,<,35; stream_size:client,<,026; stream_size:server,>,0; stream_size:client,>,30; flowbits:noalert; flowbits:isset,FB180732_0; flowbits:unset, FB1alert tcp $HOME_NET any -> $EXTERNAL_NET ![25,465,587] (msg:"ET TROJAN HOMEUNIX/9002 CnC Beacon"; flow:established,to_server; dsize:48; content:!"|00 00 00|"; offset:1; depth:3;0byte_extract:3,1,xor_key;server,<alert tcp $HOME_NET any -> $EXTERNAL_NET any (msg:"ET TROJAN AtomLogger Exfil via FTP"; flow:established,to_server; content:"Username|3a 20|"; content:"|0d 0a|Machine Name|3a 20|"; distance:0; content:"|0d 0a|Operating System|3a 20|"; distance:0; content:"|0d 0a|IP Address|3a 20|"; distance:0; content:"|0d 0a|Country|3a 20|"; distance:0; content:"|0d 0a|RAM|3a 20|"; distance:0; content:"|0d 0a|Online since|3a 20|"; distance:0; content:"|0d 0a 0d 0a 0d 0a 0d 0a|================================|0d 0a|Keystrokes and Window Lo,35; 3g|0d 0a|"; distan;c s10reated_at 2013154; rev:3; metadata:created_at 26_02_17010_09_23, updated_at 2010_09_2,e/ta:created_at 2010_09_27, updated_a| 2010_09_27;;;;;;;;;;;;;;;;;CritX/FlashPack -EK ;econdary Landing June 28 2014"; flow:established,to_;;;;;;;;;;;;;;2;;;;;;;;;;;;NTS Safe/ta:created_at 2010_09_27, updated_a| 2010_09_27T eck"; dsize:34; content:"|33 33 01 00 00 01 00 00 00 00 00 00 07|counter|05|yadro|02|ru|00 00 01 00 0y -> $HOME_NET 161 (ontent:"public"; fast_pattern:Onldated_a`,
+			wantErr: true,
+		},
+		{
+			name:    "incomplete option value string",
+			rule:    `  ert htt $ET any -> Hnz (mjectatay; tls.fingerprint:"65`,
+			wantErr: true,
+		},
 	} {
 		got, err := ParseRule(tt.rule)
 		if !reflect.DeepEqual(got, tt.want) || (err != nil) != tt.wantErr {

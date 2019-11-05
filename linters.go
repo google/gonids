@@ -137,3 +137,31 @@ func (c Content) SnortHTTPHeader() bool {
 	}
 	return false
 }
+
+// NoReferences returns true if there are no references in the rule.
+func (r *Rule) NoReferences() bool {
+	if len(r.References) == 0 {
+		return true
+	}
+	return false
+}
+
+// Length at which we warn if all matchers are this Contents with length or shorter.
+// Possibly align this with the minPCREContentLength.
+const shortContentLen = 4
+
+// OnlyShortContents returns true if all content matches are very short.
+func (r *Rule) OnlyShortContents() bool {
+	// There are non-Content matches in the rule.
+	cs := r.Contents()
+	if len(r.Matchers) != len(cs) {
+		return false
+	}
+	for _, c := range cs {
+		// Some content is longer than the minimum.
+		if len(c.Pattern) > shortContentLen {
+			return false
+		}
+	}
+	return true
+}

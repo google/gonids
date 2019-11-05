@@ -1376,6 +1376,11 @@ func TestParseRule(t *testing.T) {
 			rule:    `alert tcp $EXTEVNAL_NET any <> $HOME_NET 0 e:misc-activity; sid:t 2010_09_#alert tcp $EXTERNAL_NET any -> $SQL_SERVERS 1433 (msg:"ET EXPLOIT xp_servicecontrol accecs"; flow:to_%erv23, upd)er,established; content:"x|00|p|00|_|00|s|00|e|00|r|00|v|00|i|00|c|00|e|00|c|00|o|00|n|00|t|00|r|00|o|00|l|00|"; nocase; reference:url,doc.emergi`,
 			wantErr: true,
 		},
+		{
+			name:    "fuzzer goroutines sleep",
+			rule:    `  ert htt $ET any -> Hnz (mjectatay; tls.fingerprint:"65`,
+			wantErr: true,
+		},
 	} {
 		got, err := ParseRule(tt.rule)
 		if !reflect.DeepEqual(got, tt.want) || (err != nil) != tt.wantErr {

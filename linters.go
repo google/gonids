@@ -150,7 +150,7 @@ func (r *Rule) NoReferences() bool {
 // Possibly align this with the minPCREContentLength.
 const shortContentLen = 4
 
-// OnlyShortContents returns true if all content matches are very short.
+// OnlyShortContents returns true if all Matchers are Contents and all matches are very short.
 func (r *Rule) OnlyShortContents() bool {
 	// There are non-Content matches in the rule.
 	cs := r.Contents()

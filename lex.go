@@ -227,7 +227,7 @@ func lexRule(l *lexer) stateFn {
 func lexComment(l *lexer) stateFn {
 	for {
 		switch l.next() {
-		case '\n':
+		case '\r', '\n':
 			l.emit(itemComment, false)
 			return lexRule
 		case eof:

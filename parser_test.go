@@ -39,6 +39,11 @@ func TestParseContent(t *testing.T) {
 			input: "A|42 43|D| 45|",
 			want:  []byte("ABCDE"),
 		},
+		{
+			name:  "contains hex pipe",
+			input: "A|7C|B",
+			want:  []byte("A|B"),
+		},
 	} {
 		got, err := parseContent(tt.input)
 		if !reflect.DeepEqual(got, tt.want) || (err != nil) != tt.wantErr {

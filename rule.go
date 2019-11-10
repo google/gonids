@@ -772,7 +772,7 @@ func (c *Content) FormatPattern() string {
 	var buffer bytes.Buffer
 	pipe := false
 	for _, b := range c.Pattern {
-		if b != ' ' && (b > 126 || b < 35 || b == ':' || b == ';') {
+		if b != ' ' && (b > 126 || b < 35 || b == ':' || b == ';' || b == '|') {
 			if !pipe {
 				buffer.WriteByte('|')
 				pipe = true

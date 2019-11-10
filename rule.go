@@ -527,7 +527,7 @@ func (f FastPattern) String() string {
 	}
 
 	// "only" and "chop" modes are mutually exclusive.
-	if f.Offset != 0 && f.Length != 0 {
+	if f.Offset != 0 || f.Length != 0 {
 		s.WriteString(fmt.Sprintf(":%d,%d", f.Offset, f.Length))
 	}
 

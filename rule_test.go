@@ -87,9 +87,16 @@ func TestContentFormatPattern(t *testing.T) {
 		{
 			name: "double backslash",
 			input: &Content{
-				Pattern: []byte(`C|3a|\\WINDOWS\\system32\\`),
+				Pattern: []byte(`C:\\WINDOWS\\system32\\`),
 			},
-			want: `C|3a|\\WINDOWS\\system32\\`,
+			want: `C|3A|\\WINDOWS\\system32\\`,
+		},
+		{
+			name: "content with hex pipe",
+			input: &Content{
+				Pattern: []byte(`C|B`),
+			},
+			want: `C|7C|B`,
 		},
 	} {
 		got := tt.input.FormatPattern()

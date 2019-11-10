@@ -137,6 +137,15 @@ func TestFastPatternString(t *testing.T) {
 			want: "fast_pattern:2,5;",
 		},
 		{
+			name: "fast_pattern:`chop` with 0",
+			input: FastPattern{
+				Enabled: true,
+				Offset:  0,
+				Length:  5,
+			},
+			want: "fast_pattern:0,5;",
+		},
+		{
 			name: "invalid state",
 			input: FastPattern{
 				Enabled: true,

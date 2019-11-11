@@ -278,6 +278,59 @@ func TestParseByteMatch(t *testing.T) {
 	}
 }
 
+func TestParseBase64Decode(t *testing.T) {
+	for _, tt := range []struct {
+		name    string
+		input   string
+		kind    byteMatchType
+		want    *ByteMatch
+		wantErr bool
+	}{
+		{
+			name:  "basic base64_decode",
+			input: "",
+			kind:  b64Decode,
+			want: &ByteMatch{
+				Kind: b64Decode,
+			},
+		},
+		{
+			name:  "bytes",
+			input: "bytes  5  ",
+			kind:  b64Decode,
+			want: &ByteMatch{
+				Kind:     b64Decode,
+				NumBytes: 5,
+			},
+		},
+		{
+			name:  "offset",
+			input: "offset  4",
+			kind:  b64Decode,
+			want: &ByteMatch{
+				Kind:   b64Decode,
+				Offset: 4,
+			},
+		},
+		{
+			name:  "random",
+			input: "  relative,  offset  4, bytes     5",
+			kind:  b64Decode,
+			want: &ByteMatch{
+				Kind:     b64Decode,
+				NumBytes: 5,
+				Offset:   4,
+				Options:  []string{"relative"},
+			},
+		},
+	} {
+		got, err := parseBase64Decode(tt.kind, tt.input)
+		if !reflect.DeepEqual(got, tt.want) || (err != nil) != tt.wantErr {
+			t.Fatalf("%s: got %v,%v; expected %v,%v", tt.name, got, err, tt.want, tt.wantErr)
+		}
+	}
+}
+
 func TestParseRule(t *testing.T) {
 	for _, tt := range []struct {
 		name    string
@@ -1247,6 +1300,37 @@ func TestParseRule(t *testing.T) {
 						Negate:   true,
 						NumBytes: 2,
 						Options:  []string{"relative"},
+					},
+				},
+			},
+		},
+		{
+			name: "negate isdataat",
+			rule: `alert tcp $HOME_NET any -> $EXTERNAL_NET any (msg:"test base64 keywords"; base64_decode:bytes 150,offset 17,relative; base64_data; content:"thing I see"; sid:123; rev:1;)`,
+			want: &Rule{
+				Action:   "alert",
+				Protocol: "tcp",
+				Source: Network{
+					Nets:  []string{"$HOME_NET"},
+					Ports: []string{"any"},
+				},
+				Destination: Network{
+					Nets:  []string{"$EXTERNAL_NET"},
+					Ports: []string{"any"},
+				},
+				SID:         123,
+				Revision:    1,
+				Description: "test base64 keywords",
+				Matchers: []orderedMatcher{
+					&ByteMatch{
+						Kind:     b64Decode,
+						NumBytes: 150,
+						Offset:   17,
+						Options:  []string{"relative"},
+					},
+					&Content{
+						DataPosition: base64Data,
+						Pattern:      []byte("thing I see"),
 					},
 				},
 			},

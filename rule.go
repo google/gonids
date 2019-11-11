@@ -216,13 +216,15 @@ const (
 	bTest
 	bJump
 	isDataAt
+	b64Decode
 )
 
 var byteMatchTypeVals = map[byteMatchType]string{
-	bExtract: "byte_extract",
-	bJump:    "byte_jump",
-	bTest:    "byte_test",
-	isDataAt: "isdataat",
+	bExtract:  "byte_extract",
+	bJump:     "byte_jump",
+	bTest:     "byte_test",
+	isDataAt:  "isdataat",
+	b64Decode: "base64_decode",
 }
 
 // allbyteMatchTypeNames returns a slice of valid byte_* keywords.
@@ -272,6 +274,8 @@ func (b byteMatchType) minLen() int {
 		return 4
 	case isDataAt:
 		return 1
+	case b64Decode:
+		return 0
 	}
 	return -1
 }
@@ -566,6 +570,25 @@ func (c Content) String() string {
 	return s.String()
 }
 
+// base64DecodeString returns a string for a base64_decode ByteMatch.
+func (b ByteMatch) base64DecodeString() string {
+	var parts []string
+	if b.NumBytes > 0 {
+		parts = append(parts, fmt.Sprintf("bytes %d", b.NumBytes))
+	}
+	if b.Offset > 0 {
+		parts = append(parts, fmt.Sprintf("offset %d", b.Offset))
+	}
+	// This should only be "relative" but we'll support "anything"
+	for _, opt := range b.Options {
+		parts = append(parts, opt)
+	}
+	if len(parts) == 0 {
+		return fmt.Sprintf("%s;", byteMatchTypeVals[b.Kind])
+	}
+	return fmt.Sprintf("%s:%s;", byteMatchTypeVals[b.Kind], strings.Join(parts, ","))
+}
+
 // String returns a string for a ByteMatch.
 func (b ByteMatch) String() string {
 	// TODO: Support dataPos?
@@ -585,6 +608,9 @@ func (b ByteMatch) String() string {
 			s.WriteString("!")
 		}
 		s.WriteString(fmt.Sprintf("%d", b.NumBytes))
+	// Logic for this case is a bit different so it's handled outside.
+	case b64Decode:
+		return b.base64DecodeString()
 	}
 	for _, o := range b.Options {
 		s.WriteString(fmt.Sprintf(",%s", o))

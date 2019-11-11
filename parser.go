@@ -144,6 +144,44 @@ func parseLenMatch(k lenMatchType, s string) (*LenMatch, error) {
 	return m, nil
 }
 
+func parseBase64Decode(k byteMatchType, s string) (*ByteMatch, error) {
+	if k != b64Decode {
+		return nil, fmt.Errorf("kind %v is not base64_decode", k)
+	}
+	b := new(ByteMatch)
+	b.Kind = k
+
+	// All options to base64_decode are optional, and specified by their keyword.
+	for _, p := range strings.Split(s, ",") {
+		v := strings.TrimSpace(p)
+		switch {
+		case strings.HasPrefix(v, "bytes"):
+			val := strings.TrimSpace(strings.SplitAfter(v, "bytes")[1])
+			i, err := strconv.Atoi(val)
+			if err != nil {
+				return nil, fmt.Errorf("bytes is not an int: %s; %s", val, err)
+			}
+			if i < 1 {
+				return nil, fmt.Errorf("bytes must be positive, non-zero values only")
+			}
+			b.NumBytes = i
+		case strings.HasPrefix(v, "offset"):
+			val := strings.TrimSpace(strings.SplitAfter(v, "offset")[1])
+			i, err := strconv.Atoi(val)
+			if err != nil {
+				return nil, fmt.Errorf("offset is not an int: %s; %s", val, err)
+			}
+			if i < 1 {
+				return nil, fmt.Errorf("offset must be positive, non-zero values only")
+			}
+			b.Offset = i
+		case strings.HasPrefix(v, "relative"):
+			b.Options = []string{"relative"}
+		}
+	}
+	return b, nil
+}
+
 // parseByteMatch parses a ByteMatch.
 func parseByteMatch(k byteMatchType, s string) (*ByteMatch, error) {
 	b := new(ByteMatch)
@@ -194,7 +232,7 @@ func parseByteMatch(k byteMatchType, s string) (*ByteMatch, error) {
 		b.Offset = offset
 	}
 
-	// The rest of the options.
+	// The rest of the options, for all types not b64decode
 	for i, l := b.Kind.minLen(), len(parts); i < l; i++ {
 		parts[i] = strings.TrimSpace(parts[i])
 		b.Options = append(b.Options, parts[i])
@@ -509,10 +547,19 @@ func (r *Rule) option(key item, l *lexer) error {
 			negate = true
 			nextItem = l.nextItem()
 		}
-		// How to handle the 'negate' bit?
-		b, err := parseByteMatch(k, nextItem.value)
-		if err != nil {
-			return fmt.Errorf("could not parse byteMatch: %v", err)
+
+		b := &ByteMatch{}
+		// Parse base64_decode differently as it has odd semantics.
+		if k == b64Decode {
+			b, err = parseBase64Decode(k, nextItem.value)
+			if err != nil {
+				return fmt.Errorf("could not parse base64Decode: %v", err)
+			}
+		} else {
+			b, err = parseByteMatch(k, nextItem.value)
+			if err != nil {
+				return fmt.Errorf("could not parse byteMatch: %v", err)
+			}
 		}
 		b.Negate = negate
 

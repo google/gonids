@@ -412,6 +412,46 @@ func TestByteMatchString(t *testing.T) {
 	}
 }
 
+func TestBase64DecodeString(t *testing.T) {
+	for _, tt := range []struct {
+		name  string
+		input ByteMatch
+		want  string
+	}{
+		{
+			name: "base64_decode bare",
+			input: ByteMatch{
+				Kind: b64Decode,
+			},
+			want: `base64_decode;`,
+		},
+		{
+			name: "base64_decode some options",
+			input: ByteMatch{
+				Kind:     b64Decode,
+				NumBytes: 1,
+				Options:  []string{"relative"},
+			},
+			want: `base64_decode:bytes 1,relative;`,
+		},
+		{
+			name: "base64_decode all options",
+			input: ByteMatch{
+				Kind:     b64Decode,
+				NumBytes: 1,
+				Offset:   2,
+				Options:  []string{"relative"},
+			},
+			want: `base64_decode:bytes 1,offset 2,relative;`,
+		},
+	} {
+		got := tt.input.base64DecodeString()
+		if got != tt.want {
+			t.Fatalf("%s: got %v -- expected %v", tt.name, got, tt.want)
+		}
+	}
+}
+
 func TestTLSTagString(t *testing.T) {
 	for _, tt := range []struct {
 		name  string

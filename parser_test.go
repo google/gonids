@@ -1305,7 +1305,7 @@ func TestParseRule(t *testing.T) {
 			},
 		},
 		{
-			name: "negate isdataat",
+			name: "base64 keywords",
 			rule: `alert tcp $HOME_NET any -> $EXTERNAL_NET any (msg:"test base64 keywords"; base64_decode:bytes 150,offset 17,relative; base64_data; content:"thing I see"; sid:123; rev:1;)`,
 			want: &Rule{
 				Action:   "alert",

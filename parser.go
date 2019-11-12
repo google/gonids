@@ -262,8 +262,10 @@ func (r *Rule) comment(key item, l *lexer) error {
 	if key.typ != itemComment {
 		panic("item is not a comment")
 	}
+	// First normalize spaces, then
 	// Pop off all leading # and space, try to parse as rule
-	rule, err := ParseRule(strings.TrimLeft(key.value, "# \t\v\f"))
+	uncommented := strings.TrimLeft(strings.Join(strings.Fields(key.value), " "), "# ")
+	rule, err := ParseRule(string(uncommented))
 
 	// If there was an error this means the comment is not a rule.
 	if err != nil {

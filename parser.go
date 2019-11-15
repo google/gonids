@@ -265,7 +265,7 @@ func (r *Rule) comment(key item, l *lexer) error {
 	// First normalize spaces, then
 	// Pop off all leading # and space, try to parse as rule
 	uncommented := strings.TrimLeft(strings.Join(strings.Fields(key.value), " "), "# ")
-	rule, err := ParseRule(string(uncommented))
+	rule, err := ParseRule(uncommented)
 
 	// If there was an error this means the comment is not a rule.
 	if err != nil {

@@ -16,8 +16,11 @@ limitations under the License.
 package gonids
 
 import (
+	"fmt"
 	"reflect"
 	"testing"
+
+	"github.com/kylelemons/godebug/pretty"
 )
 
 func TestContentToRegexp(t *testing.T) {
@@ -1131,8 +1134,9 @@ func TestInsertMatcher(t *testing.T) {
 		if tt.wantErr != (gotErr != nil) {
 			t.Fatalf("gotErr=%v; wantErr=%v", gotErr != nil, tt.wantErr)
 		}
-		if !reflect.DeepEqual(tt.input, tt.want) {
-			t.Fatalf("got:\n%v\nwant:%v\n", tt.input, tt.want)
+		diff := pretty.Compare(tt.input, tt.want)
+		if diff != "" {
+			t.Fatal(fmt.Sprintf("%s: diff (-got +want):\n%s", tt.name, diff))
 		}
 	}
 }

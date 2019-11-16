@@ -16,10 +16,11 @@ limitations under the License.
 package gonids
 
 import (
+	"fmt"
 	"reflect"
 	"testing"
 
-	"github.com/davecgh/go-spew/spew"
+	"github.com/kylelemons/godebug/pretty"
 )
 
 func TestParseContent(t *testing.T) {
@@ -170,8 +171,9 @@ func TestParseLenMatch(t *testing.T) {
 		},
 	} {
 		got, err := parseLenMatch(tt.kind, tt.input)
-		if !reflect.DeepEqual(got, tt.want) || (err != nil) != tt.wantErr {
-			t.Fatalf("%s: got %v,%v; expected %v,%v", tt.name, got, err, tt.want, tt.wantErr)
+		diff := pretty.Compare(got, tt.want)
+		if diff != "" || (err != nil) != tt.wantErr {
+			t.Fatal(fmt.Sprintf("%s: gotErr:%#v, wantErr:%#v\n diff (-got +want):\n%s", tt.name, err, tt.wantErr, diff))
 		}
 	}
 }
@@ -272,8 +274,9 @@ func TestParseByteMatch(t *testing.T) {
 		},
 	} {
 		got, err := parseByteMatch(tt.kind, tt.input)
-		if !reflect.DeepEqual(got, tt.want) || (err != nil) != tt.wantErr {
-			t.Fatalf("%s: got %v,%v; expected %v,%v", tt.name, got, err, tt.want, tt.wantErr)
+		diff := pretty.Compare(got, tt.want)
+		if diff != "" || (err != nil) != tt.wantErr {
+			t.Fatal(fmt.Sprintf("%s: gotErr:%#v, wantErr:%#v\n diff (-got +want):\n%s", tt.name, err, tt.wantErr, diff))
 		}
 	}
 }
@@ -325,8 +328,9 @@ func TestParseBase64Decode(t *testing.T) {
 		},
 	} {
 		got, err := parseBase64Decode(tt.kind, tt.input)
-		if !reflect.DeepEqual(got, tt.want) || (err != nil) != tt.wantErr {
-			t.Fatalf("%s: got %v,%v; expected %v,%v", tt.name, got, err, tt.want, tt.wantErr)
+		diff := pretty.Compare(got, tt.want)
+		if diff != "" || (err != nil) != tt.wantErr {
+			t.Fatal(fmt.Sprintf("%s: gotErr:%#v, wantErr:%#v\n diff (-got +want):\n%s", tt.name, err, tt.wantErr, diff))
 		}
 	}
 }
@@ -1472,8 +1476,9 @@ func TestParseRule(t *testing.T) {
 		},
 	} {
 		got, err := ParseRule(tt.rule)
-		if !reflect.DeepEqual(got, tt.want) || (err != nil) != tt.wantErr {
-			t.Fatal(spew.Sprintf("%s: got=%#v,%#v; want=%#v,%#v", tt.name, got, err, tt.want, tt.wantErr))
+		diff := pretty.Compare(got, tt.want)
+		if diff != "" || (err != nil) != tt.wantErr {
+			t.Fatal(fmt.Sprintf("%s: gotErr:%#v, wantErr:%#v\n diff (-got +want):\n%s", tt.name, err, tt.wantErr, diff))
 		}
 	}
 }
@@ -1525,8 +1530,9 @@ func TestInEqualOut(t *testing.T) {
 		if err != nil {
 			t.Fatalf("%v", err)
 		}
-		if !reflect.DeepEqual(first, second) {
-			t.Fatalf("%s:\nfirst:\n%#v\n\nsecond:\n%#v\n\nf", tt.name, first, second)
+		diff := pretty.Compare(first, second)
+		if diff != "" {
+			t.Fatal(fmt.Sprintf("%s: diff (-got +want):\n%s", tt.name, diff))
 		}
 	}
 }

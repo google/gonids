@@ -80,6 +80,22 @@ type Flowbit struct {
 	Value  string
 }
 
+// Flowint describes a flowint.
+type Flowint struct {
+	Name     string
+	Modifier string
+	Value    string
+}
+
+// Xbit describes an Xbit.
+// TODO: Consider adding more structure to Trac and Expire.
+type Xbit struct {
+	Action string
+	Name   string
+	Track  string
+	Expire string
+}
+
 // Metadatas allows for a Stringer on []*Metadata
 type Metadatas []*Metadata
 
@@ -704,6 +720,31 @@ func (fb Flowbit) String() string {
 	s.WriteString(fmt.Sprintf("flowbits:%s", fb.Action))
 	if fb.Value != "" {
 		s.WriteString(fmt.Sprintf(",%s", fb.Value))
+	}
+	s.WriteString(";")
+	return s.String()
+}
+
+// String returns a string for a Flowbit.
+func (fi Flowint) String() string {
+	var s strings.Builder
+	s.WriteString(fmt.Sprintf("flowint:%s", fi.Name))
+	if inSlice(fi.Modifier, []string{"isset", "isnotset"}) {
+		s.WriteString(fmt.Sprintf(",%s", fi.Modifier))
+	}
+	if inSlice(fi.Modifier, []string{"+", "-", "=", ">", "<", ">=", "<=", "==", "!="}) && fi.Value != "" {
+		s.WriteString(fmt.Sprintf(",%s,%s", fi.Modifier, fi.Value))
+	}
+	s.WriteString(";")
+	return s.String()
+}
+
+// String returns a string for a Flowbit.
+func (xb Xbit) String() string {
+	var s strings.Builder
+	s.WriteString(fmt.Sprintf("xbits:%s,%s,track %s", xb.Action, xb.Name, xb.Track))
+	if xb.Expire != "" {
+		s.WriteString(fmt.Sprintf(",expire %s", xb.Expire))
 	}
 	s.WriteString(";")
 	return s.String()

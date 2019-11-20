@@ -335,6 +335,72 @@ func TestParseBase64Decode(t *testing.T) {
 	}
 }
 
+func TestParseXbit(t *testing.T) {
+	for _, tt := range []struct {
+		name    string
+		input   string
+		want    *Xbit
+		wantErr bool
+	}{
+		{
+			name:  "basic xbit",
+			input: "set,foo,track ip_src",
+			want: &Xbit{
+				Action: "set",
+				Name:   "foo",
+				Track:  "ip_src",
+			},
+		},
+		{
+			name:  "basic xbit expire",
+			input: "set,foo,track ip_src,expire 60",
+			want: &Xbit{
+				Action: "set",
+				Name:   "foo",
+				Track:  "ip_src",
+				Expire: "60",
+			},
+		},
+		{
+			name:  "funky spacing",
+			input: "  set  ,   foo,   track   ip_src  , expire  60    ",
+			want: &Xbit{
+				Action: "set",
+				Name:   "foo",
+				Track:  "ip_src",
+				Expire: "60",
+			},
+		},
+		// Errors
+		{
+			name:    "not valid action",
+			input:   "zoom,foo,track ip_src,expire 60",
+			wantErr: true,
+		},
+		{
+			name:    "invalid len",
+			input:   "set,foo",
+			wantErr: true,
+		},
+		{
+			name:    "not track",
+			input:   "set,foo,nottrack ip_src,",
+			wantErr: true,
+		},
+		{
+			name:    "not expire",
+			input:   "set,foo,track ip_src,notexpire 60",
+			wantErr: true,
+		},
+	} {
+		got, err := parseXbit(tt.input)
+		diff := pretty.Compare(got, tt.want)
+		if diff != "" || (err != nil) != tt.wantErr {
+			t.Fatal(fmt.Sprintf("%s: gotErr:%#v, wantErr:%#v\n diff (-got +want):\n%s", tt.name, err, tt.wantErr, diff))
+		}
+	}
+}
+
 func TestParseRule(t *testing.T) {
 	for _, tt := range []struct {
 		name    string

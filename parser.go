@@ -241,6 +241,47 @@ func parseByteMatch(k byteMatchType, s string) (*ByteMatch, error) {
 	return b, nil
 }
 
+func parseXbit(s string) (*Xbit, error) {
+	parts := strings.Split(s, ",")
+	// All xbits must have an action, name and track
+	if len(parts) < 3 {
+		return nil, fmt.Errorf("not enough parts for xbits: %s", s)
+	}
+	// Ensure all actions are of valid type.
+	a := strings.TrimSpace(parts[0])
+	if !inSlice(a, []string{"set", "unset", "isset", "isnotset", "toggle"}) {
+		return nil, fmt.Errorf("invalid action for xbits: %s", a)
+	}
+	xb := &Xbit{
+		Action: a,
+		Name:   strings.TrimSpace(parts[1]),
+	}
+
+	// Track.
+	t := strings.Fields(parts[2])
+	if len(t) != 2 {
+		return nil, fmt.Errorf("wrong number of parts for track: %v", t)
+	}
+	if t[0] != "track" {
+		return nil, fmt.Errorf("%s should be 'track'", t[0])
+	}
+	xb.Track = t[1]
+
+	// Expire
+	if len(parts) == 4 {
+		e := strings.Fields(parts[3])
+		if len(e) != 2 {
+			return nil, fmt.Errorf("wrong number of parts for expire: %v", e)
+		}
+		if e[0] != "expire" {
+			return nil, fmt.Errorf("%s should be 'expire'", e[0])
+		}
+		xb.Expire = e[1]
+	}
+	return xb, nil
+
+}
+
 func unquote(s string) string {
 	if strings.IndexByte(s, '"') < 0 {
 		return s
@@ -584,16 +625,24 @@ func (r *Rule) option(key item, l *lexer) error {
 			return fmt.Errorf("couldn't parse flowbit string: %s", nextItem.value)
 		}
 		// Ensure all actions are of valid type.
-		if !inSlice(parts[0], []string{"noalert", "isset", "isnotset", "set", "unset", "toggle"}) {
-			return fmt.Errorf("invalid action for flowbit: %s", parts[0])
+		a := strings.TrimSpace(parts[0])
+		if !inSlice(a, []string{"noalert", "isset", "isnotset", "set", "unset", "toggle"}) {
+			return fmt.Errorf("invalid action for flowbit: %s", a)
 		}
 		fb := &Flowbit{
-			Action: strings.TrimSpace(parts[0]),
+			Action: a,
 		}
 		if len(parts) == 2 {
 			fb.Value = strings.TrimSpace(parts[1])
 		}
 		r.Flowbits = append(r.Flowbits, fb)
+	case key.value == "xbits":
+		nextItem := l.nextItem()
+		xb, err := parseXbit(nextItem.value)
+		if err != nil {
+			return fmt.Errorf("error parsing xbits: %v", err)
+		}
+		r.Xbits = append(r.Xbits, xb)
 	}
 	return nil
 }

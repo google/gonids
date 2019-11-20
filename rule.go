@@ -59,6 +59,10 @@ type Rule struct {
 	Metas Metadatas
 	// Flowbits is a slice of Flowbit.
 	Flowbits []*Flowbit
+	// Xbits is a slice of Xbit
+	Xbits []*Xbit
+	// Flowints is a slice of Flowint
+	Flowints []*Flowint
 	// Matchers are internally used to ensure relative matches are printed correctly.
 	// Make this private before checkin?
 	Matchers []orderedMatcher
@@ -88,11 +92,13 @@ type Flowint struct {
 }
 
 // Xbit describes an Xbit.
-// TODO: Consider adding more structure to Trac and Expire.
+// TODO: Consider adding more structure to Track and Expire.
 type Xbit struct {
 	Action string
 	Name   string
 	Track  string
+	// Expire should be an int, default 0 value makes stringer difficult because this is an
+	// optional parameter. If we can confirm that this must be > 0 we can convert to int.
 	Expire string
 }
 

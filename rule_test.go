@@ -707,6 +707,79 @@ func TestFlowbitsString(t *testing.T) {
 	}
 }
 
+func TestXbitsString(t *testing.T) {
+	for _, tt := range []struct {
+		name  string
+		input *Xbit
+		want  string
+	}{
+		{
+			name: "basic set",
+			input: &Xbit{
+				Action: "set",
+				Name:   "foo",
+				Track:  "ip_src",
+			},
+			want: `xbits:set,foo,track ip_src;`,
+		},
+		{
+			name: "with expire set",
+			input: &Xbit{
+				Action: "set",
+				Name:   "foo",
+				Track:  "ip_src",
+				Expire: "5",
+			},
+			want: `xbits:set,foo,track ip_src,expire 5;`,
+		},
+	} {
+		got := tt.input.String()
+		if got != tt.want {
+			t.Fatalf("%s: got %v -- expected %v", tt.name, got, tt.want)
+		}
+	}
+}
+
+func TestFlowintsString(t *testing.T) {
+	for _, tt := range []struct {
+		name  string
+		input *Flowint
+		want  string
+	}{
+		{
+			name: "action only",
+			input: &Flowint{
+				Name:     "foo",
+				Modifier: "+",
+				Value:    "1",
+			},
+			want: `flowint:foo,+,1;`,
+		},
+		{
+			name: "isnotset only",
+			input: &Flowint{
+				Name:     "foo",
+				Modifier: "isnotset",
+			},
+			want: `flowint:foo,isnotset;`,
+		},
+		{
+			name: "extraneous value",
+			input: &Flowint{
+				Name:     "foo",
+				Modifier: "isnotset",
+				Value:    "1",
+			},
+			want: `flowint:foo,isnotset;`,
+		},
+	} {
+		got := tt.input.String()
+		if got != tt.want {
+			t.Fatalf("%s: got %v -- expected %v", tt.name, got, tt.want)
+		}
+	}
+}
+
 func TestRuleString(t *testing.T) {
 	for _, tt := range []struct {
 		name  string
@@ -820,6 +893,69 @@ func TestRuleString(t *testing.T) {
 				},
 			},
 			want: `alert http $HOME_NET any -> $EXTERNAL_NET any (msg:"Flowbits test"; flowbits:set,testbits; flowbits:noalert; sid:1223; rev:3;)`,
+		},
+		{
+			name: "rule with flowints",
+			input: Rule{
+				Action:   "alert",
+				Protocol: "http",
+				Source: Network{
+					Nets:  []string{"$HOME_NET"},
+					Ports: []string{"any"},
+				},
+				Destination: Network{
+					Nets:  []string{"$EXTERNAL_NET"},
+					Ports: []string{"any"},
+				},
+				SID:         1223,
+				Revision:    3,
+				Description: "Flowints test",
+				Flowints: []*Flowint{
+					{
+						Name:     "foo",
+						Modifier: ">",
+						Value:    "1",
+					},
+					{
+						Name:     "bar",
+						Modifier: "+",
+						Value:    "1",
+					},
+				},
+			},
+			want: `alert http $HOME_NET any -> $EXTERNAL_NET any (msg:"Flowints test"; flowint:foo,>,1; flowint:bar,+,1; sid:1223; rev:3;)`,
+		},
+		{
+			name: "rule with xbits",
+			input: Rule{
+				Action:   "alert",
+				Protocol: "http",
+				Source: Network{
+					Nets:  []string{"$HOME_NET"},
+					Ports: []string{"any"},
+				},
+				Destination: Network{
+					Nets:  []string{"$EXTERNAL_NET"},
+					Ports: []string{"any"},
+				},
+				SID:         1223,
+				Revision:    3,
+				Description: "Xbits test",
+				Xbits: []*Xbit{
+					{
+						Action: "set",
+						Name:   "foo",
+						Track:  "ip_src",
+					},
+					{
+						Action: "set",
+						Name:   "bar",
+						Track:  "ip_src",
+						Expire: "60",
+					},
+				},
+			},
+			want: `alert http $HOME_NET any -> $EXTERNAL_NET any (msg:"Xbits test"; xbits:set,foo,track ip_src; xbits:set,bar,track ip_src,expire 60; sid:1223; rev:3;)`,
 		},
 	} {
 		got := tt.input.String()

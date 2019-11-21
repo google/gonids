@@ -401,6 +401,51 @@ func TestParseXbit(t *testing.T) {
 	}
 }
 
+// TODO FINISH ME!!!!!
+func TestParseFlowint(t *testing.T) {
+	for _, tt := range []struct {
+		name    string
+		input   string
+		want    *Flowint
+		wantErr bool
+	}{
+		{
+			name:  "basic flowint",
+			input: "foo,>,1",
+			want: &Flowint{
+				Name:     "foo",
+				Modifier: ">",
+				Value:    "1",
+			},
+		},
+		{
+			name:  "basic status",
+			input: "foo,isnotset",
+			want: &Flowint{
+				Name:     "foo",
+				Modifier: "isnotset",
+			},
+		},
+		// Errors
+		{
+			name:    "too short",
+			input:   "foo",
+			wantErr: true,
+		},
+		{
+			name:    "invalid modifier",
+			input:   "foo,baz,bar",
+			wantErr: true,
+		},
+	} {
+		got, err := parseFlowint(tt.input)
+		diff := pretty.Compare(got, tt.want)
+		if diff != "" || (err != nil) != tt.wantErr {
+			t.Fatal(fmt.Sprintf("%s: gotErr:%#v, wantErr:%#v\n diff (-got +want):\n%s", tt.name, err, tt.wantErr, diff))
+		}
+	}
+}
+
 func TestParseRule(t *testing.T) {
 	for _, tt := range []struct {
 		name    string

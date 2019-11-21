@@ -690,6 +690,10 @@ func ParseRule(rule string) (*Rule, error) {
 	for item := l.nextItem(); item.typ != itemEOR && item.typ != itemEOF && err == nil; item = l.nextItem() {
 		switch item.typ {
 		case itemComment:
+			if r.Action != "" {
+				// Ignore comment ending rule
+				return r, nil
+			}
 			err = r.comment(item, l)
 			// Error here means that the comment was not a commented rule.
 			// So we're not parsing a rule and we need to break out.

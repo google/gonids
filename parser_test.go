@@ -1544,6 +1544,69 @@ func TestParseRule(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "flowints",
+			rule: `alert http $HOME_NET any -> $EXTERNAL_NET any (msg:"Flowints test"; flowint:foo,+,1; flowint:bar,isset; sid:1234; rev:2;)`,
+			want: &Rule{
+				Action:   "alert",
+				Protocol: "http",
+				Source: Network{
+					Nets:  []string{"$HOME_NET"},
+					Ports: []string{"any"},
+				},
+				Destination: Network{
+					Nets:  []string{"$EXTERNAL_NET"},
+					Ports: []string{"any"},
+				},
+				SID:         1234,
+				Revision:    2,
+				Description: "Flowints test",
+				Flowints: []*Flowint{
+					{
+						Name:     "foo",
+						Modifier: "+",
+						Value:    "1",
+					},
+					{
+						Name:     "bar",
+						Modifier: "isset",
+					},
+				},
+			},
+		},
+		// FIX THIS STILL
+		{
+			name: "xbits",
+			rule: `alert http $HOME_NET any -> $EXTERNAL_NET any (msg:"Xbits test"; xbits:set,foo,track ip_src; xbits:set,bar,track ip_src,expire 60; sid:1234; rev:2;)`,
+			want: &Rule{
+				Action:   "alert",
+				Protocol: "http",
+				Source: Network{
+					Nets:  []string{"$HOME_NET"},
+					Ports: []string{"any"},
+				},
+				Destination: Network{
+					Nets:  []string{"$EXTERNAL_NET"},
+					Ports: []string{"any"},
+				},
+				SID:         1234,
+				Revision:    2,
+				Description: "Xbits test",
+				Xbits: []*Xbit{
+					{
+						Action: "set",
+						Name:   "foo",
+						Track:  "ip_src",
+					},
+					{
+						Action: "set",
+						Name:   "bar",
+						Track:  "ip_src",
+						Expire: "60",
+					},
+				},
+			},
+		},
 		// Errors
 		{
 			name:    "invalid direction",

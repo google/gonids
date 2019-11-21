@@ -401,7 +401,6 @@ func TestParseXbit(t *testing.T) {
 	}
 }
 
-// TODO FINISH ME!!!!!
 func TestParseFlowint(t *testing.T) {
 	for _, tt := range []struct {
 		name    string
@@ -1574,7 +1573,6 @@ func TestParseRule(t *testing.T) {
 				},
 			},
 		},
-		// FIX THIS STILL
 		{
 			name: "xbits",
 			rule: `alert http $HOME_NET any -> $EXTERNAL_NET any (msg:"Xbits test"; xbits:set,foo,track ip_src; xbits:set,bar,track ip_src,expire 60; sid:1234; rev:2;)`,

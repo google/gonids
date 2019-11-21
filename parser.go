@@ -241,6 +241,7 @@ func parseByteMatch(k byteMatchType, s string) (*ByteMatch, error) {
 	return b, nil
 }
 
+// parseXbit parses an xbit.
 func parseXbit(s string) (*Xbit, error) {
 	parts := strings.Split(s, ",")
 	// All xbits must have an action, name and track
@@ -280,6 +281,30 @@ func parseXbit(s string) (*Xbit, error) {
 	}
 	return xb, nil
 
+}
+
+// parseFlowint parses a flowint.
+func parseFlowint(s string) (*Flowint, error) {
+	parts := strings.Split(s, ",")
+	// All flowints must have a name and modifier
+	if len(parts) < 2 {
+		return nil, fmt.Errorf("not enough parts for flowint: %s", s)
+	}
+	// Ensure all actions are of valid type.
+	m := strings.TrimSpace(parts[1])
+	if !inSlice(m, []string{"+", "-", "=", ">", "<", ">=", "<=", "==", "!=", "isset", "isnotset"}) {
+		return nil, fmt.Errorf("invalid modifier for flowint: %s", m)
+	}
+	fi := &Flowint{
+		Name:     strings.TrimSpace(parts[0]),
+		Modifier: m,
+	}
+
+	if len(parts) == 3 {
+		fi.Value = strings.TrimSpace(parts[2])
+	}
+
+	return fi, nil
 }
 
 func unquote(s string) string {
@@ -643,6 +668,13 @@ func (r *Rule) option(key item, l *lexer) error {
 			return fmt.Errorf("error parsing xbits: %v", err)
 		}
 		r.Xbits = append(r.Xbits, xb)
+	case key.value == "flowint":
+		nextItem := l.nextItem()
+		fi, err := parseFlowint(nextItem.value)
+		if err != nil {
+			return fmt.Errorf("error parsing flowint: %v", err)
+		}
+		r.Flowints = append(r.Flowints, fi)
 	}
 	return nil
 }

@@ -817,6 +817,14 @@ func (r Rule) String() string {
 		s.WriteString(fmt.Sprintf("%s ", fb))
 	}
 
+	for _, fi := range r.Flowints {
+		s.WriteString(fmt.Sprintf("%s ", fi))
+	}
+
+	for _, xb := range r.Xbits {
+		s.WriteString(fmt.Sprintf("%s ", xb))
+	}
+
 	for _, ref := range r.References {
 		s.WriteString(fmt.Sprintf("%s ", ref))
 	}

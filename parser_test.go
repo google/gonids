@@ -335,6 +335,116 @@ func TestParseBase64Decode(t *testing.T) {
 	}
 }
 
+func TestParseXbit(t *testing.T) {
+	for _, tt := range []struct {
+		name    string
+		input   string
+		want    *Xbit
+		wantErr bool
+	}{
+		{
+			name:  "basic xbit",
+			input: "set,foo,track ip_src",
+			want: &Xbit{
+				Action: "set",
+				Name:   "foo",
+				Track:  "ip_src",
+			},
+		},
+		{
+			name:  "basic xbit expire",
+			input: "set,foo,track ip_src,expire 60",
+			want: &Xbit{
+				Action: "set",
+				Name:   "foo",
+				Track:  "ip_src",
+				Expire: "60",
+			},
+		},
+		{
+			name:  "funky spacing",
+			input: "  set  ,   foo,   track   ip_src  , expire  60    ",
+			want: &Xbit{
+				Action: "set",
+				Name:   "foo",
+				Track:  "ip_src",
+				Expire: "60",
+			},
+		},
+		// Errors
+		{
+			name:    "not valid action",
+			input:   "zoom,foo,track ip_src,expire 60",
+			wantErr: true,
+		},
+		{
+			name:    "invalid len",
+			input:   "set,foo",
+			wantErr: true,
+		},
+		{
+			name:    "not track",
+			input:   "set,foo,nottrack ip_src,",
+			wantErr: true,
+		},
+		{
+			name:    "not expire",
+			input:   "set,foo,track ip_src,notexpire 60",
+			wantErr: true,
+		},
+	} {
+		got, err := parseXbit(tt.input)
+		diff := pretty.Compare(got, tt.want)
+		if diff != "" || (err != nil) != tt.wantErr {
+			t.Fatal(fmt.Sprintf("%s: gotErr:%#v, wantErr:%#v\n diff (-got +want):\n%s", tt.name, err, tt.wantErr, diff))
+		}
+	}
+}
+
+func TestParseFlowint(t *testing.T) {
+	for _, tt := range []struct {
+		name    string
+		input   string
+		want    *Flowint
+		wantErr bool
+	}{
+		{
+			name:  "basic flowint",
+			input: "foo,>,1",
+			want: &Flowint{
+				Name:     "foo",
+				Modifier: ">",
+				Value:    "1",
+			},
+		},
+		{
+			name:  "basic status",
+			input: "foo,isnotset",
+			want: &Flowint{
+				Name:     "foo",
+				Modifier: "isnotset",
+			},
+		},
+		// Errors
+		{
+			name:    "too short",
+			input:   "foo",
+			wantErr: true,
+		},
+		{
+			name:    "invalid modifier",
+			input:   "foo,baz,bar",
+			wantErr: true,
+		},
+	} {
+		got, err := parseFlowint(tt.input)
+		diff := pretty.Compare(got, tt.want)
+		if diff != "" || (err != nil) != tt.wantErr {
+			t.Fatal(fmt.Sprintf("%s: gotErr:%#v, wantErr:%#v\n diff (-got +want):\n%s", tt.name, err, tt.wantErr, diff))
+		}
+	}
+}
+
 func TestParseRule(t *testing.T) {
 	for _, tt := range []struct {
 		name    string
@@ -1429,6 +1539,68 @@ func TestParseRule(t *testing.T) {
 						Options: []*ContentOption{
 							{"http_uri", ""},
 						},
+					},
+				},
+			},
+		},
+		{
+			name: "flowints",
+			rule: `alert http $HOME_NET any -> $EXTERNAL_NET any (msg:"Flowints test"; flowint:foo,+,1; flowint:bar,isset; sid:1234; rev:2;)`,
+			want: &Rule{
+				Action:   "alert",
+				Protocol: "http",
+				Source: Network{
+					Nets:  []string{"$HOME_NET"},
+					Ports: []string{"any"},
+				},
+				Destination: Network{
+					Nets:  []string{"$EXTERNAL_NET"},
+					Ports: []string{"any"},
+				},
+				SID:         1234,
+				Revision:    2,
+				Description: "Flowints test",
+				Flowints: []*Flowint{
+					{
+						Name:     "foo",
+						Modifier: "+",
+						Value:    "1",
+					},
+					{
+						Name:     "bar",
+						Modifier: "isset",
+					},
+				},
+			},
+		},
+		{
+			name: "xbits",
+			rule: `alert http $HOME_NET any -> $EXTERNAL_NET any (msg:"Xbits test"; xbits:set,foo,track ip_src; xbits:set,bar,track ip_src,expire 60; sid:1234; rev:2;)`,
+			want: &Rule{
+				Action:   "alert",
+				Protocol: "http",
+				Source: Network{
+					Nets:  []string{"$HOME_NET"},
+					Ports: []string{"any"},
+				},
+				Destination: Network{
+					Nets:  []string{"$EXTERNAL_NET"},
+					Ports: []string{"any"},
+				},
+				SID:         1234,
+				Revision:    2,
+				Description: "Xbits test",
+				Xbits: []*Xbit{
+					{
+						Action: "set",
+						Name:   "foo",
+						Track:  "ip_src",
+					},
+					{
+						Action: "set",
+						Name:   "bar",
+						Track:  "ip_src",
+						Expire: "60",
 					},
 				},
 			},

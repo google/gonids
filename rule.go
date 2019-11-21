@@ -59,6 +59,10 @@ type Rule struct {
 	Metas Metadatas
 	// Flowbits is a slice of Flowbit.
 	Flowbits []*Flowbit
+	// Xbits is a slice of Xbit
+	Xbits []*Xbit
+	// Flowints is a slice of Flowint
+	Flowints []*Flowint
 	// Matchers are internally used to ensure relative matches are printed correctly.
 	// Make this private before checkin?
 	Matchers []orderedMatcher
@@ -78,6 +82,24 @@ type Metadata struct {
 type Flowbit struct {
 	Action string
 	Value  string
+}
+
+// Flowint describes a flowint.
+type Flowint struct {
+	Name     string
+	Modifier string
+	Value    string
+}
+
+// Xbit describes an Xbit.
+// TODO: Consider adding more structure to Track and Expire.
+type Xbit struct {
+	Action string
+	Name   string
+	Track  string
+	// Expire should be an int, default 0 value makes stringer difficult because this is an
+	// optional parameter. If we can confirm that this must be > 0 we can convert to int.
+	Expire string
 }
 
 // Metadatas allows for a Stringer on []*Metadata
@@ -709,6 +731,31 @@ func (fb Flowbit) String() string {
 	return s.String()
 }
 
+// String returns a string for a Flowbit.
+func (fi Flowint) String() string {
+	var s strings.Builder
+	s.WriteString(fmt.Sprintf("flowint:%s", fi.Name))
+	if inSlice(fi.Modifier, []string{"isset", "isnotset"}) {
+		s.WriteString(fmt.Sprintf(",%s", fi.Modifier))
+	}
+	if inSlice(fi.Modifier, []string{"+", "-", "=", ">", "<", ">=", "<=", "==", "!="}) && fi.Value != "" {
+		s.WriteString(fmt.Sprintf(",%s,%s", fi.Modifier, fi.Value))
+	}
+	s.WriteString(";")
+	return s.String()
+}
+
+// String returns a string for a Flowbit.
+func (xb Xbit) String() string {
+	var s strings.Builder
+	s.WriteString(fmt.Sprintf("xbits:%s,%s,track %s", xb.Action, xb.Name, xb.Track))
+	if xb.Expire != "" {
+		s.WriteString(fmt.Sprintf(",expire %s", xb.Expire))
+	}
+	s.WriteString(";")
+	return s.String()
+}
+
 // String returns a string for a rule.
 func (r Rule) String() string {
 	var s strings.Builder
@@ -768,6 +815,14 @@ func (r Rule) String() string {
 
 	for _, fb := range r.Flowbits {
 		s.WriteString(fmt.Sprintf("%s ", fb))
+	}
+
+	for _, fi := range r.Flowints {
+		s.WriteString(fmt.Sprintf("%s ", fi))
+	}
+
+	for _, xb := range r.Xbits {
+		s.WriteString(fmt.Sprintf("%s ", xb))
 	}
 
 	for _, ref := range r.References {

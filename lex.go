@@ -225,7 +225,7 @@ func lexRule(l *lexer) stateFn {
 
 // lexComment consumes a commented rule.
 func lexComment(l *lexer) stateFn {
-	//ignore leading spaces and #
+	// Ignore leading spaces and #.
 	l.ignore()
 	for {
 		r := l.next()

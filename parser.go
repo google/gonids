@@ -700,7 +700,7 @@ func ParseRule(rule string) (*Rule, error) {
 		switch item.typ {
 		case itemComment:
 			if r.Action != "" {
-				// Ignore comment ending rule
+				// Ignore comment ending rule.
 				return r, nil
 			}
 			err = r.comment(item, l)

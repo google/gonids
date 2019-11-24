@@ -493,6 +493,30 @@ func TestParseRule(t *testing.T) {
 			wantErr: true,
 		},
 		{
+			name: "comment end-rule",
+			rule: `alert tcp $HOME_NET any -> $EXTERNAL_NET any (msg:"foo"; content:"bar"; sid:123; rev:1;) # foo comment.`,
+			want: &Rule{
+				Action:   "alert",
+				Protocol: "tcp",
+				Source: Network{
+					Nets:  []string{"$HOME_NET"},
+					Ports: []string{"any"},
+				},
+				Destination: Network{
+					Nets:  []string{"$EXTERNAL_NET"},
+					Ports: []string{"any"},
+				},
+				SID:         123,
+				Revision:    1,
+				Description: "foo",
+				Matchers: []orderedMatcher{
+					&Content{
+						Pattern: []byte("bar"),
+					},
+				},
+			},
+		},
+		{
 			name: "simple content",
 			rule: `alert udp $HOME_NET any -> $EXTERNAL_NET any (sid:1337; msg:"foo"; content:"AA"; rev:2;)`,
 			want: &Rule{

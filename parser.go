@@ -241,6 +241,29 @@ func parseByteMatch(k byteMatchType, s string) (*ByteMatch, error) {
 	return b, nil
 }
 
+// parseFlowbit parses a flowbit.
+func parseFlowbit(s string) (*Flowbit, error) {
+	parts := strings.Split(s, ",")
+	if len(parts) < 1 {
+		return nil, fmt.Errorf("couldn't parse flowbit string: %s", s)
+	}
+	// Ensure all actions are of valid type.
+	a := strings.TrimSpace(parts[0])
+	if !inSlice(a, []string{"noalert", "isset", "isnotset", "set", "unset", "toggle"}) {
+		return nil, fmt.Errorf("invalid action for flowbit: %s", a)
+	}
+	fb := &Flowbit{
+		Action: a,
+	}
+	if fb.Action == "noalert" && len(parts) > 1 {
+		return nil, fmt.Errorf("noalert shouldn't have a value")
+	}
+	if len(parts) == 2 {
+		fb.Value = strings.TrimSpace(parts[1])
+	}
+	return fb, nil
+}
+
 // parseXbit parses an xbit.
 func parseXbit(s string) (*Xbit, error) {
 	parts := strings.Split(s, ",")
@@ -645,20 +668,9 @@ func (r *Rule) option(key item, l *lexer) error {
 		r.LenMatchers = append(r.LenMatchers, m)
 	case key.value == "flowbits":
 		nextItem := l.nextItem()
-		parts := strings.Split(nextItem.value, ",")
-		if len(parts) < 1 {
-			return fmt.Errorf("couldn't parse flowbit string: %s", nextItem.value)
-		}
-		// Ensure all actions are of valid type.
-		a := strings.TrimSpace(parts[0])
-		if !inSlice(a, []string{"noalert", "isset", "isnotset", "set", "unset", "toggle"}) {
-			return fmt.Errorf("invalid action for flowbit: %s", a)
-		}
-		fb := &Flowbit{
-			Action: a,
-		}
-		if len(parts) == 2 {
-			fb.Value = strings.TrimSpace(parts[1])
+		fb, err := parseFlowbit(nextItem.value)
+		if err != nil {
+			return fmt.Errorf("error parsing flowbit: %v", err)
 		}
 		r.Flowbits = append(r.Flowbits, fb)
 	case key.value == "xbits":

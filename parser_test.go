@@ -335,6 +335,41 @@ func TestParseBase64Decode(t *testing.T) {
 	}
 }
 
+func TestParseFlowbit(t *testing.T) {
+	for _, tt := range []struct {
+		name    string
+		input   string
+		want    *Flowbit
+		wantErr bool
+	}{
+		{
+			name:  "basic flowbit",
+			input: "set,foo",
+			want: &Flowbit{
+				Action: "set",
+				Value:  "foo",
+			},
+		},
+		// Errors
+		{
+			name:    "not valid action",
+			input:   "zoom,foo",
+			wantErr: true,
+		},
+		{
+			name:    "noalert with value",
+			input:   "noalert,foo",
+			wantErr: true,
+		},
+	} {
+		got, err := parseFlowbit(tt.input)
+		diff := pretty.Compare(got, tt.want)
+		if diff != "" || (err != nil) != tt.wantErr {
+			t.Fatal(fmt.Sprintf("%s: gotErr:%#v, wantErr:%#v\n diff (-got +want):\n%s", tt.name, err, tt.wantErr, diff))
+		}
+	}
+}
+
 func TestParseXbit(t *testing.T) {
 	for _, tt := range []struct {
 		name    string

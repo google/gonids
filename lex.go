@@ -434,8 +434,6 @@ func lexOptionValue(l *lexer) stateFn {
 
 // lexOptionEnd marks the end of a rule.
 func lexRuleEnd(l *lexer) stateFn {
-	l.acceptRun(" \t;")
-	l.ignore()
 	l.emit(itemEOR, false)
 	return lexRule
 }

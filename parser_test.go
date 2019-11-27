@@ -410,7 +410,7 @@ func TestParseXbit(t *testing.T) {
 		{
 			name:    "not valid action",
 			input:   "zoom,foo,track ip_src,expire 60",
-			wantErr: false,
+			wantErr: true,
 		},
 		{
 			name:    "invalid len",

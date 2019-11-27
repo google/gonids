@@ -59,6 +59,10 @@ type Rule struct {
 	Metas Metadatas
 	// Flowbits is a slice of Flowbit.
 	Flowbits []*Flowbit
+	// Xbits is a slice of Xbit
+	Xbits []*Xbit
+	// Flowints is a slice of Flowint
+	Flowints []*Flowint
 	// Matchers are internally used to ensure relative matches are printed correctly.
 	// Make this private before checkin?
 	Matchers []orderedMatcher
@@ -78,6 +82,24 @@ type Metadata struct {
 type Flowbit struct {
 	Action string
 	Value  string
+}
+
+// Flowint describes a flowint.
+type Flowint struct {
+	Name     string
+	Modifier string
+	Value    string
+}
+
+// Xbit describes an Xbit.
+// TODO: Consider adding more structure to Track and Expire.
+type Xbit struct {
+	Action string
+	Name   string
+	Track  string
+	// Expire should be an int, default 0 value makes stringer difficult because this is an
+	// optional parameter. If we can confirm that this must be > 0 we can convert to int.
+	Expire string
 }
 
 // Metadatas allows for a Stringer on []*Metadata
@@ -216,13 +238,15 @@ const (
 	bTest
 	bJump
 	isDataAt
+	b64Decode
 )
 
 var byteMatchTypeVals = map[byteMatchType]string{
-	bExtract: "byte_extract",
-	bJump:    "byte_jump",
-	bTest:    "byte_test",
-	isDataAt: "isdataat",
+	bExtract:  "byte_extract",
+	bJump:     "byte_jump",
+	bTest:     "byte_test",
+	isDataAt:  "isdataat",
+	b64Decode: "base64_decode",
 }
 
 // allbyteMatchTypeNames returns a slice of valid byte_* keywords.
@@ -272,6 +296,8 @@ func (b byteMatchType) minLen() int {
 		return 4
 	case isDataAt:
 		return 1
+	case b64Decode:
+		return 0
 	}
 	return -1
 }
@@ -527,7 +553,7 @@ func (f FastPattern) String() string {
 	}
 
 	// "only" and "chop" modes are mutually exclusive.
-	if f.Offset != 0 && f.Length != 0 {
+	if f.Offset != 0 || f.Length != 0 {
 		s.WriteString(fmt.Sprintf(":%d,%d", f.Offset, f.Length))
 	}
 
@@ -566,6 +592,25 @@ func (c Content) String() string {
 	return s.String()
 }
 
+// base64DecodeString returns a string for a base64_decode ByteMatch.
+func (b ByteMatch) base64DecodeString() string {
+	var parts []string
+	if b.NumBytes > 0 {
+		parts = append(parts, fmt.Sprintf("bytes %d", b.NumBytes))
+	}
+	if b.Offset > 0 {
+		parts = append(parts, fmt.Sprintf("offset %d", b.Offset))
+	}
+	// This should only be "relative" but we'll support "anything"
+	for _, opt := range b.Options {
+		parts = append(parts, opt)
+	}
+	if len(parts) == 0 {
+		return fmt.Sprintf("%s;", byteMatchTypeVals[b.Kind])
+	}
+	return fmt.Sprintf("%s:%s;", byteMatchTypeVals[b.Kind], strings.Join(parts, ","))
+}
+
 // String returns a string for a ByteMatch.
 func (b ByteMatch) String() string {
 	// TODO: Support dataPos?
@@ -585,6 +630,9 @@ func (b ByteMatch) String() string {
 			s.WriteString("!")
 		}
 		s.WriteString(fmt.Sprintf("%d", b.NumBytes))
+	// Logic for this case is a bit different so it's handled outside.
+	case b64Decode:
+		return b.base64DecodeString()
 	}
 	for _, o := range b.Options {
 		s.WriteString(fmt.Sprintf(",%s", o))
@@ -683,6 +731,31 @@ func (fb Flowbit) String() string {
 	return s.String()
 }
 
+// String returns a string for a Flowbit.
+func (fi Flowint) String() string {
+	var s strings.Builder
+	s.WriteString(fmt.Sprintf("flowint:%s", fi.Name))
+	if inSlice(fi.Modifier, []string{"isset", "isnotset"}) {
+		s.WriteString(fmt.Sprintf(",%s", fi.Modifier))
+	}
+	if inSlice(fi.Modifier, []string{"+", "-", "=", ">", "<", ">=", "<=", "==", "!="}) && fi.Value != "" {
+		s.WriteString(fmt.Sprintf(",%s,%s", fi.Modifier, fi.Value))
+	}
+	s.WriteString(";")
+	return s.String()
+}
+
+// String returns a string for a Flowbit.
+func (xb Xbit) String() string {
+	var s strings.Builder
+	s.WriteString(fmt.Sprintf("xbits:%s,%s,track %s", xb.Action, xb.Name, xb.Track))
+	if xb.Expire != "" {
+		s.WriteString(fmt.Sprintf(",expire %s", xb.Expire))
+	}
+	s.WriteString(";")
+	return s.String()
+}
+
 // String returns a string for a rule.
 func (r Rule) String() string {
 	var s strings.Builder
@@ -744,6 +817,14 @@ func (r Rule) String() string {
 		s.WriteString(fmt.Sprintf("%s ", fb))
 	}
 
+	for _, fi := range r.Flowints {
+		s.WriteString(fmt.Sprintf("%s ", fi))
+	}
+
+	for _, xb := range r.Xbits {
+		s.WriteString(fmt.Sprintf("%s ", xb))
+	}
+
 	for _, ref := range r.References {
 		s.WriteString(fmt.Sprintf("%s ", ref))
 	}
@@ -772,7 +853,7 @@ func (c *Content) FormatPattern() string {
 	var buffer bytes.Buffer
 	pipe := false
 	for _, b := range c.Pattern {
-		if b != ' ' && (b > 126 || b < 35 || b == ':' || b == ';') {
+		if b != ' ' && (b > 126 || b < 35 || b == ':' || b == ';' || b == '|') {
 			if !pipe {
 				buffer.WriteByte('|')
 				pipe = true

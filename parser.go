@@ -144,6 +144,44 @@ func parseLenMatch(k lenMatchType, s string) (*LenMatch, error) {
 	return m, nil
 }
 
+func parseBase64Decode(k byteMatchType, s string) (*ByteMatch, error) {
+	if k != b64Decode {
+		return nil, fmt.Errorf("kind %v is not base64_decode", k)
+	}
+	b := new(ByteMatch)
+	b.Kind = k
+
+	// All options to base64_decode are optional, and specified by their keyword.
+	for _, p := range strings.Split(s, ",") {
+		v := strings.TrimSpace(p)
+		switch {
+		case strings.HasPrefix(v, "bytes"):
+			val := strings.TrimSpace(strings.SplitAfter(v, "bytes")[1])
+			i, err := strconv.Atoi(val)
+			if err != nil {
+				return nil, fmt.Errorf("bytes is not an int: %s; %s", val, err)
+			}
+			if i < 1 {
+				return nil, fmt.Errorf("bytes must be positive, non-zero values only")
+			}
+			b.NumBytes = i
+		case strings.HasPrefix(v, "offset"):
+			val := strings.TrimSpace(strings.SplitAfter(v, "offset")[1])
+			i, err := strconv.Atoi(val)
+			if err != nil {
+				return nil, fmt.Errorf("offset is not an int: %s; %s", val, err)
+			}
+			if i < 1 {
+				return nil, fmt.Errorf("offset must be positive, non-zero values only")
+			}
+			b.Offset = i
+		case strings.HasPrefix(v, "relative"):
+			b.Options = []string{"relative"}
+		}
+	}
+	return b, nil
+}
+
 // parseByteMatch parses a ByteMatch.
 func parseByteMatch(k byteMatchType, s string) (*ByteMatch, error) {
 	b := new(ByteMatch)
@@ -194,13 +232,102 @@ func parseByteMatch(k byteMatchType, s string) (*ByteMatch, error) {
 		b.Offset = offset
 	}
 
-	// The rest of the options.
+	// The rest of the options, for all types not b64decode
 	for i, l := b.Kind.minLen(), len(parts); i < l; i++ {
 		parts[i] = strings.TrimSpace(parts[i])
 		b.Options = append(b.Options, parts[i])
 	}
 
 	return b, nil
+}
+
+// parseFlowbit parses a flowbit.
+func parseFlowbit(s string) (*Flowbit, error) {
+	parts := strings.Split(s, ",")
+	if len(parts) < 1 {
+		return nil, fmt.Errorf("couldn't parse flowbit string: %s", s)
+	}
+	// Ensure all actions are of valid type.
+	a := strings.TrimSpace(parts[0])
+	if !inSlice(a, []string{"noalert", "isset", "isnotset", "set", "unset", "toggle"}) {
+		return nil, fmt.Errorf("invalid action for flowbit: %s", a)
+	}
+	fb := &Flowbit{
+		Action: a,
+	}
+	if fb.Action == "noalert" && len(parts) > 1 {
+		return nil, fmt.Errorf("noalert shouldn't have a value")
+	}
+	if len(parts) == 2 {
+		fb.Value = strings.TrimSpace(parts[1])
+	}
+	return fb, nil
+}
+
+// parseXbit parses an xbit.
+func parseXbit(s string) (*Xbit, error) {
+	parts := strings.Split(s, ",")
+	// All xbits must have an action, name and track
+	if len(parts) < 3 {
+		return nil, fmt.Errorf("not enough parts for xbits: %s", s)
+	}
+	// Ensure all actions are of valid type.
+	a := strings.TrimSpace(parts[0])
+	if !inSlice(a, []string{"set", "unset", "isset", "isnotset", "toggle"}) {
+		return nil, fmt.Errorf("invalid action for xbits: %s", a)
+	}
+	xb := &Xbit{
+		Action: a,
+		Name:   strings.TrimSpace(parts[1]),
+	}
+
+	// Track.
+	t := strings.Fields(parts[2])
+	if len(t) != 2 {
+		return nil, fmt.Errorf("wrong number of parts for track: %v", t)
+	}
+	if t[0] != "track" {
+		return nil, fmt.Errorf("%s should be 'track'", t[0])
+	}
+	xb.Track = t[1]
+
+	// Expire
+	if len(parts) == 4 {
+		e := strings.Fields(parts[3])
+		if len(e) != 2 {
+			return nil, fmt.Errorf("wrong number of parts for expire: %v", e)
+		}
+		if e[0] != "expire" {
+			return nil, fmt.Errorf("%s should be 'expire'", e[0])
+		}
+		xb.Expire = e[1]
+	}
+	return xb, nil
+
+}
+
+// parseFlowint parses a flowint.
+func parseFlowint(s string) (*Flowint, error) {
+	parts := strings.Split(s, ",")
+	// All flowints must have a name and modifier
+	if len(parts) < 2 {
+		return nil, fmt.Errorf("not enough parts for flowint: %s", s)
+	}
+	// Ensure all actions are of valid type.
+	m := strings.TrimSpace(parts[1])
+	if !inSlice(m, []string{"+", "-", "=", ">", "<", ">=", "<=", "==", "!=", "isset", "isnotset"}) {
+		return nil, fmt.Errorf("invalid modifier for flowint: %s", m)
+	}
+	fi := &Flowint{
+		Name:     strings.TrimSpace(parts[0]),
+		Modifier: m,
+	}
+
+	if len(parts) == 3 {
+		fi.Value = strings.TrimSpace(parts[2])
+	}
+
+	return fi, nil
 }
 
 func unquote(s string) string {
@@ -224,8 +351,7 @@ func (r *Rule) comment(key item, l *lexer) error {
 	if key.typ != itemComment {
 		panic("item is not a comment")
 	}
-	// Pop off all leading # and space, try to parse as rule
-	rule, err := ParseRule(strings.TrimLeft(key.value, "# \t"))
+	rule, err := ParseRule(key.value)
 
 	// If there was an error this means the comment is not a rule.
 	if err != nil {
@@ -258,12 +384,15 @@ func (r *Rule) protocol(key item, l *lexer) error {
 	return nil
 }
 
-// netSplitRE matches the characters to split a list of networks [$HOME_NET, 192.168.1.1/32] for example.
-var netSplitRE = regexp.MustCompile(`\s*,\s*`)
-
 // network decodes an IDS rule network (networks and ports) based on its key.
 func (r *Rule) network(key item, l *lexer) error {
-	items := netSplitRE.Split(strings.Trim(key.value, "[]"), -1)
+	items := strings.Split(strings.Trim(key.value, "[]"), ",")
+	// Validate that no items contain spaces.
+	for _, i := range items {
+		if len(strings.Fields(i)) > 1 || len(strings.TrimSpace(i)) != len(i) {
+			return fmt.Errorf("network component contains spaces: %v", i)
+		}
+	}
 	switch key.typ {
 	case itemSourceAddress:
 		r.Source.Nets = append(r.Source.Nets, items...)
@@ -304,7 +433,7 @@ func (r *Rule) option(key item, l *lexer) error {
 	}
 	switch {
 	// TODO: Many of these simple tags could be factored into nicer structures.
-	case inSlice(key.value, []string{"classtype", "flow", "tag", "priority", "app-layer-protocol",
+	case inSlice(key.value, []string{"classtype", "flow", "tag", "priority", "app-layer-protocol", "noalert",
 		"flags", "ipopts", "ip_proto", "geoip", "fragbits", "fragoffset", "tos",
 		"window",
 		"threshold", "detection_filter",
@@ -509,10 +638,19 @@ func (r *Rule) option(key item, l *lexer) error {
 			negate = true
 			nextItem = l.nextItem()
 		}
-		// How to handle the 'negate' bit?
-		b, err := parseByteMatch(k, nextItem.value)
-		if err != nil {
-			return fmt.Errorf("could not parse byteMatch: %v", err)
+
+		b := &ByteMatch{}
+		// Parse base64_decode differently as it has odd semantics.
+		if k == b64Decode {
+			b, err = parseBase64Decode(k, nextItem.value)
+			if err != nil {
+				return fmt.Errorf("could not parse base64Decode: %v", err)
+			}
+		} else {
+			b, err = parseByteMatch(k, nextItem.value)
+			if err != nil {
+				return fmt.Errorf("could not parse byteMatch: %v", err)
+			}
 		}
 		b.Negate = negate
 
@@ -530,21 +668,25 @@ func (r *Rule) option(key item, l *lexer) error {
 		r.LenMatchers = append(r.LenMatchers, m)
 	case key.value == "flowbits":
 		nextItem := l.nextItem()
-		parts := strings.Split(nextItem.value, ",")
-		if len(parts) < 1 {
-			return fmt.Errorf("couldn't parse flowbit string: %s", nextItem.value)
-		}
-		// Ensure all actions are of valid type.
-		if !inSlice(parts[0], []string{"noalert", "isset", "isnotset", "set", "unset", "toggle"}) {
-			return fmt.Errorf("invalid action for flowbit: %s", parts[0])
-		}
-		fb := &Flowbit{
-			Action: strings.TrimSpace(parts[0]),
-		}
-		if len(parts) == 2 {
-			fb.Value = strings.TrimSpace(parts[1])
+		fb, err := parseFlowbit(nextItem.value)
+		if err != nil {
+			return fmt.Errorf("error parsing flowbit: %v", err)
 		}
 		r.Flowbits = append(r.Flowbits, fb)
+	case key.value == "xbits":
+		nextItem := l.nextItem()
+		xb, err := parseXbit(nextItem.value)
+		if err != nil {
+			return fmt.Errorf("error parsing xbits: %v", err)
+		}
+		r.Xbits = append(r.Xbits, xb)
+	case key.value == "flowint":
+		nextItem := l.nextItem()
+		fi, err := parseFlowint(nextItem.value)
+		if err != nil {
+			return fmt.Errorf("error parsing flowint: %v", err)
+		}
+		r.Flowints = append(r.Flowints, fi)
 	}
 	return nil
 }
@@ -560,6 +702,10 @@ func ParseRule(rule string) (*Rule, error) {
 	for item := l.nextItem(); item.typ != itemEOR && item.typ != itemEOF && err == nil; item = l.nextItem() {
 		switch item.typ {
 		case itemComment:
+			if r.Action != "" {
+				// Ignore comment ending rule.
+				return r, nil
+			}
 			err = r.comment(item, l)
 			// Error here means that the comment was not a commented rule.
 			// So we're not parsing a rule and we need to break out.

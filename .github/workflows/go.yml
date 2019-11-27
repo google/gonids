@@ -26,3 +26,18 @@ jobs:
 
     - name: Build
       run: go build -v .
+
+    - name: Test
+      run:  go test -v ./...
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@v1
+
+      - name: Run GolangCI-Lint
+        uses: actions-contrib/golangci-lint@master
+        with:
+          args: run

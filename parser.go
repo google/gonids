@@ -384,12 +384,15 @@ func (r *Rule) protocol(key item, l *lexer) error {
 	return nil
 }
 
-// netSplitRE matches the characters to split a list of networks [$HOME_NET, 192.168.1.1/32] for example.
-var netSplitRE = regexp.MustCompile(`\s*,\s*`)
-
 // network decodes an IDS rule network (networks and ports) based on its key.
 func (r *Rule) network(key item, l *lexer) error {
-	items := netSplitRE.Split(strings.Trim(key.value, "[]"), -1)
+	items := strings.Split(strings.Trim(key.value, "[]"), ",")
+	// Validate that no items contain spaces.
+	for _, i := range items {
+		if len(strings.Fields(i)) > 1 || len(strings.TrimSpace(i)) != len(i) {
+			return fmt.Errorf("network component contains spaces: %v", i)
+		}
+	}
 	switch key.typ {
 	case itemSourceAddress:
 		r.Source.Nets = append(r.Source.Nets, items...)

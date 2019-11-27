@@ -22,6 +22,7 @@ package gonids
 import (
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"regexp"
 	"strconv"
 	"strings"

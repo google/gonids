@@ -173,13 +173,17 @@ func (l *lexer) errorf(format string, args ...interface{}) stateFn {
 }
 
 func (l *lexer) unexpectedEOF() stateFn {
-	l.items <- item{itemError, "unexpected EOF"}
+	close(l.items)
 	return nil
 }
 
 // nextItem returns the next item from the input.
 func (l *lexer) nextItem() item {
-	return <-l.items
+	r, more := <-l.items
+	if !more {
+		return item{itemError, "unexpected EOF"}
+	}
+	return r
 }
 
 // lex initializes and runs a new scanner for the input string.
@@ -221,9 +225,21 @@ func lexRule(l *lexer) stateFn {
 
 // lexComment consumes a commented rule.
 func lexComment(l *lexer) stateFn {
+	// Ignore leading spaces and #.
+	l.ignore()
+	for {
+		r := l.next()
+		if unicode.IsSpace(r) || r == '#' {
+			l.ignore()
+		} else {
+			break
+		}
+	}
+	l.backup()
+
 	for {
 		switch l.next() {
-		case '\n':
+		case '\r', '\n':
 			l.emit(itemComment, false)
 			return lexRule
 		case eof:
@@ -418,8 +434,6 @@ func lexOptionValue(l *lexer) stateFn {
 
 // lexOptionEnd marks the end of a rule.
 func lexRuleEnd(l *lexer) stateFn {
-	l.acceptRun(" \t;")
-	l.ignore()
 	l.emit(itemEOR, false)
 	return lexRule
 }

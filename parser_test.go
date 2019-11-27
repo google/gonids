@@ -16,10 +16,11 @@ limitations under the License.
 package gonids
 
 import (
+	"fmt"
 	"reflect"
 	"testing"
 
-	"github.com/davecgh/go-spew/spew"
+	"github.com/kylelemons/godebug/pretty"
 )
 
 func TestParseContent(t *testing.T) {
@@ -38,6 +39,11 @@ func TestParseContent(t *testing.T) {
 			name:  "hex content",
 			input: "A|42 43|D| 45|",
 			want:  []byte("ABCDE"),
+		},
+		{
+			name:  "contains hex pipe",
+			input: "A|7C|B",
+			want:  []byte("A|B"),
 		},
 	} {
 		got, err := parseContent(tt.input)
@@ -165,8 +171,9 @@ func TestParseLenMatch(t *testing.T) {
 		},
 	} {
 		got, err := parseLenMatch(tt.kind, tt.input)
-		if !reflect.DeepEqual(got, tt.want) || (err != nil) != tt.wantErr {
-			t.Fatalf("%s: got %v,%v; expected %v,%v", tt.name, got, err, tt.want, tt.wantErr)
+		diff := pretty.Compare(got, tt.want)
+		if diff != "" || (err != nil) != tt.wantErr {
+			t.Fatal(fmt.Sprintf("%s: gotErr:%#v, wantErr:%#v\n diff (-got +want):\n%s", tt.name, err, tt.wantErr, diff))
 		}
 	}
 }
@@ -267,8 +274,208 @@ func TestParseByteMatch(t *testing.T) {
 		},
 	} {
 		got, err := parseByteMatch(tt.kind, tt.input)
-		if !reflect.DeepEqual(got, tt.want) || (err != nil) != tt.wantErr {
-			t.Fatalf("%s: got %v,%v; expected %v,%v", tt.name, got, err, tt.want, tt.wantErr)
+		diff := pretty.Compare(got, tt.want)
+		if diff != "" || (err != nil) != tt.wantErr {
+			t.Fatal(fmt.Sprintf("%s: gotErr:%#v, wantErr:%#v\n diff (-got +want):\n%s", tt.name, err, tt.wantErr, diff))
+		}
+	}
+}
+
+func TestParseBase64Decode(t *testing.T) {
+	for _, tt := range []struct {
+		name    string
+		input   string
+		kind    byteMatchType
+		want    *ByteMatch
+		wantErr bool
+	}{
+		{
+			name:  "basic base64_decode",
+			input: "",
+			kind:  b64Decode,
+			want: &ByteMatch{
+				Kind: b64Decode,
+			},
+		},
+		{
+			name:  "bytes",
+			input: "bytes  5  ",
+			kind:  b64Decode,
+			want: &ByteMatch{
+				Kind:     b64Decode,
+				NumBytes: 5,
+			},
+		},
+		{
+			name:  "offset",
+			input: "offset  4",
+			kind:  b64Decode,
+			want: &ByteMatch{
+				Kind:   b64Decode,
+				Offset: 4,
+			},
+		},
+		{
+			name:  "random",
+			input: "  relative,  offset  4, bytes     5",
+			kind:  b64Decode,
+			want: &ByteMatch{
+				Kind:     b64Decode,
+				NumBytes: 5,
+				Offset:   4,
+				Options:  []string{"relative"},
+			},
+		},
+	} {
+		got, err := parseBase64Decode(tt.kind, tt.input)
+		diff := pretty.Compare(got, tt.want)
+		if diff != "" || (err != nil) != tt.wantErr {
+			t.Fatal(fmt.Sprintf("%s: gotErr:%#v, wantErr:%#v\n diff (-got +want):\n%s", tt.name, err, tt.wantErr, diff))
+		}
+	}
+}
+
+func TestParseFlowbit(t *testing.T) {
+	for _, tt := range []struct {
+		name    string
+		input   string
+		want    *Flowbit
+		wantErr bool
+	}{
+		{
+			name:  "basic flowbit",
+			input: "set,foo",
+			want: &Flowbit{
+				Action: "set",
+				Value:  "foo",
+			},
+		},
+		// Errors
+		{
+			name:    "not valid action",
+			input:   "zoom,foo",
+			wantErr: true,
+		},
+		{
+			name:    "noalert with value",
+			input:   "noalert,foo",
+			wantErr: true,
+		},
+	} {
+		got, err := parseFlowbit(tt.input)
+		diff := pretty.Compare(got, tt.want)
+		if diff != "" || (err != nil) != tt.wantErr {
+			t.Fatal(fmt.Sprintf("%s: gotErr:%#v, wantErr:%#v\n diff (-got +want):\n%s", tt.name, err, tt.wantErr, diff))
+		}
+	}
+}
+
+func TestParseXbit(t *testing.T) {
+	for _, tt := range []struct {
+		name    string
+		input   string
+		want    *Xbit
+		wantErr bool
+	}{
+		{
+			name:  "basic xbit",
+			input: "set,foo,track ip_src",
+			want: &Xbit{
+				Action: "set",
+				Name:   "foo",
+				Track:  "ip_src",
+			},
+		},
+		{
+			name:  "basic xbit expire",
+			input: "set,foo,track ip_src,expire 60",
+			want: &Xbit{
+				Action: "set",
+				Name:   "foo",
+				Track:  "ip_src",
+				Expire: "60",
+			},
+		},
+		{
+			name:  "funky spacing",
+			input: "  set  ,   foo,   track   ip_src  , expire  60    ",
+			want: &Xbit{
+				Action: "set",
+				Name:   "foo",
+				Track:  "ip_src",
+				Expire: "60",
+			},
+		},
+		// Errors
+		{
+			name:    "not valid action",
+			input:   "zoom,foo,track ip_src,expire 60",
+			wantErr: true,
+		},
+		{
+			name:    "invalid len",
+			input:   "set,foo",
+			wantErr: true,
+		},
+		{
+			name:    "not track",
+			input:   "set,foo,nottrack ip_src,",
+			wantErr: true,
+		},
+		{
+			name:    "not expire",
+			input:   "set,foo,track ip_src,notexpire 60",
+			wantErr: true,
+		},
+	} {
+		got, err := parseXbit(tt.input)
+		diff := pretty.Compare(got, tt.want)
+		if diff != "" || (err != nil) != tt.wantErr {
+			t.Fatal(fmt.Sprintf("%s: gotErr:%#v, wantErr:%#v\n diff (-got +want):\n%s", tt.name, err, tt.wantErr, diff))
+		}
+	}
+}
+
+func TestParseFlowint(t *testing.T) {
+	for _, tt := range []struct {
+		name    string
+		input   string
+		want    *Flowint
+		wantErr bool
+	}{
+		{
+			name:  "basic flowint",
+			input: "foo,>,1",
+			want: &Flowint{
+				Name:     "foo",
+				Modifier: ">",
+				Value:    "1",
+			},
+		},
+		{
+			name:  "basic status",
+			input: "foo,isnotset",
+			want: &Flowint{
+				Name:     "foo",
+				Modifier: "isnotset",
+			},
+		},
+		// Errors
+		{
+			name:    "too short",
+			input:   "foo",
+			wantErr: true,
+		},
+		{
+			name:    "invalid modifier",
+			input:   "foo,baz,bar",
+			wantErr: true,
+		},
+	} {
+		got, err := parseFlowint(tt.input)
+		diff := pretty.Compare(got, tt.want)
+		if diff != "" || (err != nil) != tt.wantErr {
+			t.Fatal(fmt.Sprintf("%s: gotErr:%#v, wantErr:%#v\n diff (-got +want):\n%s", tt.name, err, tt.wantErr, diff))
 		}
 	}
 }
@@ -284,6 +491,30 @@ func TestParseRule(t *testing.T) {
 			name:    "non-rule comment",
 			rule:    `# Foo header, this describes a file.`,
 			wantErr: true,
+		},
+		{
+			name: "comment end-rule",
+			rule: `alert tcp $HOME_NET any -> $EXTERNAL_NET any (msg:"foo"; content:"bar"; sid:123; rev:1;) # foo comment.`,
+			want: &Rule{
+				Action:   "alert",
+				Protocol: "tcp",
+				Source: Network{
+					Nets:  []string{"$HOME_NET"},
+					Ports: []string{"any"},
+				},
+				Destination: Network{
+					Nets:  []string{"$EXTERNAL_NET"},
+					Ports: []string{"any"},
+				},
+				SID:         123,
+				Revision:    1,
+				Description: "foo",
+				Matchers: []orderedMatcher{
+					&Content{
+						Pattern: []byte("bar"),
+					},
+				},
+			},
 		},
 		{
 			name: "simple content",
@@ -1247,6 +1478,37 @@ func TestParseRule(t *testing.T) {
 			},
 		},
 		{
+			name: "base64 keywords",
+			rule: `alert tcp $HOME_NET any -> $EXTERNAL_NET any (msg:"test base64 keywords"; base64_decode:bytes 150,offset 17,relative; base64_data; content:"thing I see"; sid:123; rev:1;)`,
+			want: &Rule{
+				Action:   "alert",
+				Protocol: "tcp",
+				Source: Network{
+					Nets:  []string{"$HOME_NET"},
+					Ports: []string{"any"},
+				},
+				Destination: Network{
+					Nets:  []string{"$EXTERNAL_NET"},
+					Ports: []string{"any"},
+				},
+				SID:         123,
+				Revision:    1,
+				Description: "test base64 keywords",
+				Matchers: []orderedMatcher{
+					&ByteMatch{
+						Kind:     b64Decode,
+						NumBytes: 150,
+						Offset:   17,
+						Options:  []string{"relative"},
+					},
+					&Content{
+						DataPosition: base64Data,
+						Pattern:      []byte("thing I see"),
+					},
+				},
+			},
+		},
+		{
 			name: "content with backslash at end",
 			rule: `alert http $HOME_NET any -> $EXTERNAL_NET any (msg:"ending backslash rule"; content:"foo\"; sid:12345; rev:2;)`, want: &Rule{
 				Action:   "alert",
@@ -1340,6 +1602,68 @@ func TestParseRule(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "flowints",
+			rule: `alert http $HOME_NET any -> $EXTERNAL_NET any (msg:"Flowints test"; flowint:foo,+,1; flowint:bar,isset; sid:1234; rev:2;)`,
+			want: &Rule{
+				Action:   "alert",
+				Protocol: "http",
+				Source: Network{
+					Nets:  []string{"$HOME_NET"},
+					Ports: []string{"any"},
+				},
+				Destination: Network{
+					Nets:  []string{"$EXTERNAL_NET"},
+					Ports: []string{"any"},
+				},
+				SID:         1234,
+				Revision:    2,
+				Description: "Flowints test",
+				Flowints: []*Flowint{
+					{
+						Name:     "foo",
+						Modifier: "+",
+						Value:    "1",
+					},
+					{
+						Name:     "bar",
+						Modifier: "isset",
+					},
+				},
+			},
+		},
+		{
+			name: "xbits",
+			rule: `alert http $HOME_NET any -> $EXTERNAL_NET any (msg:"Xbits test"; xbits:set,foo,track ip_src; xbits:set,bar,track ip_src,expire 60; sid:1234; rev:2;)`,
+			want: &Rule{
+				Action:   "alert",
+				Protocol: "http",
+				Source: Network{
+					Nets:  []string{"$HOME_NET"},
+					Ports: []string{"any"},
+				},
+				Destination: Network{
+					Nets:  []string{"$EXTERNAL_NET"},
+					Ports: []string{"any"},
+				},
+				SID:         1234,
+				Revision:    2,
+				Description: "Xbits test",
+				Xbits: []*Xbit{
+					{
+						Action: "set",
+						Name:   "foo",
+						Track:  "ip_src",
+					},
+					{
+						Action: "set",
+						Name:   "bar",
+						Track:  "ip_src",
+						Expire: "60",
+					},
+				},
+			},
+		},
 		// Errors
 		{
 			name:    "invalid direction",
@@ -1372,14 +1696,25 @@ func TestParseRule(t *testing.T) {
 			wantErr: true,
 		},
 		{
+			name:    "network with space",
+			rule:    `alert tcp $EXTERNAL_NET 443 -> $HOME_NET [123, 234] (msg:"bad network definition"; sid:4321;)`,
+			wantErr: true,
+		},
+		{
 			name:    "fuzzer generated garbage",
 			rule:    `alert tcp $EXTEVNAL_NET any <> $HOME_NET 0 e:misc-activity; sid:t 2010_09_#alert tcp $EXTERNAL_NET any -> $SQL_SERVERS 1433 (msg:"ET EXPLOIT xp_servicecontrol accecs"; flow:to_%erv23, upd)er,established; content:"x|00|p|00|_|00|s|00|e|00|r|00|v|00|i|00|c|00|e|00|c|00|o|00|n|00|t|00|r|00|o|00|l|00|"; nocase; reference:url,doc.emergi`,
 			wantErr: true,
 		},
+		{
+			name:    "fuzzer goroutines sleep",
+			rule:    `  ert htt $ET any -> Hnz (mjectatay; tls.fingerprint:"65`,
+			wantErr: true,
+		},
 	} {
 		got, err := ParseRule(tt.rule)
-		if !reflect.DeepEqual(got, tt.want) || (err != nil) != tt.wantErr {
-			t.Fatal(spew.Sprintf("%s: got=%#v,%#v; want=%#v,%#v", tt.name, got, err, tt.want, tt.wantErr))
+		diff := pretty.Compare(got, tt.want)
+		if diff != "" || (err != nil) != tt.wantErr {
+			t.Fatal(fmt.Sprintf("%s: gotErr:%#v, wantErr:%#v\n diff (-got +want):\n%s", tt.name, err, tt.wantErr, diff))
 		}
 	}
 }
@@ -1431,8 +1766,9 @@ func TestInEqualOut(t *testing.T) {
 		if err != nil {
 			t.Fatalf("%v", err)
 		}
-		if !reflect.DeepEqual(first, second) {
-			t.Fatalf("%s:\nfirst:\n%#v\n\nsecond:\n%#v\n\nf", tt.name, first, second)
+		diff := pretty.Compare(first, second)
+		if diff != "" {
+			t.Fatal(fmt.Sprintf("%s: diff (-got +want):\n%s", tt.name, diff))
 		}
 	}
 }

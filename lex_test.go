@@ -184,7 +184,7 @@ func TestLexer(t *testing.T) {
 		{
 			name:  "comment",
 			input: "# bla",
-			items: []item{{itemComment, "# bla"}},
+			items: []item{{itemComment, "bla"}},
 		},
 		// errors.
 		{

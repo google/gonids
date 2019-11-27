@@ -16,8 +16,10 @@ limitations under the License.
 package gonids
 
 import (
-	"reflect"
+	"fmt"
 	"testing"
+
+	"github.com/kylelemons/godebug/pretty"
 )
 
 func TestOptimizeHTTP(t *testing.T) {
@@ -133,8 +135,9 @@ func TestOptimizeHTTP(t *testing.T) {
 			t.Fatalf("%s: gotMod %v; expected %v", tt.name, gotMod, tt.wantMod)
 		}
 		// Actual modifications correctness.
-		if tt.wantMod && !reflect.DeepEqual(tt.output, tt.input) {
-			t.Fatalf("got:\n%v\nwant:\n%v", tt.input, tt.output)
+		diff := pretty.Compare(tt.output, tt.input)
+		if tt.wantMod && diff != "" {
+			t.Fatal(fmt.Sprintf("diff (-got +want):\n%s", diff))
 		}
 	}
 }
@@ -266,8 +269,9 @@ func TestSnortURILenFix(t *testing.T) {
 			t.Fatalf("%s: gotMod %v; expected %v", tt.name, gotMod, tt.wantMod)
 		}
 		// Actual modifications correctness.
-		if tt.wantMod && !reflect.DeepEqual(tt.output, tt.input) {
-			t.Fatalf("got:\n%v\nwant:\n%v", tt.input, tt.output)
+		diff := pretty.Compare(tt.output, tt.input)
+		if tt.wantMod && diff != "" {
+			t.Fatal(fmt.Sprintf("diff (-got +want):\n%s", diff))
 		}
 	}
 }
@@ -380,8 +384,9 @@ func TestSnortHTTPHeaderFix(t *testing.T) {
 			t.Fatalf("%s: gotMod %v; expected %v", tt.name, gotMod, tt.wantMod)
 		}
 		// Actual modifications correctness.
-		if tt.wantMod && !reflect.DeepEqual(tt.output, tt.input) {
-			t.Fatalf("got:\n%v\nwant:\n%v", tt.input, tt.output)
+		diff := pretty.Compare(tt.output, tt.input)
+		if tt.wantMod && diff != "" {
+			t.Fatal(fmt.Sprintf("diff (-got +want):\n%s", diff))
 		}
 	}
 }

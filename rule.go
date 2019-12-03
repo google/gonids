@@ -482,7 +482,7 @@ func (r *Rule) CVE() string {
 
 // Contents returns all *Content for a rule.
 func (r *Rule) Contents() []*Content {
-	var cs []*Content
+	cs := make([]*Content, 0, len(r.Matchers))
 	for _, m := range r.Matchers {
 		if c, ok := m.(*Content); ok {
 			cs = append(cs, c)

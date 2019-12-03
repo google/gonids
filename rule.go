@@ -602,9 +602,7 @@ func (b ByteMatch) base64DecodeString() string {
 		parts = append(parts, fmt.Sprintf("offset %d", b.Offset))
 	}
 	// This should only be "relative" but we'll support "anything"
-	for _, opt := range b.Options {
-		parts = append(parts, opt)
-	}
+	parts = append(parts, b.Options...)
 	if len(parts) == 0 {
 		return fmt.Sprintf("%s;", byteMatchTypeVals[b.Kind])
 	}

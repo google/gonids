@@ -15,6 +15,7 @@ limitations under the License.
 
 package gonids
 
+// FuzzParseRule is used by OSS-Fuzz to fuzz the library.
 func FuzzParseRule(data []byte) int {
 	r, err := ParseRule(string(data))
 	if err != nil {

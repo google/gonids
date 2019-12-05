@@ -776,7 +776,7 @@ func (r Rule) String() string {
 			if c, ok := m.(*Content); ok {
 				if d != c.DataPosition {
 					d = c.DataPosition
-					s.WriteString(fmt.Sprintf(" %s;", d))
+					s.WriteString(fmt.Sprintf("%s; ", d))
 				}
 			}
 			s.WriteString(fmt.Sprintf("%s ", m))

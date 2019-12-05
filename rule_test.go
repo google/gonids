@@ -811,6 +811,34 @@ func TestRuleString(t *testing.T) {
 			want: `alert udp $HOME_NET any -> $EXTERNAL_NET any (msg:"foo"; content:"AA"; sid:1337; rev:2;)`,
 		},
 		{
+			name: "rule with datapos",
+			input: Rule{
+				Action:   "alert",
+				Protocol: "udp",
+				Source: Network{
+					Nets:  []string{"$HOME_NET"},
+					Ports: []string{"any"},
+				},
+				Destination: Network{
+					Nets:  []string{"$EXTERNAL_NET"},
+					Ports: []string{"any"},
+				},
+				SID:         1337,
+				Revision:    2,
+				Description: "foo",
+				Matchers: []orderedMatcher{
+					&Content{
+						Pattern: []byte("AA"),
+					},
+					&Content{
+						Pattern:      []byte("BB"),
+						DataPosition: fileData,
+					},
+				},
+			},
+			want: `alert udp $HOME_NET any -> $EXTERNAL_NET any (msg:"foo"; content:"AA"; file_data; content:"BB"; sid:1337; rev:2;)`,
+		},
+		{
 			name: "rule with pcre",
 			input: Rule{
 				Action:   "alert",

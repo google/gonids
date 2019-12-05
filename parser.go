@@ -639,7 +639,7 @@ func (r *Rule) option(key item, l *lexer) error {
 			nextItem = l.nextItem()
 		}
 
-		b := &ByteMatch{}
+		var b *ByteMatch
 		// Parse base64_decode differently as it has odd semantics.
 		if k == b64Decode {
 			b, err = parseBase64Decode(k, nextItem.value)

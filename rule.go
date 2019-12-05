@@ -482,7 +482,7 @@ func (r *Rule) CVE() string {
 
 // Contents returns all *Content for a rule.
 func (r *Rule) Contents() []*Content {
-	var cs []*Content
+	cs := make([]*Content, 0, len(r.Matchers))
 	for _, m := range r.Matchers {
 		if c, ok := m.(*Content); ok {
 			cs = append(cs, c)
@@ -602,9 +602,7 @@ func (b ByteMatch) base64DecodeString() string {
 		parts = append(parts, fmt.Sprintf("offset %d", b.Offset))
 	}
 	// This should only be "relative" but we'll support "anything"
-	for _, opt := range b.Options {
-		parts = append(parts, opt)
-	}
+	parts = append(parts, b.Options...)
 	if len(parts) == 0 {
 		return fmt.Sprintf("%s;", byteMatchTypeVals[b.Kind])
 	}

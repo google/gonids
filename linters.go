@@ -101,15 +101,10 @@ func (r *Rule) ExpensivePCRE() bool {
 	common := true
 	for _, c := range cs {
 		if !inSlice(strings.ToLower(strings.Trim(string(c.Pattern), "\r\n :/?")), bannedContents) {
-			return false
+			common = false
 		}
 	}
-	if common {
-		return true
-	}
-
-	// Don't flag a rule if we haven't defined a condition that's interesting.
-	return false
+	return common
 }
 
 // SnortHTTPHeader returns true if any content contains double CRLF at the end.
@@ -140,10 +135,7 @@ func (c Content) SnortHTTPHeader() bool {
 
 // NoReferences returns true if there are no references in the rule.
 func (r *Rule) NoReferences() bool {
-	if len(r.References) == 0 {
-		return true
-	}
-	return false
+	return len(r.References) == 0
 }
 
 // Length at which we warn if all matchers are this Contents with length or shorter.

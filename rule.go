@@ -769,6 +769,11 @@ func (r Rule) String() string {
 
 	s.WriteString(fmt.Sprintf(`%s (msg:"%s"; `, r.Destination, r.Description))
 
+	// Pull flow out of tags if it exists, we like flow at the beginning of rules.
+	if v, ok := r.Tags["flow"]; ok {
+		s.WriteString(fmt.Sprintf("flow:%s; ", v))
+	}
+
 	// Write out matchers in order (because things can be relative.)
 	if len(r.Matchers) > 0 {
 		d := pktData
@@ -804,6 +809,9 @@ func (r Rule) String() string {
 	}
 
 	for k, v := range r.Tags {
+		if k == "flow" {
+			continue
+		}
 		s.WriteString(fmt.Sprintf("%s:%s; ", k, v))
 	}
 

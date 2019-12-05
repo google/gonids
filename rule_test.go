@@ -839,6 +839,31 @@ func TestRuleString(t *testing.T) {
 			want: `alert udp $HOME_NET any -> $EXTERNAL_NET any (msg:"foo"; content:"AA"; file_data; content:"BB"; sid:1337; rev:2;)`,
 		},
 		{
+			name: "rule with flow and tag",
+			input: Rule{
+				Action:   "alert",
+				Protocol: "tcp",
+				Source: Network{
+					Nets:  []string{"$HOME_NET"},
+					Ports: []string{"any"},
+				},
+				Destination: Network{
+					Nets:  []string{"$EXTERNAL_NET"},
+					Ports: []string{"any"},
+				},
+				SID:         1337,
+				Revision:    2,
+				Description: "foo",
+				Matchers: []orderedMatcher{
+					&Content{
+						Pattern: []byte("AA"),
+					},
+				},
+				Tags: map[string]string{"flow": "to_server", "app-layer-protocol": "tls"},
+			},
+			want: `alert tcp $HOME_NET any -> $EXTERNAL_NET any (msg:"foo"; flow:to_server; content:"AA"; app-layer-protocol:tls; sid:1337; rev:2;)`,
+		},
+		{
 			name: "rule with pcre",
 			input: Rule{
 				Action:   "alert",

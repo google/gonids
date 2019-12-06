@@ -313,8 +313,8 @@ type ByteMatch struct {
 	Negate bool
 	// A variable name being extracted by byte_extract.
 	Variable string
-	// Number of bytes to operate on. "bytes to convert" in Snort Manual.
-	NumBytes int
+	// Number of bytes to operate on. "bytes to convert" in Snort Manual. This can be an int, or a var from byte_extract.
+	NumBytes string
 	// Operator for comparison in byte_test.
 	Operator string
 	// Value to compare against using byte_test.
@@ -595,8 +595,8 @@ func (c Content) String() string {
 // base64DecodeString returns a string for a base64_decode ByteMatch.
 func (b ByteMatch) base64DecodeString() string {
 	var parts []string
-	if b.NumBytes > 0 {
-		parts = append(parts, fmt.Sprintf("bytes %d", b.NumBytes))
+	if b.NumBytes != "" {
+		parts = append(parts, fmt.Sprintf("bytes %s", b.NumBytes))
 	}
 	if b.Offset > 0 {
 		parts = append(parts, fmt.Sprintf("offset %d", b.Offset))
@@ -618,16 +618,16 @@ func (b ByteMatch) String() string {
 
 	switch b.Kind {
 	case bExtract:
-		s.WriteString(fmt.Sprintf("%d,%d,%s", b.NumBytes, b.Offset, b.Variable))
+		s.WriteString(fmt.Sprintf("%s,%d,%s", b.NumBytes, b.Offset, b.Variable))
 	case bJump:
-		s.WriteString(fmt.Sprintf("%d,%d", b.NumBytes, b.Offset))
+		s.WriteString(fmt.Sprintf("%s,%d", b.NumBytes, b.Offset))
 	case bTest:
-		s.WriteString(fmt.Sprintf("%d,%s,%s,%d", b.NumBytes, b.Operator, b.Value, b.Offset))
+		s.WriteString(fmt.Sprintf("%s,%s,%s,%d", b.NumBytes, b.Operator, b.Value, b.Offset))
 	case isDataAt:
 		if b.Negate {
 			s.WriteString("!")
 		}
-		s.WriteString(fmt.Sprintf("%d", b.NumBytes))
+		s.WriteString(b.NumBytes)
 	// Logic for this case is a bit different so it's handled outside.
 	case b64Decode:
 		return b.base64DecodeString()
@@ -769,6 +769,11 @@ func (r Rule) String() string {
 
 	s.WriteString(fmt.Sprintf(`%s (msg:"%s"; `, r.Destination, r.Description))
 
+	// Pull flow out of tags if it exists, we like flow at the beginning of rules.
+	if v, ok := r.Tags["flow"]; ok {
+		s.WriteString(fmt.Sprintf("flow:%s; ", v))
+	}
+
 	// Write out matchers in order (because things can be relative.)
 	if len(r.Matchers) > 0 {
 		d := pktData
@@ -804,6 +809,9 @@ func (r Rule) String() string {
 	}
 
 	for k, v := range r.Tags {
+		if k == "flow" {
+			continue
+		}
 		s.WriteString(fmt.Sprintf("%s:%s; ", k, v))
 	}
 
@@ -886,4 +894,15 @@ func (r *Rule) InsertMatcher(m orderedMatcher, pos int) error {
 	copy(r.Matchers[pos+1:], r.Matchers[pos:])
 	r.Matchers[pos] = m
 	return nil
+}
+
+// HasVar returns true if a variable with the provided name exists.
+func (r *Rule) HasVar(s string) bool {
+	hasVar := false
+	for _, bm := range r.ByteMatchers() {
+		if bm.Variable == s {
+			hasVar = true
+		}
+	}
+	return hasVar
 }

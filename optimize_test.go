@@ -306,7 +306,7 @@ func TestSnortHTTPHeaderFix(t *testing.T) {
 					&ByteMatch{
 						Kind:     isDataAt,
 						Negate:   true,
-						NumBytes: 1,
+						NumBytes: "1",
 					},
 				},
 				Metas: Metadatas{
@@ -359,7 +359,7 @@ func TestSnortHTTPHeaderFix(t *testing.T) {
 					&ByteMatch{
 						Kind:     isDataAt,
 						Negate:   true,
-						NumBytes: 1,
+						NumBytes: "1",
 					},
 					&Content{
 						Pattern: []byte("baz"),

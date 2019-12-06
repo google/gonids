@@ -192,7 +192,7 @@ func TestParseByteMatch(t *testing.T) {
 			kind:  bExtract,
 			want: &ByteMatch{
 				Kind:     bExtract,
-				NumBytes: 3,
+				NumBytes: "3",
 				Variable: "Certs.len",
 			},
 		},
@@ -202,7 +202,7 @@ func TestParseByteMatch(t *testing.T) {
 			kind:  bExtract,
 			want: &ByteMatch{
 				Kind:     bExtract,
-				NumBytes: 3,
+				NumBytes: "3",
 				Variable: "Certs.len",
 				Options:  []string{"relative", "little"},
 			},
@@ -213,7 +213,7 @@ func TestParseByteMatch(t *testing.T) {
 			kind:  bJump,
 			want: &ByteMatch{
 				Kind:     bJump,
-				NumBytes: 3,
+				NumBytes: "3",
 				Offset:   0,
 			},
 		},
@@ -223,7 +223,7 @@ func TestParseByteMatch(t *testing.T) {
 			kind:  bJump,
 			want: &ByteMatch{
 				Kind:     bJump,
-				NumBytes: 3,
+				NumBytes: "3",
 				Offset:   0,
 				Options:  []string{"relative", "little"},
 			},
@@ -234,7 +234,7 @@ func TestParseByteMatch(t *testing.T) {
 			kind:  bTest,
 			want: &ByteMatch{
 				Kind:     bTest,
-				NumBytes: 2,
+				NumBytes: "2",
 				Operator: "=",
 				Offset:   0,
 				Value:    "0x01",
@@ -246,7 +246,7 @@ func TestParseByteMatch(t *testing.T) {
 			kind:  bTest,
 			want: &ByteMatch{
 				Kind:     bTest,
-				NumBytes: 4,
+				NumBytes: "4",
 				Operator: "=",
 				Value:    "1337",
 				Offset:   1,
@@ -259,7 +259,7 @@ func TestParseByteMatch(t *testing.T) {
 			kind:  isDataAt,
 			want: &ByteMatch{
 				Kind:     isDataAt,
-				NumBytes: 4,
+				NumBytes: "4",
 			},
 		},
 		{
@@ -268,7 +268,7 @@ func TestParseByteMatch(t *testing.T) {
 			kind:  isDataAt,
 			want: &ByteMatch{
 				Kind:     isDataAt,
-				NumBytes: 4,
+				NumBytes: "4",
 				Options:  []string{"relative"},
 			},
 		},
@@ -303,7 +303,7 @@ func TestParseBase64Decode(t *testing.T) {
 			kind:  b64Decode,
 			want: &ByteMatch{
 				Kind:     b64Decode,
-				NumBytes: 5,
+				NumBytes: "5",
 			},
 		},
 		{
@@ -321,7 +321,7 @@ func TestParseBase64Decode(t *testing.T) {
 			kind:  b64Decode,
 			want: &ByteMatch{
 				Kind:     b64Decode,
-				NumBytes: 5,
+				NumBytes: "5",
 				Offset:   4,
 				Options:  []string{"relative"},
 			},
@@ -1362,7 +1362,7 @@ func TestParseRule(t *testing.T) {
 					},
 					&ByteMatch{
 						Kind:     bExtract,
-						NumBytes: 3,
+						NumBytes: "3",
 						Variable: "Certs.len",
 						Options:  []string{"relative", "little"},
 					},
@@ -1399,7 +1399,7 @@ func TestParseRule(t *testing.T) {
 					},
 					&ByteMatch{
 						Kind:     bTest,
-						NumBytes: 5,
+						NumBytes: "5",
 						Operator: "<",
 						Value:    "65537",
 						Offset:   0,
@@ -1431,7 +1431,7 @@ func TestParseRule(t *testing.T) {
 					},
 					&ByteMatch{
 						Kind:     bJump,
-						NumBytes: 4,
+						NumBytes: "4",
 						Offset:   0,
 						Options:  []string{"relative", "little", "post_offset -1"},
 					},
@@ -1464,14 +1464,14 @@ func TestParseRule(t *testing.T) {
 					},
 					&ByteMatch{
 						Kind:     bJump,
-						NumBytes: 2,
+						NumBytes: "2",
 						Offset:   3,
 						Options:  []string{"post_offset -1"},
 					},
 					&ByteMatch{
 						Kind:     isDataAt,
 						Negate:   true,
-						NumBytes: 2,
+						NumBytes: "2",
 						Options:  []string{"relative"},
 					},
 				},
@@ -1497,7 +1497,7 @@ func TestParseRule(t *testing.T) {
 				Matchers: []orderedMatcher{
 					&ByteMatch{
 						Kind:     b64Decode,
-						NumBytes: 150,
+						NumBytes: "150",
 						Offset:   17,
 						Options:  []string{"relative"},
 					},

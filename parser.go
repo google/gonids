@@ -655,9 +655,6 @@ func (r *Rule) option(key item, l *lexer) error {
 				}
 			}
 		}
-		// Validate that NumBytes is an int or a variable
-		//
-
 		b.Negate = negate
 
 		r.Matchers = append(r.Matchers, b)

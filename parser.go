@@ -156,15 +156,7 @@ func parseBase64Decode(k byteMatchType, s string) (*ByteMatch, error) {
 		v := strings.TrimSpace(p)
 		switch {
 		case strings.HasPrefix(v, "bytes"):
-			val := strings.TrimSpace(strings.SplitAfter(v, "bytes")[1])
-			i, err := strconv.Atoi(val)
-			if err != nil {
-				return nil, fmt.Errorf("bytes is not an int: %s; %s", val, err)
-			}
-			if i < 1 {
-				return nil, fmt.Errorf("bytes must be positive, non-zero values only")
-			}
-			b.NumBytes = i
+			b.NumBytes = strings.TrimSpace(strings.SplitAfter(v, "bytes")[1])
 		case strings.HasPrefix(v, "offset"):
 			val := strings.TrimSpace(strings.SplitAfter(v, "offset")[1])
 			i, err := strconv.Atoi(val)
@@ -194,11 +186,7 @@ func parseByteMatch(k byteMatchType, s string) (*ByteMatch, error) {
 		return nil, fmt.Errorf("%s keyword has %d parts", s, len(parts))
 	}
 
-	n, err := strconv.Atoi(strings.TrimSpace(parts[0]))
-	if err != nil {
-		return nil, fmt.Errorf("number of bytes is not an int: %s; %s", parts[0], err)
-	}
-	b.NumBytes = n
+	b.NumBytes = strings.TrimSpace(parts[0])
 
 	if len(parts) < b.Kind.minLen() {
 		return nil, fmt.Errorf("invalid %s length: %d", b.Kind, len(parts))
@@ -652,6 +640,16 @@ func (r *Rule) option(key item, l *lexer) error {
 				return fmt.Errorf("could not parse byteMatch: %v", err)
 			}
 		}
+		// Validate that NumBytes is an int or a variable
+		if i, err := strconv.Atoi(b.NumBytes); err != nil {
+			// NumBytes is not an int, check if it is a variable from byte_extract.
+			if !r.HasVar(b.NumBytes) {
+				return fmt.Errorf("number of bytes is not an int, or an extracted variable: %s; %s", b.NumBytes, err)
+			}
+		} else if i < 1 {
+			return fmt.Errorf("bytes must be positive, non-zero values only: %d", i)
+		}
+
 		b.Negate = negate
 
 		r.Matchers = append(r.Matchers, b)

@@ -627,7 +627,7 @@ func (b ByteMatch) String() string {
 		if b.Negate {
 			s.WriteString("!")
 		}
-		s.WriteString(fmt.Sprintf("%s", b.NumBytes))
+		s.WriteString(b.NumBytes)
 	// Logic for this case is a bit different so it's handled outside.
 	case b64Decode:
 		return b.base64DecodeString()

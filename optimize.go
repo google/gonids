@@ -87,7 +87,7 @@ func (r *Rule) SnortHTTPHeaderFix() bool {
 			if c.SnortHTTPHeader() {
 				modified = true
 				c.Pattern = bytes.TrimSuffix(c.Pattern, []byte("\r\n"))
-				if err := r.InsertMatcher(&ByteMatch{Kind: isDataAt, Negate: true, NumBytes: 1}, i+1); err != nil {
+				if err := r.InsertMatcher(&ByteMatch{Kind: isDataAt, Negate: true, NumBytes: "1"}, i+1); err != nil {
 					return false
 				}
 			}

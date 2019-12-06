@@ -348,7 +348,7 @@ func TestByteMatchString(t *testing.T) {
 			name: "byte_test basic",
 			input: ByteMatch{
 				Kind:     bTest,
-				NumBytes: 3,
+				NumBytes: "3",
 				Operator: ">",
 				Value:    "300",
 				Offset:   42,
@@ -359,7 +359,7 @@ func TestByteMatchString(t *testing.T) {
 			name: "byte_jump basic",
 			input: ByteMatch{
 				Kind:     bJump,
-				NumBytes: 3,
+				NumBytes: "3",
 				Offset:   42,
 			},
 			want: `byte_jump:3,42;`,
@@ -368,7 +368,7 @@ func TestByteMatchString(t *testing.T) {
 			name: "byte_extract basic",
 			input: ByteMatch{
 				Kind:     bExtract,
-				NumBytes: 3,
+				NumBytes: "3",
 				Offset:   42,
 				Variable: "foobar",
 			},
@@ -378,7 +378,7 @@ func TestByteMatchString(t *testing.T) {
 			name: "byte_test options",
 			input: ByteMatch{
 				Kind:     bTest,
-				NumBytes: 3,
+				NumBytes: "3",
 				Operator: ">",
 				Value:    "300",
 				Offset:   42,
@@ -390,7 +390,7 @@ func TestByteMatchString(t *testing.T) {
 			name: "byte_jump options",
 			input: ByteMatch{
 				Kind:     bJump,
-				NumBytes: 3,
+				NumBytes: "3",
 				Offset:   42,
 				Options:  []string{"relative", "post_offset 2", "bitmask 0x03f0"},
 			},
@@ -400,7 +400,7 @@ func TestByteMatchString(t *testing.T) {
 			name: "byte_extract options",
 			input: ByteMatch{
 				Kind:     bExtract,
-				NumBytes: 3,
+				NumBytes: "3",
 				Offset:   42,
 				Variable: "foobar",
 				Options:  []string{"relative", "bitmask 0x03ff"},
@@ -432,7 +432,7 @@ func TestBase64DecodeString(t *testing.T) {
 			name: "base64_decode some options",
 			input: ByteMatch{
 				Kind:     b64Decode,
-				NumBytes: 1,
+				NumBytes: "1",
 				Options:  []string{"relative"},
 			},
 			want: `base64_decode:bytes 1,relative;`,
@@ -441,7 +441,7 @@ func TestBase64DecodeString(t *testing.T) {
 			name: "base64_decode all options",
 			input: ByteMatch{
 				Kind:     b64Decode,
-				NumBytes: 1,
+				NumBytes: "1",
 				Offset:   2,
 				Options:  []string{"relative"},
 			},
@@ -1121,6 +1121,52 @@ func TestStickyBuffer(t *testing.T) {
 	}
 }
 
+func TestHasVar(t *testing.T) {
+	for _, tt := range []struct {
+		name string
+		r    *Rule
+		s    string
+		want bool
+	}{
+		{
+			name: "has var",
+			r: &Rule{
+				Matchers: []orderedMatcher{
+					&ByteMatch{
+						Variable: "foovar",
+					},
+				},
+			},
+			s:    "foovar",
+			want: true,
+		},
+		{
+			name: "has var",
+			r: &Rule{
+				Matchers: []orderedMatcher{
+					&ByteMatch{
+						Variable: "barvar",
+					},
+				},
+			},
+			s:    "foovar",
+			want: false,
+		},
+		{
+			name: "no byte matchers",
+			r:    &Rule{},
+			s:    "foovar",
+			want: false,
+		},
+	} {
+		got := tt.r.HasVar(tt.s)
+		if got != tt.want {
+			t.Fatalf("got=%v; want=%v", got, tt.want)
+		}
+
+	}
+}
+
 func TestInsertMatcher(t *testing.T) {
 	for _, tt := range []struct {
 		name    string
@@ -1226,7 +1272,7 @@ func TestInsertMatcher(t *testing.T) {
 			matcher: &ByteMatch{
 				Kind:     isDataAt,
 				Negate:   true,
-				NumBytes: 1,
+				NumBytes: "1",
 			},
 			pos: 1,
 			want: &Rule{
@@ -1237,7 +1283,7 @@ func TestInsertMatcher(t *testing.T) {
 					&ByteMatch{
 						Kind:     isDataAt,
 						Negate:   true,
-						NumBytes: 1,
+						NumBytes: "1",
 					},
 					&Content{
 						Pattern: []byte("bar"),

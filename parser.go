@@ -419,6 +419,7 @@ func (r *Rule) option(key item, l *lexer) error {
 	if key.typ != itemOptionKey {
 		panic("item is not an option key")
 	}
+	var unsupportedOptions = make([]string, 0, 3)
 	switch {
 	// TODO: Many of these simple tags could be factored into nicer structures.
 	case inSlice(key.value, []string{"classtype", "flow", "tag", "priority", "app-layer-protocol", "noalert",
@@ -690,8 +691,30 @@ func (r *Rule) option(key item, l *lexer) error {
 			return fmt.Errorf("error parsing flowint: %v", err)
 		}
 		r.Flowints = append(r.Flowints, fi)
+	default:
+		// Don't fail parsing completely, we'll return an error with all keys at the end.
+		unsupportedOptions = append(unsupportedOptions, key.value)
+	}
+	// If we didn't hit any unsupported options, optErr should be nil still.
+	if len(unsupportedOptions) > 0 {
+		return &UnsupportedOptionError{
+			Rule:    r,
+			Options: unsupportedOptions,
+		}
 	}
 	return nil
+}
+
+// UnsupportedOptionError contains a partially parsed rule, and the options that aren't
+// supported for parsing.
+type UnsupportedOptionError struct {
+	Rule    *Rule
+	Options []string
+}
+
+// Error returns a string for UnsupportedOptionError
+func (uoe *UnsupportedOptionError) Error() string {
+	return fmt.Sprintf("rule contains unsupported option(s): %s", strings.Join(uoe.Options, ","))
 }
 
 // ParseRule parses an IDS rule and returns a struct describing the rule.

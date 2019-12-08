@@ -695,7 +695,7 @@ func (r *Rule) option(key item, l *lexer) error {
 		// Don't fail parsing completely, we'll return an error with all keys at the end.
 		unsupportedOptions = append(unsupportedOptions, key.value)
 	}
-	// If we didn't hit any unsupported options, optErr should be nil still.
+	// If we encountered unsupported options, return custom error.
 	if len(unsupportedOptions) > 0 {
 		return &UnsupportedOptionError{
 			Rule:    r,

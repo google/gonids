@@ -208,7 +208,7 @@ func (l *lexer) run() {
 }
 
 func (l *lexer) close() {
-	//reads all items until channel close to be sure goroutine has ended
+	// Reads all items until channel close to be sure goroutine has ended.
 	more := true
 	for more {
 		_, more = <-l.items

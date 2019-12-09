@@ -173,7 +173,6 @@ func (l *lexer) errorf(format string, args ...interface{}) stateFn {
 }
 
 func (l *lexer) unexpectedEOF() stateFn {
-	close(l.items)
 	return nil
 }
 
@@ -204,6 +203,15 @@ func lex(input string) (*lexer, error) {
 func (l *lexer) run() {
 	for l.state = lexRule; l.state != nil; {
 		l.state = l.state(l)
+	}
+	close(l.items)
+}
+
+func (l *lexer) close() {
+	// Reads all items until channel close to be sure goroutine has ended.
+	more := true
+	for more {
+		_, more = <-l.items
 	}
 }
 

@@ -486,6 +486,7 @@ func TestParseRule(t *testing.T) {
 		rule    string
 		want    *Rule
 		wantErr bool
+		optErr  *UnsupportedOptionError
 	}{
 		{
 			name:    "non-rule comment",
@@ -1700,11 +1701,49 @@ func TestParseRule(t *testing.T) {
 			rule:    `alert tcp $EXTERNAL_NET 443 -> $HOME_NET [123, 234] (msg:"bad network definition"; sid:4321;)`,
 			wantErr: true,
 		},
+		{
+			name:    "unsupported option key",
+			rule:    `alert http $HOME_NET any -> $EXTERNAL_NET any (msg:"unsupported option key"; content:"foo"; zibzab:1; foobar:"wat"; content:"baz"; sid:4321; rev:1;)`,
+			wantErr: true,
+			optErr: &UnsupportedOptionError{
+				Rule: &Rule{
+					Action:   "alert",
+					Protocol: "http",
+					Source: Network{
+						Nets:  []string{"$HOME_NET"},
+						Ports: []string{"any"},
+					},
+					Destination: Network{
+						Nets:  []string{"$EXTERNAL_NET"},
+						Ports: []string{"any"},
+					},
+					Description: "unsupported option key",
+					Matchers: []orderedMatcher{
+						&Content{
+							Pattern: []byte("foo"),
+						},
+						&Content{
+							Pattern: []byte("baz"),
+						},
+					},
+					SID:      4321,
+					Revision: 1,
+				},
+				Options: []string{"zibzab", "foobar"},
+			},
+		},
 	} {
 		got, err := ParseRule(tt.rule)
 		diff := pretty.Compare(got, tt.want)
 		if diff != "" || (err != nil) != tt.wantErr {
 			t.Fatal(fmt.Sprintf("%s: gotErr:%#v, wantErr:%#v\n diff (-got +want):\n%s", tt.name, err, tt.wantErr, diff))
+		}
+		// Validate UnsupportedOptionError contents.
+		if uerr, ok := err.(*UnsupportedOptionError); ok {
+			diff := pretty.Compare(uerr, tt.optErr)
+			if diff != "" {
+				t.Fatal(fmt.Sprintf("%s: diff (-got +want)\n%s", tt.name, diff))
+			}
 		}
 	}
 }

@@ -419,7 +419,6 @@ func (r *Rule) option(key item, l *lexer) error {
 	if key.typ != itemOptionKey {
 		panic("item is not an option key")
 	}
-	var unsupportedOptions = make([]string, 0, 3)
 	switch {
 	// TODO: Many of these simple tags could be factored into nicer structures.
 	case inSlice(key.value, []string{"classtype", "flow", "tag", "priority", "app-layer-protocol", "noalert",
@@ -692,14 +691,8 @@ func (r *Rule) option(key item, l *lexer) error {
 		}
 		r.Flowints = append(r.Flowints, fi)
 	default:
-		// Don't fail parsing completely, we'll return an error with all keys at the end.
-		unsupportedOptions = append(unsupportedOptions, key.value)
-	}
-	// If we encountered unsupported options, return custom error.
-	if len(unsupportedOptions) > 0 {
 		return &UnsupportedOptionError{
-			Rule:    r,
-			Options: unsupportedOptions,
+			Options: []string{key.value},
 		}
 	}
 	return nil
@@ -726,6 +719,7 @@ func ParseRule(rule string) (*Rule, error) {
 	defer l.close()
 	dataPosition = pktData
 	r := &Rule{}
+	var unsupportedOptions = make([]string, 0, 3)
 	for item := l.nextItem(); item.typ != itemEOR && item.typ != itemEOF && err == nil; item = l.nextItem() {
 		switch item.typ {
 		case itemComment:
@@ -751,12 +745,28 @@ func ParseRule(rule string) (*Rule, error) {
 			err = r.direction(item, l)
 		case itemOptionKey:
 			err = r.option(item, l)
+			// We will continue to parse a rule with unsupported options.
+			if uerr, ok := err.(*UnsupportedOptionError); ok {
+				unsupportedOptions = append(unsupportedOptions, uerr.Options...)
+				// This is ugly but allows the parsing to continue.
+				err = nil
+			}
 		case itemError:
 			err = errors.New(item.value)
 		}
+		// Unrecoverable parse error.
 		if err != nil {
 			return nil, err
 		}
 	}
+
+	// If we encountered one or more unsupported keys, return an UnsupportedOptionError.
+	if len(unsupportedOptions) > 0 {
+		return nil, &UnsupportedOptionError{
+			Rule:    r,
+			Options: unsupportedOptions,
+		}
+	}
+
 	return r, nil
 }

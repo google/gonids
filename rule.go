@@ -493,7 +493,7 @@ func (r *Rule) Contents() []*Content {
 
 // ByteMatchers returns all *ByteMatch for a rule.
 func (r *Rule) ByteMatchers() []*ByteMatch {
-	var bs []*ByteMatch
+	bs := make([]*ByteMatch, 0, len(r.Matchers))
 	for _, m := range r.Matchers {
 		if b, ok := m.(*ByteMatch); ok {
 			bs = append(bs, b)
@@ -898,11 +898,10 @@ func (r *Rule) InsertMatcher(m orderedMatcher, pos int) error {
 
 // HasVar returns true if a variable with the provided name exists.
 func (r *Rule) HasVar(s string) bool {
-	hasVar := false
 	for _, bm := range r.ByteMatchers() {
 		if bm.Variable == s {
-			hasVar = true
+			return true
 		}
 	}
-	return hasVar
+	return false
 }

@@ -1038,6 +1038,30 @@ func TestRE(t *testing.T) {
 	}
 }
 
+func TestLastContent(t *testing.T) {
+	for _, tt := range []struct {
+		rule string
+		want string
+	}{
+		{
+			rule: `alert udp $HOME_NET any -> $EXTERNAL_NET any (sid:1337; msg:"foo"; content:"foo"; content:"bar"; within:40;)`,
+			want: `bar`,
+		},
+		{
+			rule: `alert udp $HOME_NET any -> $EXTERNAL_NET any (sid:1337; msg:"foo"; content:"bar"; content:"foo"; within:40;)`,
+			want: `foo`,
+		},
+	} {
+		r, err := ParseRule(tt.rule)
+		if err != nil {
+			t.Fatalf("re: parse rule failed: %v", err)
+		}
+		if got := string(r.LastContent().Pattern); got != tt.want {
+			t.Fatalf("re: got=%v; want=%v", got, tt.want)
+		}
+	}
+}
+
 func TestDataPosString(t *testing.T) {
 	for _, tt := range []struct {
 		val  DataPos

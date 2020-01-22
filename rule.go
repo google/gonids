@@ -492,13 +492,12 @@ func (r *Rule) Contents() []*Content {
 }
 
 func (r *Rule) LastContent() *Content {
-	var c *Content
-	for _, m := range r.Matchers {
-		if co, ok := m.(*Content); ok {
-			c = co
+	for i := range r.Matchers {
+		if co, ok := r.Matchers[len(r.Matchers)-i-1].(*Content); ok {
+			return co
 		}
 	}
-	return c
+	return nil
 }
 
 // ByteMatchers returns all *ByteMatch for a rule.

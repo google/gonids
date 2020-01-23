@@ -1038,6 +1038,43 @@ func TestRE(t *testing.T) {
 	}
 }
 
+func TestLastContent(t *testing.T) {
+	for _, tt := range []struct {
+		rule string
+		want *Content
+	}{
+		{
+			rule: `alert udp $HOME_NET any -> $EXTERNAL_NET any (sid:1337; msg:"foo"; content:"bar";)`,
+			want: &Content{Pattern: []byte("bar")},
+		},
+		{
+			rule: `alert udp $HOME_NET any -> $EXTERNAL_NET any (sid:1337; msg:"foo"; content:"bar"; pcre:"/foo.*bar/iU"; content:"foo"; within:40; pcre:"/foo.*bar.*baz/iU";)`,
+			want: &Content{
+				Pattern: []byte("foo"),
+				Options: []*ContentOption{
+					{
+						Name:  "within",
+						Value: "40",
+					},
+				},
+			},
+		},
+		{
+			rule: `alert udp $HOME_NET any -> $EXTERNAL_NET any (sid:1337; msg:"foo";)`,
+			want: nil,
+		},
+	} {
+		r, err := ParseRule(tt.rule)
+		if err != nil {
+			t.Fatalf("re: parse rule failed: %v", err)
+		}
+		diff := pretty.Compare(r.LastContent(), tt.want)
+		if diff != "" {
+			t.Fatalf(fmt.Sprintf("diff (-got +want):\n%s", diff))
+		}
+	}
+}
+
 func TestDataPosString(t *testing.T) {
 	for _, tt := range []struct {
 		val  DataPos

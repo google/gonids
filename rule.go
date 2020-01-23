@@ -491,6 +491,15 @@ func (r *Rule) Contents() []*Content {
 	return cs
 }
 
+func (r *Rule) LastContent() *Content {
+	for i := range r.Matchers {
+		if co, ok := r.Matchers[len(r.Matchers)-i-1].(*Content); ok {
+			return co
+		}
+	}
+	return nil
+}
+
 // ByteMatchers returns all *ByteMatch for a rule.
 func (r *Rule) ByteMatchers() []*ByteMatch {
 	bs := make([]*ByteMatch, 0, len(r.Matchers))

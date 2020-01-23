@@ -1068,8 +1068,9 @@ func TestLastContent(t *testing.T) {
 		if err != nil {
 			t.Fatalf("re: parse rule failed: %v", err)
 		}
-		if got := r.LastContent(); !reflect.DeepEqual(got, tt.want) {
-			t.Fatalf("re: got=%#+v; want=%#+v", got, tt.want)
+		diff := pretty.Compare(r.LastContent(), tt.want)
+		if diff != "" {
+			t.Fatalf(fmt.Sprintf("diff (-got +want):\n%s", diff))
 		}
 	}
 }

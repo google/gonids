@@ -192,7 +192,7 @@ func lex(input string) (*lexer, error) {
 	}
 	l := &lexer{
 		input: input,
-		items: make(chan item),
+		items: make(chan item, 0x1000),
 	}
 	go l.run()
 	return l, nil

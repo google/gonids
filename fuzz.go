@@ -23,5 +23,6 @@ func FuzzParseRule(data []byte) int {
 		return 0
 	}
 	r.OptimizeHTTP()
+	r.String()
 	return 1
 }

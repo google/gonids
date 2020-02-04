@@ -1,11 +1,8 @@
 /* Copyright 2016 Google Inc.
-
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
-
     http://www.apache.org/licenses/LICENSE-2.0
-
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -913,4 +910,15 @@ func (r *Rule) HasVar(s string) bool {
 		}
 	}
 	return false
+}
+
+//getSidMgs returns a string representing a sidmsg.map entry
+func (r *Rule) getSidMgs(s string) string {	
+	var sidmsg = fmt.Sprintf("%s || %s", string(r.SID), r.Description);
+	for _, ref := range r.References {
+		if ref.Type == "url" {
+			sidmsg = fmt.Sprintf("%s || url,%s", sidmsg, ref.Value);
+		}
+	}
+	return sidmsg;
 }

@@ -29,3 +29,20 @@ jobs:
 
     - name: Test
       run:  go test -v ./...
+
+name: CIFuzz
+on: [pull_request]
+jobs:
+  fuzz:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Building and running fuzzers
+      uses: google/oss-fuzz/infra/cifuzz/actions@master
+      with:
+        project-name: 'gonids'
+        fuzz-time: 360
+        dry-run: True
+    - uses: actions/upload-artifact@v1
+      with:
+        name: fuzzer_parserule
+        path: ./out/fuzz_parserule

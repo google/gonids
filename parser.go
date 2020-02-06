@@ -339,6 +339,10 @@ func (r *Rule) comment(key item, l *lexer) error {
 	if key.typ != itemComment {
 		panic("item is not a comment")
 	}
+	if r.Disabled {
+		// ignoring comment for rule with empty action
+		return nil
+	}
 	rule, err := ParseRule(key.value)
 
 	// If there was an error this means the comment is not a rule.

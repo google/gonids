@@ -1412,3 +1412,57 @@ func TestInsertMatcher(t *testing.T) {
 		}
 	}
 }
+
+func TestRuleGetSidMsg(t *testing.T) {
+	for _, tt := range []struct {
+		name  string
+		input Rule
+		want  string
+	}{
+		{
+			name: "rule",
+			input: Rule{
+				SID:         1337,
+				Description: "foo",
+			},
+			want: `1337 || foo`,
+		},
+		{
+			name: "rule",
+			input: Rule{
+				SID:         1337,
+				Description: "foo",
+				References: []*Reference{
+					{
+						Type:  "url",
+						Value: "www.google.com",
+					},
+				},
+			},
+			want: `1337 || foo || url,www.google.com`,
+		},
+		{
+			name: "rule",
+			input: Rule{
+				SID:         1337,
+				Description: "foo",
+				References: []*Reference{
+					{
+						Type:  "url",
+						Value: "www.google.com",
+					},
+					{
+						Type:  "md5",
+						Value: "2aee1c40199c7754da766e61452612cc",
+					},
+				},
+			},
+			want: `1337 || foo || url,www.google.com || md5,2aee1c40199c7754da766e61452612cc`,
+		},
+	} {
+		got := tt.input.GetSidMsg()
+		if got != tt.want {
+			t.Fatalf("%s: got %v -- expected %v", tt.name, got, tt.want)
+		}
+	}
+}

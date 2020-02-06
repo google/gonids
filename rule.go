@@ -914,3 +914,13 @@ func (r *Rule) HasVar(s string) bool {
 	}
 	return false
 }
+
+// GetSidMgs returns a string representing a sidmsg.map entry.
+func (r *Rule) GetSidMsg() string {
+	var sidmsg strings.Builder
+	sidmsg.WriteString(fmt.Sprintf("%s || %s", strconv.Itoa(r.SID), r.Description))
+	for _, ref := range r.References {
+		sidmsg.WriteString(fmt.Sprintf(" || %s,%s", ref.Type, ref.Value))
+	}
+	return sidmsg.String()
+}

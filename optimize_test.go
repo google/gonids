@@ -152,8 +152,8 @@ func TestSnortURILenFix(t *testing.T) {
 		{
 			name: "urilen exact raw",
 			input: &Rule{
-				LenMatchers: []*LenMatch{
-					{
+				Matchers: []orderedMatcher{
+					&LenMatch{
 						Kind:    uriLen,
 						Num:     3,
 						Options: []string{"raw"},
@@ -165,8 +165,8 @@ func TestSnortURILenFix(t *testing.T) {
 		{
 			name: "urilen exact norm",
 			input: &Rule{
-				LenMatchers: []*LenMatch{
-					{
+				Matchers: []orderedMatcher{
+					&LenMatch{
 						Kind:    uriLen,
 						Num:     3,
 						Options: []string{"norm"},
@@ -178,8 +178,8 @@ func TestSnortURILenFix(t *testing.T) {
 		{
 			name: "urilen range",
 			input: &Rule{
-				LenMatchers: []*LenMatch{
-					{
+				Matchers: []orderedMatcher{
+					&LenMatch{
 						Kind:     uriLen,
 						Min:      3,
 						Max:      7,
@@ -188,8 +188,8 @@ func TestSnortURILenFix(t *testing.T) {
 				},
 			},
 			output: &Rule{
-				LenMatchers: []*LenMatch{
-					{
+				Matchers: []orderedMatcher{
+					&LenMatch{
 						Kind:     uriLen,
 						Min:      2,
 						Max:      8,
@@ -208,16 +208,16 @@ func TestSnortURILenFix(t *testing.T) {
 		{
 			name: "urilen exact",
 			input: &Rule{
-				LenMatchers: []*LenMatch{
-					{
+				Matchers: []orderedMatcher{
+					&LenMatch{
 						Kind: uriLen,
 						Num:  3,
 					},
 				},
 			},
 			output: &Rule{
-				LenMatchers: []*LenMatch{
-					{
+				Matchers: []orderedMatcher{
+					&LenMatch{
 						Kind:    uriLen,
 						Num:     3,
 						Options: []string{"raw"},
@@ -234,8 +234,8 @@ func TestSnortURILenFix(t *testing.T) {
 		{
 			name: "urilen range norm",
 			input: &Rule{
-				LenMatchers: []*LenMatch{
-					{
+				Matchers: []orderedMatcher{
+					&LenMatch{
 						Kind:     uriLen,
 						Min:      3,
 						Max:      7,
@@ -245,8 +245,8 @@ func TestSnortURILenFix(t *testing.T) {
 				},
 			},
 			output: &Rule{
-				LenMatchers: []*LenMatch{
-					{
+				Matchers: []orderedMatcher{
+					&LenMatch{
 						Kind:     uriLen,
 						Min:      2,
 						Max:      8,

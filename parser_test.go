@@ -732,8 +732,8 @@ func TestParseRule(t *testing.T) {
 				},
 				SID:         1337,
 				Description: "foo",
-				LenMatchers: []*LenMatch{
-					{
+				Matchers: []orderedMatcher{
+					&LenMatch{
 						Kind:     dSize,
 						Operator: ">",
 						Num:      19,
@@ -757,8 +757,8 @@ func TestParseRule(t *testing.T) {
 				},
 				SID:         1337,
 				Description: "foo",
-				LenMatchers: []*LenMatch{
-					{
+				Matchers: []orderedMatcher{
+					&LenMatch{
 						Kind:     uriLen,
 						Operator: "<>",
 						Min:      2,
@@ -809,8 +809,8 @@ func TestParseRule(t *testing.T) {
 				SID:         1337,
 				Revision:    1,
 				Description: "foo",
-				LenMatchers: []*LenMatch{
-					{
+				Matchers: []orderedMatcher{
+					&LenMatch{
 						Kind:     iType,
 						Operator: ">",
 						Num:      10,

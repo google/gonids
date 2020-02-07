@@ -49,7 +49,7 @@ func (r *Rule) OptimizeHTTP() bool {
 func (r *Rule) SnortURILenFix() bool {
 	var modified bool
 	// Update this once we parse urilen in a better structure.
-	for _, l := range r.LenMatchers {
+	for _, l := range r.LenMatchers() {
 		if l.Kind == uriLen && l.Operator == "<>" {
 			l.Min--
 			l.Max++

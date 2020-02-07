@@ -53,8 +53,6 @@ type Rule struct {
 	TLSTags []*TLSTag
 	// StreamMatch holds stream_size parameters.
 	StreamMatch *StreamCmp
-	// LenMatchers is a slice of ICMP matches.
-	LenMatchers []*LenMatch
 	// Metas is a slice of Metadata.
 	Metas Metadatas
 	// Flowbits is a slice of Flowbit.
@@ -479,12 +477,15 @@ func (i lenMatchType) String() string {
 
 // LenMatch holds the values to represent an Length Match.
 type LenMatch struct {
-	Kind     lenMatchType
-	Min      int
-	Max      int
-	Num      int
-	Operator string
-	Options  []string
+	// DataPosition defaults to pkt_data state, can be modified to apply to file_data, base64_data locations.
+	// This value will apply to all following contents, to reset to default you must reset DataPosition during processing.
+	DataPosition DataPos
+	Kind         lenMatchType
+	Min          int
+	Max          int
+	Num          int
+	Operator     string
+	Options      []string
 }
 
 // PCRE describes a PCRE item of a rule.
@@ -583,6 +584,17 @@ func (r *Rule) CVE() string {
 		}
 	}
 	return ""
+}
+
+// Contents returns all *Content for a rule.
+func (r *Rule) LenMatchers() []*LenMatch {
+	lms := make([]*LenMatch, 0, len(r.Matchers))
+	for _, m := range r.Matchers {
+		if lm, ok := m.(*LenMatch); ok {
+			lms = append(lms, lm)
+		}
+	}
+	return lms
 }
 
 // Contents returns all *Content for a rule.
@@ -906,11 +918,11 @@ func (r Rule) String() string {
 		s.WriteString(fmt.Sprintf("%s ", r.StreamMatch))
 	}
 
-	if len(r.LenMatchers) > 0 {
-		for _, i := range r.LenMatchers {
-			s.WriteString(fmt.Sprintf("%s ", i))
-		}
-	}
+	// if lms := r.LenMatchers(); len(lms) > 0 {
+	// 	for _, i := range lms {
+	// 		s.WriteString(fmt.Sprintf("%s ", i))
+	// 	}
+	// }
 
 	if len(r.TLSTags) > 0 {
 		for _, t := range r.TLSTags {

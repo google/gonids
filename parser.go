@@ -672,7 +672,8 @@ func (r *Rule) option(key item, l *lexer) error {
 		if err != nil {
 			return fmt.Errorf("could not parse LenMatch: %v", err)
 		}
-		r.LenMatchers = append(r.LenMatchers, m)
+		m.DataPosition = dataPosition
+		r.Matchers = append(r.Matchers, m)
 	case key.value == "flowbits":
 		nextItem := l.nextItem()
 		fb, err := parseFlowbit(nextItem.value)

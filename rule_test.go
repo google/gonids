@@ -1010,6 +1010,40 @@ func TestRuleString(t *testing.T) {
 			},
 			want: `alert http $HOME_NET any -> $EXTERNAL_NET any (msg:"Xbits test"; xbits:set,foo,track ip_src; xbits:set,bar,track ip_src,expire 60; sid:1223; rev:3;)`,
 		},
+		{
+			name: "rule with bsize",
+			input: Rule{
+				Action:   "alert",
+				Protocol: "http",
+				Source: Network{
+					Nets:  []string{"$HOME_NET"},
+					Ports: []string{"any"},
+				},
+				Destination: Network{
+					Nets:  []string{"$EXTERNAL_NET"},
+					Ports: []string{"any"},
+				},
+				SID:         1234,
+				Revision:    2,
+				Description: "new sticky buffers",
+				Matchers: []orderedMatcher{
+					&Content{
+						DataPosition: httpMethod,
+						Pattern:      []byte("POST"),
+					},
+					&LenMatch{
+						DataPosition: httpURI,
+						Kind:         bSize,
+						Num:          10,
+					},
+					&Content{
+						DataPosition: httpURI,
+						Pattern:      []byte("foo"),
+					},
+				},
+			},
+			want: `alert http $HOME_NET any -> $EXTERNAL_NET any (msg:"new sticky buffers"; http.method; content:"POST"; http.uri; bsize:10; content:"foo"; sid:1234; rev:2;)`,
+		},
 	} {
 		got := tt.input.String()
 		if got != tt.want {

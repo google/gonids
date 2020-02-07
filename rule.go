@@ -385,7 +385,7 @@ func lenMatcher(s string) (lenMatchType, error) {
 			return k, nil
 		}
 	}
-	return lUnknown, fmt.Errorf("%s is not an icmp keyword", s)
+	return lUnknown, fmt.Errorf("%s is not an lenMatch keyword", s)
 }
 
 // Returns the number of mandatory parameters for a byteMatchType keyword, -1 if unknown.
@@ -428,7 +428,7 @@ type ByteMatch struct {
 	Options []string
 }
 
-// lenMatchType describes the type of ICMP matches and comparisons that are supported.
+// lenMatchType describes the type of length matches and comparisons that are supported.
 type lenMatchType int
 
 const (
@@ -443,6 +443,7 @@ const (
 	ipID
 	tcpSeq
 	tcpACK
+	bSize
 )
 
 // lenMatchTypeVals map len types to string representations.
@@ -457,9 +458,10 @@ var lenMatchTypeVals = map[lenMatchType]string{
 	ipID:   "id",
 	tcpSeq: "seq",
 	tcpACK: "ack",
+	bSize:  "bsize",
 }
 
-// allLenMatchTypeNames returns a slice of string containing all ICMP match keywords.
+// allLenMatchTypeNames returns a slice of string containing all length match keywords.
 func allLenMatchTypeNames() []string {
 	i := make([]string, len(lenMatchTypeVals))
 	var j int
@@ -765,7 +767,7 @@ func (b ByteMatch) String() string {
 	return s.String()
 }
 
-// String returns a string for an ICMP match.
+// String returns a string for an length match.
 func (i LenMatch) String() string {
 	var s strings.Builder
 	s.WriteString(fmt.Sprintf("%s:", i.Kind))
@@ -910,6 +912,12 @@ func (r Rule) String() string {
 					s.WriteString(fmt.Sprintf("%s; ", d))
 				}
 			}
+			if c, ok := m.(*LenMatch); ok {
+				if d != c.DataPosition {
+					d = c.DataPosition
+					s.WriteString(fmt.Sprintf("%s; ", d))
+				}
+			}
 			s.WriteString(fmt.Sprintf("%s ", m))
 		}
 	}
@@ -917,12 +925,6 @@ func (r Rule) String() string {
 	if r.StreamMatch != nil {
 		s.WriteString(fmt.Sprintf("%s ", r.StreamMatch))
 	}
-
-	// if lms := r.LenMatchers(); len(lms) > 0 {
-	// 	for _, i := range lms {
-	// 		s.WriteString(fmt.Sprintf("%s ", i))
-	// 	}
-	// }
 
 	if len(r.TLSTags) > 0 {
 		for _, t := range r.TLSTags {

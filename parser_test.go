@@ -169,6 +169,26 @@ func TestParseLenMatch(t *testing.T) {
 				Options:  []string{"raw", "foo", "bar"},
 			},
 		},
+		{
+			name:  "simple bsize",
+			input: "4",
+			kind:  bSize,
+			want: &LenMatch{
+				Kind: bSize,
+				Num:  4,
+			},
+		},
+		{
+			name:  "range bsize",
+			input: "4<>6",
+			kind:  bSize,
+			want: &LenMatch{
+				Kind:     bSize,
+				Min:      4,
+				Max:      6,
+				Operator: "<>",
+			},
+		},
 	} {
 		got, err := parseLenMatch(tt.kind, tt.input)
 		diff := pretty.Compare(got, tt.want)
@@ -1742,12 +1762,71 @@ func TestParseRule(t *testing.T) {
 					&Content{
 						DataPosition: httpURI,
 						Pattern:      []byte("/foo"),
-						Options:      []*ContentOption{},
 					},
 					&Content{
 						DataPosition: httpURI,
 						Pattern:      []byte("bar"),
 						Options:      []*ContentOption{{"distance", "0"}},
+					},
+				},
+			},
+		},
+		{
+			name: "bsize simple",
+			rule: `alert http $HOME_NET any -> $EXTERNAL_NET any (msg:"new sticky buffers"; http.uri; bsize:10; sid:1234; rev:2;)`,
+			want: &Rule{
+				Action:   "alert",
+				Protocol: "http",
+				Source: Network{
+					Nets:  []string{"$HOME_NET"},
+					Ports: []string{"any"},
+				},
+				Destination: Network{
+					Nets:  []string{"$EXTERNAL_NET"},
+					Ports: []string{"any"},
+				},
+				SID:         1234,
+				Revision:    2,
+				Description: "new sticky buffers",
+				Matchers: []orderedMatcher{
+					&LenMatch{
+						DataPosition: httpURI,
+						Kind:         bSize,
+						Num:          10,
+					},
+				},
+			},
+		},
+		{
+			name: "bsize with contents and toggle",
+			rule: `alert http $HOME_NET any -> $EXTERNAL_NET any (msg:"new sticky buffers"; http.method; content:"POST"; bsize:10; http.uri; content:"foo"; sid:1234; rev:2;)`,
+			want: &Rule{
+				Action:   "alert",
+				Protocol: "http",
+				Source: Network{
+					Nets:  []string{"$HOME_NET"},
+					Ports: []string{"any"},
+				},
+				Destination: Network{
+					Nets:  []string{"$EXTERNAL_NET"},
+					Ports: []string{"any"},
+				},
+				SID:         1234,
+				Revision:    2,
+				Description: "new sticky buffers",
+				Matchers: []orderedMatcher{
+					&Content{
+						DataPosition: httpMethod,
+						Pattern:      []byte("POST"),
+					},
+					&LenMatch{
+						DataPosition: httpMethod,
+						Kind:         bSize,
+						Num:          10,
+					},
+					&Content{
+						DataPosition: httpURI,
+						Pattern:      []byte("foo"),
 					},
 				},
 			},

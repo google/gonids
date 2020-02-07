@@ -551,7 +551,7 @@ func (r *Rule) option(key item, l *lexer) error {
 		}
 	case inSlice(key.value, []string{"http_cookie", "http_raw_cookie", "http_method", "http_header", "http_raw_header",
 		"http_uri", "http_raw_uri", "http_user_agent", "http_stat_code", "http_stat_msg",
-		"http_client_body", "http_server_body", "http_host", "nocase", "rawbytes"}):
+		"http_client_body", "http_server_body", "http_host", "nocase", "rawbytes", "startswith", "endswith"}):
 		lastContent := r.LastContent()
 		if lastContent == nil {
 			return fmt.Errorf("invalid content option %q with no content match", key.value)

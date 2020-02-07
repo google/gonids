@@ -1665,6 +1665,62 @@ func TestParseRule(t *testing.T) {
 				},
 			},
 		},
+		// Begin Suricata 5.0 features.
+		{
+			name: "startswith",
+			rule: `alert http $HOME_NET any -> $EXTERNAL_NET any (msg:"startswith test"; content:"foo"; startswith; sid:1234; rev:2;)`,
+			want: &Rule{
+				Action:   "alert",
+				Protocol: "http",
+				Source: Network{
+					Nets:  []string{"$HOME_NET"},
+					Ports: []string{"any"},
+				},
+				Destination: Network{
+					Nets:  []string{"$EXTERNAL_NET"},
+					Ports: []string{"any"},
+				},
+				SID:         1234,
+				Revision:    2,
+				Description: "startswith test",
+				Matchers: []orderedMatcher{
+					&Content{
+						Pattern: []byte("foo"),
+						Options: []*ContentOption{
+							{"startswith", ""},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "startswith and endswith",
+			rule: `alert http $HOME_NET any -> $EXTERNAL_NET any (msg:"start and end test"; content:"foo"; startswith; endswith; sid:1234; rev:2;)`,
+			want: &Rule{
+				Action:   "alert",
+				Protocol: "http",
+				Source: Network{
+					Nets:  []string{"$HOME_NET"},
+					Ports: []string{"any"},
+				},
+				Destination: Network{
+					Nets:  []string{"$EXTERNAL_NET"},
+					Ports: []string{"any"},
+				},
+				SID:         1234,
+				Revision:    2,
+				Description: "start and end test",
+				Matchers: []orderedMatcher{
+					&Content{
+						Pattern: []byte("foo"),
+						Options: []*ContentOption{
+							{"startswith", ""},
+							{"endswith", ""},
+						},
+					},
+				},
+			},
+		},
 		// Errors
 		{
 			name:    "invalid direction",

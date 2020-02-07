@@ -120,6 +120,9 @@ const (
 	pktData DataPos = iota
 	fileData
 	base64Data
+	//
+	// Suricata 4.x Sticky Buffers
+	//
 	// HTTP Sticky buffers
 	httpAcceptEnc
 	httpAccept
@@ -153,12 +156,65 @@ const (
 	// SMB Sticky Buffers
 	smbNamedPipe
 	smbShare
+	//
+	// Suricata 5.0 Sticky Buffers
+	//
+	fileData5
+	// HTTP Sticky Buffers
+	httpAccept5
+	httpAcceptEnc5
+	httpAcceptLang5
+	httpConnection5
+	httpContentLen5
+	httpContentType5
+	httpCookie
+	httpHeader
+	httpHeaderNames5
+	httpHeaderRaw
+	httpHost
+	httpHostRaw
+	httpLocation
+	httpMethod
+	httpProtocol5
+	httpReferer5
+	httpRequestBody
+	httpRequestLine5
+	httpResponseBody
+	httpResponseLine5
+	httpServer
+	httpServerBody
+	httpStart5
+	httpStatCode
+	httpStatMsg
+	httpURI
+	httpURIRaw
+	httpUserAgent
+	// TLS Sticky Buffers
+	tlsCertSubject5
+	tlsCertIssuer5
+	tlsCertSerial5
+	tlsCertFingerprint5
+	tlsSNI5
+	// JA3 Sticky Buffers
+	ja3Hash5
+	ja3String5
+	ja3sHash
+	ja3sString
+	// SSH Sticky Buffers
+	sshProto5
+	sshSoftware5
+	// Kerberos Sticky Buffers - Unchanged from Suricata 4.x
+	// DNS Sticky Buffers
+	dnsQuery5
+	// SMB - Documentation lacking. Unknown.
 )
 
+// Contains both Suricata 4.x and 5.0 buffers. Some day we'll deprecate the 4.x ones.
 var stickyBuffers = map[DataPos]string{
 	pktData:    "pkt_data",
 	fileData:   "file_data",
 	base64Data: "base64_data",
+	// Suricata 4.X Sticky Buffers
 	// HTTP Sticky Buffers
 	httpAcceptEnc:    "http_accept_enc",
 	httpAccept:       "http_accept",
@@ -192,6 +248,55 @@ var stickyBuffers = map[DataPos]string{
 	// SMB Sticky Buffers
 	smbNamedPipe: "smb_named_pipe",
 	smbShare:     "smb_share",
+	// Suricata 5.0 Sticky Buffers
+	fileData5: "file.data",
+	// HTTP Sticky Buffers
+	httpAccept5:       "http.accept",
+	httpAcceptEnc5:    "http.accept_enc",
+	httpAcceptLang5:   "http.accept_lang",
+	httpConnection5:   "http.connection",
+	httpContentLen5:   "http.content_len",
+	httpContentType5:  "http.content_type",
+	httpCookie:        "http.cookie",
+	httpHeader:        "http.header",
+	httpHeaderNames5:  "http.header_names",
+	httpHeaderRaw:     "http.header.raw",
+	httpHost:          "http.host",
+	httpHostRaw:       "http.host.raw",
+	httpLocation:      "http.location",
+	httpMethod:        "http.method",
+	httpProtocol5:     "http.protocol",
+	httpReferer5:      "http.referer",
+	httpRequestBody:   "http.request_body",
+	httpRequestLine5:  "http.request_line",
+	httpResponseBody:  "http.response_body",
+	httpResponseLine5: "http.response_line",
+	httpServer:        "http.server",
+	httpServerBody:    "http.server_body",
+	httpStart5:        "http.start",
+	httpStatCode:      "http.stat_code",
+	httpStatMsg:       "http.stat_msg",
+	httpURI:           "http.uri",
+	httpURIRaw:        "http.uri.raw",
+	httpUserAgent:     "http.user_agent",
+	// TLS Sticky Buffers
+	tlsCertSubject5:     "tls.cert_subject",
+	tlsCertIssuer5:      "tls.cert_issuer",
+	tlsCertSerial5:      "tls.cert_serial",
+	tlsCertFingerprint5: "tls.cert_fingerprint",
+	tlsSNI5:             "tls.sni",
+	// JA3 Sticky Buffers
+	ja3Hash5:   "ja3.hash",
+	ja3String5: "ja3.string",
+	ja3sHash:   "ja3s.hash",
+	ja3sString: "ja3s.string",
+	// SSH Sticky Buffers
+	sshProto5:    "ssh.proto",
+	sshSoftware5: "ssh.software",
+	// Kerberos Sticky Buffers - Unchanged from Suricata 4.x
+	// DNS Sticky Buffers
+	dnsQuery5: "dns.query",
+	// SMB - Documentation lacking. Unknown.
 }
 
 func (d DataPos) String() string {

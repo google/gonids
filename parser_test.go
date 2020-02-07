@@ -1721,6 +1721,37 @@ func TestParseRule(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "new sticky buffers",
+			rule: `alert http $HOME_NET any -> $EXTERNAL_NET any (msg:"new sticky buffers"; http.uri; content:"/foo"; content:"bar"; distance:0; sid:1234; rev:2;)`,
+			want: &Rule{
+				Action:   "alert",
+				Protocol: "http",
+				Source: Network{
+					Nets:  []string{"$HOME_NET"},
+					Ports: []string{"any"},
+				},
+				Destination: Network{
+					Nets:  []string{"$EXTERNAL_NET"},
+					Ports: []string{"any"},
+				},
+				SID:         1234,
+				Revision:    2,
+				Description: "new sticky buffers",
+				Matchers: []orderedMatcher{
+					&Content{
+						DataPosition: httpURI,
+						Pattern:      []byte("/foo"),
+						Options:      []*ContentOption{},
+					},
+					&Content{
+						DataPosition: httpURI,
+						Pattern:      []byte("bar"),
+						Options:      []*ContentOption{{"distance", "0"}},
+					},
+				},
+			},
+		},
 		// Errors
 		{
 			name:    "invalid direction",

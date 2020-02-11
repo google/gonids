@@ -1028,9 +1028,11 @@ func (r *Rule) InsertMatcher(m orderedMatcher, pos int) error {
 
 // HasVar returns true if a variable with the provided name exists.
 func (r *Rule) HasVar(s string) bool {
-	for _, bm := range r.ByteMatchers() {
-		if bm.Variable == s {
-			return true
+	for _, m := range r.Matchers {
+		if b, ok := m.(*ByteMatch); ok {
+			if b.Variable == s {
+				return true
+			}
 		}
 	}
 	return false

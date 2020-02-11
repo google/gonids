@@ -162,6 +162,7 @@ const (
 	httpAccept5
 	httpAcceptEnc5
 	httpAcceptLang5
+	httpClientBody
 	httpConnection5
 	httpContentLen5
 	httpContentType5
@@ -252,6 +253,7 @@ var stickyBuffers = map[DataPos]string{
 	httpAccept5:       "http.accept",
 	httpAcceptEnc5:    "http.accept_enc",
 	httpAcceptLang5:   "http.accept_lang",
+	httpClientBody:    "http.client_body",
 	httpConnection5:   "http.connection",
 	httpContentLen5:   "http.content_len",
 	httpContentType5:  "http.content_type",

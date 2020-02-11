@@ -19,6 +19,56 @@ import (
 	"bytes"
 )
 
+// Suricata 4.x content options mapped to Suricata 5.0 sticky buffers.
+var cOptToStickyBuffer = map[string]DataPos{
+	// HTTP Content Modifiers
+	"http_client_body":  httpClientBody,
+	"http_cookie":       httpCookie,
+	"http_header":       httpHeader,
+	"http_host":         httpHost,
+	"http_method":       httpMethod,
+	"http_raw_header":   httpHeaderRaw,
+	"http_raw_host":     httpHostRaw,
+	"http_raw_uri":      httpURIRaw,
+	"http_request_line": httpRequestLine5,
+	"http_server_body":  httpServerBody,
+	"http_stat_code":    httpStatCode,
+	"http_stat_msg":     httpStatMsg,
+	"http_uri":          httpURI,
+	"http_user_agent":   httpUserAgent,
+}
+
+var suri4StickyTo5Sticky = map[DataPos]DataPos{
+	fileData: fileData5,
+	// HTTP
+	httpAccept:       httpAccept5,
+	httpAcceptEnc:    httpAcceptEnc5,
+	httpAcceptLang:   httpAcceptLang5,
+	httpConnection:   httpConnection5,
+	httpContentLen:   httpContentLen5,
+	httpContentType:  httpContentType5,
+	httpHeaderNames:  httpHeaderNames5,
+	httpProtocol:     httpProtocol5,
+	httpReferer:      httpReferer5,
+	httpRequestLine:  httpRequestLine5,
+	httpResponseLine: httpResponseLine5,
+	httpStart:        httpStart5,
+	// TLS
+	tlsCertSubject:     tlsCertSubject5,
+	tlsCertIssuer:      tlsCertIssuer5,
+	tlsCertSerial:      tlsCertSerial5,
+	tlsCertFingerprint: tlsCertFingerprint5,
+	tlsSNI:             tlsSNI5,
+	// JA3
+	ja3Hash:   ja3Hash5,
+	ja3String: ja3String5,
+	// SSH
+	sshProto:    sshProto5,
+	sshSoftware: sshSoftware5,
+	// DNS
+	dnsQuery: dnsQuery5,
+}
+
 // OptimizeHTTP tunes an old style rule to leverage port agnostic HTTP detection.
 func (r *Rule) OptimizeHTTP() bool {
 	if !r.ShouldBeHTTP() {
@@ -96,6 +146,38 @@ func (r *Rule) SnortHTTPHeaderFix() bool {
 
 	if modified {
 		r.Metas = append(r.Metas, MetadataModifier("snort_http_header"))
+	}
+	return modified
+}
+
+// Suricata 4.x to Suricata 5.x optimization
+func (r *Rule) UpgradeToSuri5() bool {
+	var modified bool
+	for _, c := range r.Contents() {
+		for i, opt := range c.Options {
+			if sticky, ok := cOptToStickyBuffer[opt.Name]; ok {
+				// Remove the old modifier.
+				// TODO(duane): Find a better way to handle this. If I break this into another function I need
+				// to iterate again across everything.
+				if i < len(c.Options)-1 {
+					copy(c.Options[i:], c.Options[i+1:])
+				}
+				c.Options[len(c.Options)-1] = nil // or the zero value of T
+				c.Options = c.Options[:len(c.Options)-1]
+
+				c.DataPosition = sticky
+				modified = true
+			}
+		}
+		// old sticky buffer to new sticky buffer
+		if sticky, ok := suri4StickyTo5Sticky[c.DataPosition]; ok {
+			c.DataPosition = sticky
+			modified = true
+		}
+	}
+
+	if modified {
+		r.Metas = append(r.Metas, MetadataModifier("upgrade_to_suri5"))
 	}
 	return modified
 }

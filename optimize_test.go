@@ -390,3 +390,136 @@ func TestSnortHTTPHeaderFix(t *testing.T) {
 		}
 	}
 }
+
+func TestConvertToSuri5(t *testing.T) {
+	for _, tt := range []struct {
+		name    string
+		input   *Rule
+		output  *Rule
+		wantMod bool
+	}{
+		{
+			name: "content modifier",
+			input: &Rule{
+				Matchers: []orderedMatcher{
+					&Content{
+						Pattern: []byte("/foo.php"),
+						Options: []*ContentOption{
+							{"http_uri", ""},
+						},
+					},
+					&Content{
+						Pattern: []byte("?bar=baz"),
+						Options: []*ContentOption{
+							{"http_uri", ""},
+						},
+					},
+				},
+			},
+			output: &Rule{
+				Matchers: []orderedMatcher{
+					&Content{
+						DataPosition: httpURI,
+						Pattern:      []byte("/foo.php"),
+					},
+					&Content{
+						DataPosition: httpURI,
+						Pattern:      []byte("?bar=baz"),
+					},
+				},
+				Metas: Metadatas{
+					&Metadata{
+						Key:   "gonids",
+						Value: "upgrade_to_suri5"},
+				},
+			},
+
+			wantMod: true,
+		},
+		{
+			name: "old sticky buffer",
+			input: &Rule{
+				Matchers: []orderedMatcher{
+					&Content{
+						DataPosition: httpRequestLine,
+						Pattern:      []byte("foo.php"),
+					},
+				},
+			},
+			output: &Rule{
+				Matchers: []orderedMatcher{
+					&Content{
+						DataPosition: httpRequestLine5,
+						Pattern:      []byte("foo.php"),
+					},
+				},
+				Metas: Metadatas{
+					&Metadata{
+						Key:   "gonids",
+						Value: "upgrade_to_suri5"},
+				},
+			},
+
+			wantMod: true,
+		},
+		{
+			name: "old sticky buffer",
+			input: &Rule{
+				Matchers: []orderedMatcher{
+					&Content{
+						Pattern: []byte("/foo.php"),
+						Options: []*ContentOption{
+							{"http_uri", ""},
+						},
+					},
+
+					&Content{
+						DataPosition: httpRequestLine,
+						Pattern:      []byte("bar"),
+					},
+					&Content{
+						Pattern: []byte("?baz=bop"),
+						Options: []*ContentOption{
+							{"http_uri", ""},
+						},
+					},
+				},
+			},
+			output: &Rule{
+				Matchers: []orderedMatcher{
+					&Content{
+						DataPosition: httpURI,
+						Pattern:      []byte("/foo.php"),
+					},
+
+					&Content{
+						DataPosition: httpRequestLine5,
+						Pattern:      []byte("bar"),
+					},
+					&Content{
+						DataPosition: httpURI,
+						Pattern:      []byte("?baz=bop"),
+					},
+				},
+				Metas: Metadatas{
+					&Metadata{
+						Key:   "gonids",
+						Value: "upgrade_to_suri5"},
+				},
+			},
+
+			wantMod: true,
+		},
+	} {
+		gotMod := tt.input.UpgradeToSuri5()
+		// Expected modification.
+		if gotMod != tt.wantMod {
+			t.Fatalf("%s: gotMod %v; expected %v", tt.name, gotMod, tt.wantMod)
+		}
+		// Actual modifications correctness.
+		diff := pretty.Compare(tt.output, tt.input)
+		if tt.wantMod && diff != "" {
+			t.Fatal(fmt.Sprintf("diff (-got +want):\n%s", diff))
+		}
+	}
+}

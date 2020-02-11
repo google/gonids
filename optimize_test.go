@@ -391,7 +391,7 @@ func TestSnortHTTPHeaderFix(t *testing.T) {
 	}
 }
 
-func TestConvertToSuri5(t *testing.T) {
+func TestUpgradeToSuri5(t *testing.T) {
 	for _, tt := range []struct {
 		name    string
 		input   *Rule

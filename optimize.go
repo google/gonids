@@ -150,7 +150,7 @@ func (r *Rule) SnortHTTPHeaderFix() bool {
 	return modified
 }
 
-// Suricata 4.x to Suricata 5.x optimization
+// UpgradeToSuri5 optimizes a Suricata 4.x rule to Suricata 5.x features.
 func (r *Rule) UpgradeToSuri5() bool {
 	var modified bool
 	for _, c := range r.Contents() {

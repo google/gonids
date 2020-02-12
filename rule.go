@@ -590,7 +590,7 @@ func (r *Rule) CVE() string {
 	return ""
 }
 
-// Contents returns all *Content for a rule.
+// LenMatchers returns all *LenMatch for a rule.
 func (r *Rule) LenMatchers() []*LenMatch {
 	lms := make([]*LenMatch, 0, len(r.Matchers))
 	for _, m := range r.Matchers {
@@ -612,6 +612,7 @@ func (r *Rule) Contents() []*Content {
 	return cs
 }
 
+// LastContent returns the last *Content from Matchers
 func (r *Rule) LastContent() *Content {
 	for i := range r.Matchers {
 		if co, ok := r.Matchers[len(r.Matchers)-i-1].(*Content); ok {
@@ -1038,7 +1039,7 @@ func (r *Rule) HasVar(s string) bool {
 	return false
 }
 
-// GetSidMgs returns a string representing a sidmsg.map entry.
+// GetSidMsg returns a string representing a sidmsg.map entry.
 func (r *Rule) GetSidMsg() string {
 	var sidmsg strings.Builder
 	sidmsg.WriteString(fmt.Sprintf("%s || %s", strconv.Itoa(r.SID), r.Description))

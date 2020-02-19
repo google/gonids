@@ -7,11 +7,12 @@ jobs:
    - name: Build Fuzzers
      uses: google/oss-fuzz/infra/cifuzz/actions/build_fuzzers@master
      with:
-       project-name: 'gonids'
+       oss-fuzz-project-name: 'gonids'
        dry-run: true
    - name: Run Fuzzers
      uses: google/oss-fuzz/infra/cifuzz/actions/run_fuzzers@master
      with:
+       oss-fuzz-project-name: 'gonids'
        fuzz-time: 600
        dry-run: true
    - name: Upload Crash

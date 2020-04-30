@@ -343,7 +343,7 @@ func (r *Rule) comment(key item, l *lexer) error {
 		// ignoring comment for rule with empty action
 		return nil
 	}
-	rule, err := ParseRule(key.value)
+	rule, err := parseRuleAux(key.value, true)
 
 	// If there was an error this means the comment is not a rule.
 	if err != nil {
@@ -716,7 +716,7 @@ func (uoe *UnsupportedOptionError) Error() string {
 }
 
 // ParseRule parses an IDS rule and returns a struct describing the rule.
-func ParseRule(rule string) (*Rule, error) {
+func parseRuleAux(rule string, commented bool) (*Rule, error) {
 	l, err := lex(rule)
 	if err != nil {
 		return nil, err
@@ -728,7 +728,7 @@ func ParseRule(rule string) (*Rule, error) {
 	for item := l.nextItem(); item.typ != itemEOR && item.typ != itemEOF && err == nil; item = l.nextItem() {
 		switch item.typ {
 		case itemComment:
-			if r.Action != "" {
+			if r.Action != "" || commented {
 				// Ignore comment ending rule.
 				return r, nil
 			}
@@ -774,4 +774,8 @@ func ParseRule(rule string) (*Rule, error) {
 	}
 
 	return r, nil
+}
+
+func ParseRule(rule string) (*Rule, error) {
+	return parseRuleAux(rule, false)
 }

@@ -30,8 +30,11 @@ jobs:
     - name: Test
       run:  go test -v ./...
 
-    - uses: actions/checkout@v2      
     - name: golangci-lint
       uses: actions-contrib/golangci-lint@v1
+      env:
+        GOROOT: ""
+      with:
+        args: "run"
 
 

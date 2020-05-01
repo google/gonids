@@ -3,7 +3,7 @@ on: [push, pull_request]
 jobs:
 
   build:
-    name: Build and Test
+    name: Build, Test, Lint
     runs-on: ubuntu-latest
     steps:
 
@@ -29,3 +29,7 @@ jobs:
 
     - name: Test
       run:  go test -v ./...
+      
+    - name: golangci-lint
+      uses: actions-contrib/golangci-lint@v1
+

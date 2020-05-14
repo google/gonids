@@ -715,7 +715,7 @@ func (uoe *UnsupportedOptionError) Error() string {
 	return fmt.Sprintf("rule contains unsupported option(s): %s", strings.Join(uoe.Options, ","))
 }
 
-// ParseRule parses an IDS rule and returns a struct describing the rule.
+// parseRuleAux parses an IDS rule, optionally ignoring comments.
 func parseRuleAux(rule string, commented bool) (*Rule, error) {
 	l, err := lex(rule)
 	if err != nil {
@@ -776,6 +776,7 @@ func parseRuleAux(rule string, commented bool) (*Rule, error) {
 	return r, nil
 }
 
+// ParseRule parses an IDS rule and returns a struct describing the rule.
 func ParseRule(rule string) (*Rule, error) {
 	return parseRuleAux(rule, false)
 }

@@ -92,7 +92,7 @@ func TestContentFormatPattern(t *testing.T) {
 			input: &Content{
 				Pattern: []byte(`C:\\WINDOWS\\system32\\`),
 			},
-			want: `C|3A|\\WINDOWS\\system32\\`,
+			want: `C|3A 5C 5C|WINDOWS|5C 5C|system32|5C 5C|`,
 		},
 		{
 			name: "content with hex pipe",

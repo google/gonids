@@ -34,6 +34,9 @@ var hexRE = regexp.MustCompile(`(?i)(\|(?:\s*[a-f0-9]{2}\s*)+\|)`)
 // escapeRE matches char that needs to escaped in regexp.
 var escapeRE = regexp.MustCompile(`([()+.'\\])`)
 
+// escapeContent matches escaped special characters.
+var escapeContent = regexp.MustCompile(`\\([\\;":])`)
+
 // metaSplitRE matches string in metadata
 var metaSplitRE = regexp.MustCompile(`,\s*`)
 
@@ -48,7 +51,10 @@ func parseContent(content string) ([]byte, error) {
 			errpanic = fmt.Errorf("recovered from panic: %v", r)
 		}
 	}()
-	b := hexRE.ReplaceAllStringFunc(content,
+
+	b := escapeContent.ReplaceAllString(content, "$1")
+
+	b = hexRE.ReplaceAllStringFunc(b,
 		func(h string) string {
 			r, err := hex.DecodeString(strings.Replace(strings.Trim(h, "|"), " ", "", -1))
 			if err != nil {

@@ -45,6 +45,16 @@ func TestParseContent(t *testing.T) {
 			input: "A|7C|B",
 			want:  []byte("A|B"),
 		},
+		{
+			name:  "contains escaped backslash",
+			input: `A\\B`,
+			want:  []byte(`A\B`),
+		},
+		{
+			name:  "contains multiple escaped characters",
+			input: `A\\\;\"\\\:B`,
+			want:  []byte(`A\;"\:B`),
+		},
 	} {
 		got, err := parseContent(tt.input)
 		if !reflect.DeepEqual(got, tt.want) || (err != nil) != tt.wantErr {
@@ -1548,6 +1558,29 @@ func TestParseRule(t *testing.T) {
 				Matchers: []orderedMatcher{
 					&Content{
 						Pattern: []byte{0x66, 0x6f, 0x6f, 0x5c},
+					},
+				},
+			},
+		},
+		{
+			name: "content with escaped characters",
+			rule: `alert tcp $HOME_NET any -> $EXTERNAL_NET any (msg:"escaped characters"; content:"A\\B\;C\"\:"; sid:7; rev:1;)`, want: &Rule{
+				Action:   "alert",
+				Protocol: "tcp",
+				Source: Network{
+					Nets:  []string{"$HOME_NET"},
+					Ports: []string{"any"},
+				},
+				Destination: Network{
+					Nets:  []string{"$EXTERNAL_NET"},
+					Ports: []string{"any"},
+				},
+				SID:         7,
+				Revision:    1,
+				Description: "escaped characters",
+				Matchers: []orderedMatcher{
+					&Content{
+						Pattern: []byte{0x41, 0x5c, 0x42, 0x3b, 0x43, 0x22, 0x3a},
 					},
 				},
 			},

@@ -52,6 +52,10 @@ func parseContent(content string) ([]byte, error) {
 		}
 	}()
 
+	if containsUnescaped(content) {
+		return nil, fmt.Errorf("invalid special characters escaping")
+	}
+
 	b := escapeContent.ReplaceAllString(content, "$1")
 
 	b = hexRE.ReplaceAllStringFunc(b,
@@ -322,6 +326,33 @@ func parseFlowint(s string) (*Flowint, error) {
 	}
 
 	return fi, nil
+}
+
+// containsUnescaped checks content whether special characters are properly escaped.
+func containsUnescaped(s string) bool {
+	esc := false
+
+	for _, b := range s {
+		if esc {
+			switch b {
+			case '\\', ';', '"', ':':
+				esc = false
+				break
+			default:
+				return true
+			}
+		} else {
+			switch b {
+			case '\\':
+				esc = true
+				break
+			case ';', '"', ':':
+				return true
+			}
+		}
+	}
+
+	return esc
 }
 
 func unquote(s string) string {

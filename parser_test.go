@@ -55,6 +55,16 @@ func TestParseContent(t *testing.T) {
 			input: `A\\\;\"\\\:B`,
 			want:  []byte(`A\;"\:B`),
 		},
+		{
+			name:    "unescaped special characters",
+			input:   `";`,
+			wantErr: true,
+		},
+		{
+			name:    "invalid escaping",
+			input:   `\a\b\c`,
+			wantErr: true,
+		},
 	} {
 		got, err := parseContent(tt.input)
 		if !reflect.DeepEqual(got, tt.want) || (err != nil) != tt.wantErr {
@@ -1540,29 +1550,6 @@ func TestParseRule(t *testing.T) {
 			},
 		},
 		{
-			name: "content with backslash at end",
-			rule: `alert http $HOME_NET any -> $EXTERNAL_NET any (msg:"ending backslash rule"; content:"foo\"; sid:12345; rev:2;)`, want: &Rule{
-				Action:   "alert",
-				Protocol: "http",
-				Source: Network{
-					Nets:  []string{"$HOME_NET"},
-					Ports: []string{"any"},
-				},
-				Destination: Network{
-					Nets:  []string{"$EXTERNAL_NET"},
-					Ports: []string{"any"},
-				},
-				SID:         12345,
-				Revision:    2,
-				Description: "ending backslash rule",
-				Matchers: []orderedMatcher{
-					&Content{
-						Pattern: []byte{0x66, 0x6f, 0x6f, 0x5c},
-					},
-				},
-			},
-		},
-		{
 			name: "content with escaped characters",
 			rule: `alert tcp $HOME_NET any -> $EXTERNAL_NET any (msg:"escaped characters"; content:"A\\B\;C\"\:"; sid:7; rev:1;)`, want: &Rule{
 				Action:   "alert",
@@ -1901,6 +1888,11 @@ func TestParseRule(t *testing.T) {
 			wantErr: true,
 		},
 		{
+			name:    "content with backslash at end",
+			rule:    `alert http $HOME_NET any -> $EXTERNAL_NET any (msg:"ending backslash rule"; content:"foo\"; sid:12345; rev:2;)`,
+			wantErr: true,
+		},
+		{
 			name:    "unsupported option key",
 			rule:    `alert http $HOME_NET any -> $EXTERNAL_NET any (msg:"unsupported option key"; content:"foo"; zibzab:1; foobar:"wat"; content:"baz"; sid:4321; rev:1;)`,
 			wantErr: true,
@@ -1997,6 +1989,54 @@ func TestInEqualOut(t *testing.T) {
 		diff := pretty.Compare(first, second)
 		if diff != "" {
 			t.Fatal(fmt.Sprintf("%s: diff (-got +want):\n%s", tt.name, diff))
+		}
+	}
+}
+func TestContainsUnescaped(t *testing.T) {
+	for _, tt := range []struct {
+		name  string
+		input string
+		want  bool
+	}{
+		{
+			name:  "correctly escaped",
+			input: `\\A\;B\"C\:`,
+			want:  false,
+		},
+		{
+			name:  "trailing slash",
+			input: `\\A\;B\"C\:\`,
+			want:  true,
+		},
+		{
+			name:  "leading slash",
+			input: `\ABC`,
+			want:  true,
+		},
+		{
+			name:  "even slashes",
+			input: `\\\\\\\\`,
+			want:  false,
+		},
+		{
+			name:  "odd slashes",
+			input: `\\\\\\\\\`,
+			want:  true,
+		},
+		{
+			name:  "even slashes semicolon",
+			input: `\\\\\\\\;`,
+			want:  true,
+		},
+		{
+			name:  "odd slashes semicolon",
+			input: `\\\\\\\\\;`,
+			want:  false,
+		},
+	} {
+		got := containsUnescaped(tt.input)
+		if got != tt.want {
+			t.Fatalf("got=%v; want=%v", got, tt.want)
 		}
 	}
 }

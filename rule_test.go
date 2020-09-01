@@ -88,11 +88,11 @@ func TestContentFormatPattern(t *testing.T) {
 			want: "abcd|3B 3A 0D 0A|e|0D|f",
 		},
 		{
-			name: "double backslash",
+			name: "backslash",
 			input: &Content{
-				Pattern: []byte(`C:\\WINDOWS\\system32\\`),
+				Pattern: []byte(`C:\WINDOWS\system32\`),
 			},
-			want: `C|3A|\\WINDOWS\\system32\\`,
+			want: `C|3A 5C|WINDOWS|5C|system32|5C|`,
 		},
 		{
 			name: "content with hex pipe",
@@ -100,6 +100,13 @@ func TestContentFormatPattern(t *testing.T) {
 				Pattern: []byte(`C|B`),
 			},
 			want: `C|7C|B`,
+		},
+		{
+			name: "escaped characters",
+			input: &Content{
+				Pattern: []byte(`A\B;C":`),
+			},
+			want: `A|5C|B|3B|C|22 3A|`,
 		},
 	} {
 		got := tt.input.FormatPattern()

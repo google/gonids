@@ -34,6 +34,9 @@ var hexRE = regexp.MustCompile(`(?i)(\|(?:\s*[a-f0-9]{2}\s*)+\|)`)
 // escapeRE matches char that needs to escaped in regexp.
 var escapeRE = regexp.MustCompile(`([()+.'\\])`)
 
+// escapeContent matches escaped special characters.
+var escapeContent = regexp.MustCompile(`\\([\\;":])`)
+
 // metaSplitRE matches string in metadata
 var metaSplitRE = regexp.MustCompile(`,\s*`)
 
@@ -48,7 +51,14 @@ func parseContent(content string) ([]byte, error) {
 			errpanic = fmt.Errorf("recovered from panic: %v", r)
 		}
 	}()
-	b := hexRE.ReplaceAllStringFunc(content,
+
+	if containsUnescaped(content) {
+		return nil, fmt.Errorf("invalid special characters escaping")
+	}
+
+	b := escapeContent.ReplaceAllString(content, "$1")
+
+	b = hexRE.ReplaceAllStringFunc(b,
 		func(h string) string {
 			r, err := hex.DecodeString(strings.Replace(strings.Trim(h, "|"), " ", "", -1))
 			if err != nil {
@@ -316,6 +326,33 @@ func parseFlowint(s string) (*Flowint, error) {
 	}
 
 	return fi, nil
+}
+
+// containsUnescaped checks content whether special characters are properly escaped.
+func containsUnescaped(s string) bool {
+	esc := false
+
+	for _, b := range s {
+		if esc {
+			switch b {
+			case '\\', ';', '"', ':':
+				esc = false
+				break
+			default:
+				return true
+			}
+		} else {
+			switch b {
+			case '\\':
+				esc = true
+				break
+			case ';', '"', ':':
+				return true
+			}
+		}
+	}
+
+	return esc
 }
 
 func unquote(s string) string {

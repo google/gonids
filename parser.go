@@ -337,7 +337,6 @@ func containsUnescaped(s string) bool {
 			switch b {
 			case '\\', ';', '"', ':':
 				esc = false
-				break
 			default:
 				return true
 			}
@@ -345,7 +344,6 @@ func containsUnescaped(s string) bool {
 			switch b {
 			case '\\':
 				esc = true
-				break
 			case ';', '"', ':':
 				return true
 			}

@@ -344,7 +344,7 @@ func containsUnescaped(s string) bool {
 			switch b {
 			case '\\':
 				esc = true
-			case ';', '"', ':':
+			case ';', '"':
 				return true
 			}
 		}

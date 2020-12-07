@@ -23,6 +23,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"net"
 	"regexp"
 	"strconv"
 	"strings"
@@ -398,6 +399,9 @@ func (r *Rule) action(key item, l *lexer) error {
 	if key.typ != itemAction {
 		panic("item is not an action")
 	}
+	if !inSlice(key.value, []string{"alert", "drop", "pass"}) {
+		return fmt.Errorf("invalid action: %v", key.value)
+	}
 	r.Action = key.value
 	return nil
 }
@@ -406,6 +410,9 @@ func (r *Rule) action(key item, l *lexer) error {
 func (r *Rule) protocol(key item, l *lexer) error {
 	if key.typ != itemProtocol {
 		panic("item is not a protocol")
+	}
+	if !inSlice(key.value, []string{"tcp", "udp", "icmp", "ip", "http", "ftp", "tls", "smb", "dns", "dcerpc", "ssh", "smtp", "imap", "modbus", "dnp3", "enip", "nfs", "ikev2", "krb5", "ntp", "dhcp"}) {
+		return fmt.Errorf("invalid protocol: %v", key.value)
 	}
 	r.Protocol = key.value
 	return nil
@@ -422,17 +429,84 @@ func (r *Rule) network(key item, l *lexer) error {
 	}
 	switch key.typ {
 	case itemSourceAddress:
-		r.Source.Nets = append(r.Source.Nets, items...)
+		if iPAddressesValid(items[:]...) {
+			r.Source.Nets = append(r.Source.Nets, items...)
+		} else {
+			return fmt.Errorf("some or all source ips are invalid: %v", items)
+		}
 	case itemSourcePort:
-		r.Source.Ports = append(r.Source.Ports, items...)
+		if portsValid(items[:]...) {
+			r.Source.Ports = append(r.Source.Ports, items...)
+		} else {
+			return fmt.Errorf("some or all source ports are invalid: %v", items)
+		}
 	case itemDestinationAddress:
-		r.Destination.Nets = append(r.Destination.Nets, items...)
+		if iPAddressesValid(items[:]...) {
+			r.Destination.Nets = append(r.Destination.Nets, items...)
+		} else {
+			return fmt.Errorf("some or all destination ips are invalid: %v", items)
+		}
 	case itemDestinationPort:
-		r.Destination.Ports = append(r.Destination.Ports, items...)
+		if portsValid(items[:]...) {
+			r.Destination.Ports = append(r.Destination.Ports, items...)
+		} else {
+			return fmt.Errorf("some or all destination ports are invalid: %v", items)
+		}
 	default:
 		panic("item is not a network component")
 	}
 	return nil
+}
+
+//validate every item is bettwen 1 and 65535
+func portsValid(p ...string) bool {
+	for _, _port := range p {
+
+		if len(_port) > 0 && string(_port[0:1]) == "!" {
+			_port = _port[1:]
+		}
+		_ports := strings.Split(_port, ":")
+		for _, port := range _ports {
+			if port == "any" || strings.HasPrefix(port, "$") {
+				continue
+			}
+			x, err := strconv.Atoi(port)
+			if err != nil {
+				return false
+			}
+			if x > 65535 || x < 1 {
+				return false
+			}
+		}
+	}
+	return true
+}
+
+//validate item is either a valid ip or ip range
+func iPAddressValid(ip string) bool {
+	var _ip = net.ParseIP(ip)
+	var _cidr, _, _ = net.ParseCIDR(ip)
+	if _ip == nil && _cidr == nil {
+		return false
+	}
+	return true
+}
+
+//validate every item is either a valid ip or ip range
+func iPAddressesValid(ip ...string) bool {
+	for _, _ip := range ip {
+		if len(_ip) > 0 && string(_ip[0:1]) == "!" {
+			_ip = _ip[1:]
+		}
+		if _ip == "any" || strings.HasPrefix(_ip, "$") {
+			continue
+		}
+
+		if iPAddressValid(_ip) {
+			return false
+		}
+	}
+	return true
 }
 
 // direction decodes an IDS rule direction based on its key.

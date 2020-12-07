@@ -502,7 +502,7 @@ func iPAddressesValid(ip ...string) bool {
 			continue
 		}
 
-		if iPAddressValid(_ip) {
+		if !iPAddressValid(_ip) {
 			return false
 		}
 	}

@@ -411,7 +411,7 @@ func (r *Rule) protocol(key item, l *lexer) error {
 	if key.typ != itemProtocol {
 		panic("item is not a protocol")
 	}
-	if !inSlice(key.value, []string{"tcp", "udp", "icmp", "ip", "http", "ftp", "tls", "smb", "dns", "dcerpc", "ssh", "smtp", "imap", "modbus", "dnp3", "enip", "nfs", "ikev2", "krb5", "ntp", "dhcp"}) {
+	if !inSlice(key.value, []string{"tcp", "tcp-stream", "tcp-pkt", "udp", "icmp", "ip", "http", "ftp", "tls", "smb", "dns", "dcerpc", "ssh", "smtp", "imap", "modbus", "dnp3", "enip", "nfs", "ikev2", "krb5", "ntp", "dhcp"}) {
 		return fmt.Errorf("invalid protocol: %v", key.value)
 	}
 	r.Protocol = key.value

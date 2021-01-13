@@ -1853,6 +1853,26 @@ func TestParseRule(t *testing.T) {
 		},
 		// Errors
 		{
+			name:    "invalid action",
+			rule:    `alertt udp $HOME_NET any -> $EXTERNAL_NET any (sid:1337; msg:"foo"; content:"AA"; rev:2;)`,
+			wantErr: true,
+		},
+		{
+			name:    "invalid ip",
+			rule:    `alert udp $HOME_NET any -> 0.0.0 any (sid:1337; msg:"foo"; dsize:>19;)`,
+			wantErr: true,
+		},
+		{
+			name:    "invalid protocol",
+			rule:    `alertt udpp $HOME_NET any -> $EXTERNAL_NET any (sid:1337; msg:"foo"; content:"AA"; rev:2;)`,
+			wantErr: true,
+		},
+		{
+			name:    "invalid port",
+			rule:    `alert tcp $HOME_NET any -> $EXTERNAL_NET 888888 (msg:"GONIDS TEST hello world"; flow:established,to_server; content:"hello world"; classtype:trojan-activity; sid:1; rev:1;)`,
+			wantErr: true,
+		},
+		{
 			name:    "invalid direction",
 			rule:    `alert udp $HOME_NET any *# $EXTERNAL_NET any (sid:2; msg:"foo"; content:"A";)`,
 			wantErr: true,
@@ -2035,6 +2055,35 @@ func TestContainsUnescaped(t *testing.T) {
 		},
 	} {
 		got := containsUnescaped(tt.input)
+		if got != tt.want {
+			t.Fatalf("got=%v; want=%v", got, tt.want)
+		}
+	}
+}
+
+func TestValidNetworks(t *testing.T) {
+	for _, tt := range []struct {
+		strs []string
+		want bool
+	}{
+		{
+			strs: []string{"192.168.1.1/31", "$FOOBAR", "!192.168.10.1"},
+			want: true,
+		},
+		{
+			strs: []string{"192.168.1.1/31", "$FOOBAR", "!!192.168.10.1"},
+			want: false,
+		},
+		{
+			strs: []string{"192.168.1.1/31", "FOOBAR", "!192.168.10.1"},
+			want: false,
+		},
+		{
+			strs: []string{"192.168.1.1/37", "$FOOBAR", "!192.168.10.1"},
+			want: false,
+		},
+	} {
+		got := validNetworks(tt.strs)
 		if got != tt.want {
 			t.Fatalf("got=%v; want=%v", got, tt.want)
 		}

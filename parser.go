@@ -460,13 +460,10 @@ func (r *Rule) network(key item, l *lexer) error {
 
 // Validate that every item is between 1 and 65535.
 func portsValid(p []string) bool {
-	for _, _port := range p {
-
-		if len(_port) > 0 && string(_port[0:1]) == "!" {
-			_port = _port[1:]
-		}
-		_ports := strings.Split(_port, ":")
-		for _, port := range _ports {
+	for _, u := range p {
+		u = strings.TrimPrefix(u, "!")
+		ports := strings.Split(u, ":")
+		for _, port := range ports {
 			if port == "any" || strings.HasPrefix(port, "$") {
 				continue
 			}
@@ -483,13 +480,15 @@ func portsValid(p []string) bool {
 }
 
 // Validate item is either a valid ip or ip range.
-func validNetwork(ip string) bool {
-	var _ip = net.ParseIP(ip)
-	var _cidr, _, _ = net.ParseCIDR(ip)
-	if _ip == nil && _cidr == nil {
-		return false
+func validNetwork(i string) bool {
+	_, _, err := net.ParseCIDR(i)
+	if err == nil {
+		return true
 	}
-	return true
+	if net.ParseIP(i) != nil {
+		return true
+	}
+	return false
 }
 
 // Validate every item is either a valid ip or ip range.

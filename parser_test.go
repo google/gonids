@@ -1853,6 +1853,26 @@ func TestParseRule(t *testing.T) {
 		},
 		// Errors
 		{
+			name:    "invalid action",
+			rule:    `alertt udp $HOME_NET any -> $EXTERNAL_NET any (sid:1337; msg:"foo"; content:"AA"; rev:2;)`,
+			wantErr: true,
+		},
+		{
+			name:    "invalid ip",
+			rule:    `alert udp $HOME_NET any -> 0.0.0 any (sid:1337; msg:"foo"; dsize:>19;)`,
+			wantErr: true,
+		},
+		{
+			name:    "invalid protocol",
+			rule:    `alertt udpp $HOME_NET any -> $EXTERNAL_NET any (sid:1337; msg:"foo"; content:"AA"; rev:2;)`,
+			wantErr: true,
+		},
+		{
+			name:    "invalid port",
+			rule:    `alert tcp $HOME_NET any -> $EXTERNAL_NET 888888 (msg:"GONIDS TEST hello world"; flow:established,to_server; content:"hello world"; classtype:trojan-activity; sid:1; rev:1;)`,
+			wantErr: true,
+		},
+		{
 			name:    "invalid direction",
 			rule:    `alert udp $HOME_NET any *# $EXTERNAL_NET any (sid:2; msg:"foo"; content:"A";)`,
 			wantErr: true,
@@ -2037,6 +2057,93 @@ func TestContainsUnescaped(t *testing.T) {
 		got := containsUnescaped(tt.input)
 		if got != tt.want {
 			t.Fatalf("got=%v; want=%v", got, tt.want)
+		}
+	}
+}
+
+func TestValidNetwork(t *testing.T) {
+	for _, tt := range []struct {
+		name  string
+		input string
+		want  bool
+	}{
+		{
+			name:  "valid",
+			input: "192.100.10.1/28",
+			want:  true,
+		},
+		{
+			name:  "invalid address",
+			input: "192.168.10",
+			want:  false,
+		},
+		{
+			name:  "invalid CIDR",
+			input: "168.168.1.1/40",
+			want:  false,
+		},
+	} {
+		got := validNetwork(tt.input)
+		if got != tt.want {
+			t.Fatalf("got=%v; want=%v:\n%s", got, tt.want, tt.name)
+		}
+	}
+}
+
+func TestPortsValid(t *testing.T) {
+	for _, tt := range []struct {
+		name  string
+		input []string
+		want  bool
+	}{
+		{
+			name:  "valid port",
+			input: []string{"8080", "1"},
+			want:  true,
+		},
+		{
+			name:  "invalid port",
+			input: []string{"8080", "0"},
+			want:  false,
+		},
+	} {
+		got := portsValid(tt.input)
+		if got != tt.want {
+			t.Fatalf("got=%v; want=%v:\n%s", got, tt.want, tt.name)
+		}
+	}
+}
+
+func TestValidNetworks(t *testing.T) {
+	for _, tt := range []struct {
+		name string
+		strs []string
+		want bool
+	}{
+		{
+			name: "all valid",
+			strs: []string{"192.168.1.1/31", "$FOOBAR", "!192.168.10.1", "2001:0db8:85a3:0000:0000:8a2e:0370:7334"},
+			want: true,
+		},
+		{
+			name: "double negation",
+			strs: []string{"192.168.1.1/31", "$FOOBAR", "!!192.168.10.1"},
+			want: false,
+		},
+		{
+			name: "invalid variable",
+			strs: []string{"192.168.1.1/31", "FOOBAR", "!192.168.10.1"},
+			want: false,
+		},
+		{
+			name: "invalid CIDR",
+			strs: []string{"192.168.1.1/37", "$FOOBAR", "!192.168.10.1"},
+			want: false,
+		},
+	} {
+		got := validNetworks(tt.strs)
+		if got != tt.want {
+			t.Fatalf("got=%v; want=%v:\n%s", got, tt.want, tt.name)
 		}
 	}
 }

@@ -418,9 +418,17 @@ func (r *Rule) protocol(key item, l *lexer) error {
 	return nil
 }
 
+var nestedNetRE = regexp.MustCompile(`,(!?\[[^]]*\])`)
 // network decodes an IDS rule network (networks and ports) based on its key.
 func (r *Rule) network(key item, l *lexer) error {
-	items := strings.Split(strings.Trim(key.value, "[]"), ",")
+	// This is a hack. We use a regexp to replace the outer `,` with `___`
+	// to give us a discrete string to split on, avoiding the inner `,`
+	
+
+	// Specify TrimSuffix and TrimPrefix to ensure only one instance of `[` and `]` are trimmed.
+	tmp := strings.TrimSuffix(strings.TrimPrefix(key.value, "["), "]")
+	items := strings.Split(nestedNetRE.ReplaceAllString(tmp, "___${1}"), "___")
+
 	// Validate that no items contain spaces.
 	for _, i := range items {
 		if len(strings.Fields(i)) > 1 || len(strings.TrimSpace(i)) != len(i) {
@@ -461,7 +469,16 @@ func (r *Rule) network(key item, l *lexer) error {
 // Validate that every item is between 1 and 65535.
 func portsValid(p []string) bool {
 	for _, u := range p {
+		// Ignore negations for validation.
 		u = strings.TrimPrefix(u, "!")
+
+		// If this port range is a nested range, check the inner set.
+		if strings.HasPrefix(u, "[") {
+			if portsValid(strings.Split(strings.Trim(u,"[]"), ",")) {
+				continue
+			}
+			return false
+		}
 		ports := strings.Split(u, ":")
 		for _, port := range ports {
 			if port == "any" || strings.HasPrefix(port, "$") {

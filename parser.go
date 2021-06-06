@@ -423,7 +423,7 @@ var nestedNetRE = regexp.MustCompile(`,(!?\[[^]]*\])`)
 // network decodes an IDS rule network (networks and ports) based on its key.
 func (r *Rule) network(key item, l *lexer) error {
 	// This is a hack. We use a regexp to replace the outer `,` with `___`
-	// to give us a discrete string to split on, avoiding the inner `,`
+	// to give us a discrete string to split on, avoiding the inner `,`.
 
 	// Specify TrimSuffix and TrimPrefix to ensure only one instance of `[` and `]` are trimmed.
 	tmp := strings.TrimSuffix(strings.TrimPrefix(key.value, "["), "]")
@@ -469,7 +469,7 @@ func (r *Rule) network(key item, l *lexer) error {
 // Validate that every item is between 1 and 65535.
 func portsValid(p []string) bool {
 	for _, u := range p {
-		// Ignore negations for validation
+		// Ignore negations for validation.
 		u = strings.TrimPrefix(u, "!")
 
 		// If this port range is a grouping, check the inner group.

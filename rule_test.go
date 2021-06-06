@@ -307,6 +307,16 @@ func TestNetString(t *testing.T) {
 			input: []string{"$HOME_NET", "!$FOO_NET", "192.168.0.0/16"},
 			want:  "[$HOME_NET,!$FOO_NET,192.168.0.0/16]",
 		},
+		{
+			name:  "grouped ports",
+			input: []string{"1:80", "![2,4]", "[6,7,8]"},
+			want:  "[1:80,![2,4],[6,7,8]]",
+		},
+		{
+			name:  "grouped networks",
+			input: []string{"192.168.0.0/16", "![192.168.86.0/24,192.168.87.0/24]"},
+			want:  "[192.168.0.0/16,![192.168.86.0/24,192.168.87.0/24]]",
+		},
 	} {
 		got := netString(tt.input)
 		if got != tt.want {
@@ -336,6 +346,22 @@ func TestNetworkString(t *testing.T) {
 				Ports: []string{"$HTTP_PORTS", "!53", "$BAR_NET"},
 			},
 			want: "[$HOME_NET,!$FOO_NET,192.168.0.0/16] [$HTTP_PORTS,!53,$BAR_NET]",
+		},
+		{
+			name: "grouped ports",
+			input: Network{
+				Nets:  []string{"$HOME_NET", "!$FOO_NET", "192.168.0.0/16"},
+				Ports: []string{"1:80", "![2,4]", "[6,7,8]"},
+			},
+			want: "[$HOME_NET,!$FOO_NET,192.168.0.0/16] [1:80,![2,4],[6,7,8]]",
+		},
+		{
+			name: "grouped networks",
+			input: Network{
+				Nets:  []string{"192.168.0.0/16", "![192.168.86.0/24,192.168.87.0/24]"},
+				Ports: []string{"$HTTP_PORTS", "!53", "$BAR_NET"},
+			},
+			want: "[192.168.0.0/16,![192.168.86.0/24,192.168.87.0/24]] [$HTTP_PORTS,!53,$BAR_NET]",
 		},
 	} {
 		got := tt.input.String()
@@ -1050,6 +1076,35 @@ func TestRuleString(t *testing.T) {
 				},
 			},
 			want: `alert http $HOME_NET any -> $EXTERNAL_NET any (msg:"new sticky buffers"; http.method; content:"POST"; http.uri; bsize:10; content:"foo"; sid:1234; rev:2;)`,
+		},
+		{
+			name: "rule with port and network groups",
+			input: Rule{
+				Action:   "alert",
+				Protocol: "http",
+				Source: Network{
+					Nets:  []string{"192.168.0.0/16", "![192.168.86.0/24,192.168.87.0/24]"},
+					Ports: []string{"1:80", "![2,4]", "[6,7,8]"},
+				},
+				Destination: Network{
+					Nets:  []string{"$EXTERNAL_NET"},
+					Ports: []string{"any"},
+				},
+				SID:         1234,
+				Revision:    2,
+				Description: "grouped network bits",
+				Matchers: []orderedMatcher{
+					&Content{
+						DataPosition: httpMethod,
+						Pattern:      []byte("POST"),
+					},
+					&Content{
+						DataPosition: httpURI,
+						Pattern:      []byte("foo"),
+					},
+				},
+			},
+			want: `alert http [192.168.0.0/16,![192.168.86.0/24,192.168.87.0/24]] [1:80,![2,4],[6,7,8]] -> $EXTERNAL_NET any (msg:"grouped network bits"; http.method; content:"POST"; http.uri; content:"foo"; sid:1234; rev:2;)`,
 		},
 	} {
 		got := tt.input.String()

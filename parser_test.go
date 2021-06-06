@@ -1852,7 +1852,7 @@ func TestParseRule(t *testing.T) {
 			},
 		},
 		{
-			name: "nested port test",
+			name: "grouped port test",
 			rule: `alert http $HOME_NET [1:80,![2,4],[6,7,8]] -> $EXTERNAL_NET any (msg:"wat"; http.method; content:"POST"; http.uri; content:"foo"; sid:1234; rev:2;)`,
 			want: &Rule{
 				Action:   "alert",
@@ -1860,6 +1860,35 @@ func TestParseRule(t *testing.T) {
 				Source: Network{
 					Nets:  []string{"$HOME_NET"},
 					Ports: []string{"1:80", "![2,4]", "[6,7,8]"},
+				},
+				Destination: Network{
+					Nets:  []string{"$EXTERNAL_NET"},
+					Ports: []string{"any"},
+				},
+				SID:         1234,
+				Revision:    2,
+				Description: "wat",
+				Matchers: []orderedMatcher{
+					&Content{
+						DataPosition: httpMethod,
+						Pattern:      []byte("POST"),
+					},
+					&Content{
+						DataPosition: httpURI,
+						Pattern:      []byte("foo"),
+					},
+				},
+			},
+		},
+		{
+			name: "grouped network test",
+			rule: `alert http [192.168.0.0/16,![192.168.86.0/24,192.168.87.0/24]] any -> $EXTERNAL_NET any (msg:"wat"; http.method; content:"POST"; http.uri; content:"foo"; sid:1234; rev:2;)`,
+			want: &Rule{
+				Action:   "alert",
+				Protocol: "http",
+				Source: Network{
+					Nets:  []string{"192.168.0.0/16", "![192.168.86.0/24,192.168.87.0/24]"},
+					Ports: []string{"any"},
 				},
 				Destination: Network{
 					Nets:  []string{"$EXTERNAL_NET"},

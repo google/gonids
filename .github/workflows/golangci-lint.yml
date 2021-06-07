@@ -11,6 +11,7 @@ jobs:
   golangci:
     name: lint
     runs-on: ubuntu-latest
+    env:  GO111MODULES=off
     steps:
       - uses: actions/checkout@v2
       - name: golangci-lint
@@ -18,7 +19,6 @@ jobs:
         with:
           # Optional: version of golangci-lint to use in form of v1.2 or v1.2.3 or `latest` to use the latest version
           version: latest
-          env:  GO111MODULES=off
 
           # Optional: working directory, useful for monorepos
           # working-directory: somedir

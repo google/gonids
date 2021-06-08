@@ -11,8 +11,8 @@ jobs:
   golangci:
     name: lint
     runs-on: ubuntu-latest
-    env:
-            GO111MODULES: off
+    #env:
+    #        GO111MODULES: off
     steps:
       - uses: actions/checkout@v2
       - name: golangci-lint

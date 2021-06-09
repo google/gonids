@@ -1909,6 +1909,102 @@ func TestParseRule(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "raw port list",
+			rule: `alert tcp $EXTERNAL_NET [443,465,993,995,25] -> $HOME_NET any (msg:"raw port list"; content:"hi"; sid:12345; rev:1;)`,
+			want: &Rule{
+				Action:   "alert",
+				Protocol: "tcp",
+				Source: Network{
+					Nets:  []string{"$EXTERNAL_NET"},
+					Ports: []string{"443,465,993,995,25"},
+				},
+				Destination: Network{
+					Nets:  []string{"$HOME_NET"},
+					Ports: []string{"any"},
+				},
+				SID:         12345,
+				Revision:    1,
+				Description: "raw port list",
+				Matchers: []orderedMatcher{
+					&Content{
+						Pattern: []byte("hi"),
+					},
+				},
+			},
+		},
+		{
+			name: "raw port list with negations",
+			rule: `alert tcp $EXTERNAL_NET [!21,!22,!23,!2100,!3535] -> $HOME_NET any (msg:"raw port list with negations"; content:"hi"; sid:12345; rev:1;)`,
+			want: &Rule{
+				Action:   "alert",
+				Protocol: "tcp",
+				Source: Network{
+					Nets:  []string{"$EXTERNAL_NET"},
+					Ports: []string{"!21,!22,!23,!2100,!3535"},
+				},
+				Destination: Network{
+					Nets:  []string{"$HOME_NET"},
+					Ports: []string{"any"},
+				},
+				SID:         12345,
+				Revision:    1,
+				Description: "raw port list with negations",
+				Matchers: []orderedMatcher{
+					&Content{
+						Pattern: []byte("hi"),
+					},
+				},
+			},
+		},
+		{
+			name: "raw network list",
+			rule: `alert tcp [174.129.0.0/16,67.202.0.0/18] any -> $HOME_NET any (msg:"raw network list"; content:"hi"; sid:12345; rev:1;)`,
+			want: &Rule{
+				Action:   "alert",
+				Protocol: "tcp",
+				Source: Network{
+					Nets:  []string{"174.129.0.0/16,67.202.0.0/18"},
+					Ports: []string{"any"},
+				},
+				Destination: Network{
+					Nets:  []string{"$HOME_NET"},
+					Ports: []string{"any"},
+				},
+				SID:         12345,
+				Revision:    1,
+				Description: "raw network list",
+				Matchers: []orderedMatcher{
+					&Content{
+						Pattern: []byte("hi"),
+					},
+				},
+			},
+		},
+		{
+			name: "raw network list with negations",
+			rule: `alert tcp [174.129.0.0/16,!67.202.0.0/18] any -> $HOME_NET any (msg:"raw network list"; content:"hi"; sid:12345; rev:1;)`,
+			want: &Rule{
+				Action:   "alert",
+				Protocol: "tcp",
+				Source: Network{
+					Nets:  []string{"174.129.0.0/16,!67.202.0.0/18"},
+					Ports: []string{"any"},
+				},
+				Destination: Network{
+					Nets:  []string{"$HOME_NET"},
+					Ports: []string{"any"},
+				},
+				SID:         12345,
+				Revision:    1,
+				Description: "raw network list",
+				Matchers: []orderedMatcher{
+					&Content{
+						Pattern: []byte("hi"),
+					},
+				},
+			},
+		},
 		// Errors
 		{
 			name:    "invalid action",
@@ -2167,6 +2263,16 @@ func TestPortsValid(t *testing.T) {
 		{
 			name:  "nested range",
 			input: []string{"![25,110,143,465,587,2525]"},
+			want:  true,
+		},
+		{
+			name:  "port list",
+			input: []string{"[443,465,993,995,25]"},
+			want:  true,
+		},
+		{
+			name:  "open upper range",
+			input: []string{"[1024:]"},
 			want:  true,
 		},
 		{

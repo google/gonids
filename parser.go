@@ -38,8 +38,55 @@ var escapeRE = regexp.MustCompile(`([()+.'\\])`)
 // escapeContent matches escaped special characters.
 var escapeContent = regexp.MustCompile(`\\([\\;":])`)
 
-// metaSplitRE matches string in metadata
+// metaSplitRE matches string in metadata.
 var metaSplitRE = regexp.MustCompile(`,\s*`)
+
+// nestedNetRE matches nested network groups.
+var nestedNetRE = regexp.MustCompile(`,(!?\[[^]]*\])`)
+
+var appLayerProtocols = []string{
+	"dcerpc",
+	"dhcp",
+	"dnp3",
+	"dns",
+	"enip",
+	"ftp",
+	"ftp-data",
+	"http",
+	"http2",
+	"icmp",
+	"icmpv4",
+	"icmpv6",
+	"ikev2",
+	"imap",
+	"ip",
+	"ip4",
+	"ip6",
+	"ipv4",
+	"ipv6",
+	"irc",
+	"jabber",
+	"krb5",
+	"modbus",
+	"mqtt",
+	"nfs",
+	"ntp",
+	"pkthdr",
+	"rdp",
+	"rfb",
+	"sctp",
+	"sip",
+	"smb",
+	"smtp",
+	"snmp",
+	"ssh",
+	"tcp",
+	"tcp-pkt",
+	"tcp-stream",
+	"tftp",
+	"tls",
+	"udp",
+}
 
 // parseContent decodes rule content match. For now it only takes care of escaped and hex
 // encoded content.
@@ -411,14 +458,12 @@ func (r *Rule) protocol(key item, l *lexer) error {
 	if key.typ != itemProtocol {
 		panic("item is not a protocol")
 	}
-	if !inSlice(key.value, []string{"asn1", "dcerpc", "dhcp", "dnp3", "dns", "enip", "ftp", "http", "http2", "icmp", "ikev2", "imap", "ip", "krb", "krb5", "modbus", "mqtt", "nfs", "ntp", "rdp", "rfb", "sip", "smb", "smtp", "snmp", "ssh", "tcp", "tcp-pkt", "tcp-stream", "tftp", "tls", "udp", "x509"}) {
+	if !inSlice(key.value, appLayerProtocols) {
 		return fmt.Errorf("invalid protocol: %v", key.value)
 	}
 	r.Protocol = key.value
 	return nil
 }
-
-var nestedNetRE = regexp.MustCompile(`,(!?\[[^]]*\])`)
 
 // network decodes an IDS rule network (networks and ports) based on its key.
 func (r *Rule) network(key item, l *lexer) error {

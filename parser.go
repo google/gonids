@@ -44,6 +44,9 @@ var metaSplitRE = regexp.MustCompile(`,\s*`)
 // nestedNetRE matches nested network groups.
 var nestedNetRE = regexp.MustCompile(`,(!?\[[^]]*\])`)
 
+// portSplitRE splits port lists and ranges for validation.
+var portSplitRE = regexp.MustCompile(`[:,]`)
+
 var appLayerProtocols = []string{
 	"dcerpc",
 	"dhcp",
@@ -514,7 +517,6 @@ func (r *Rule) network(key item, l *lexer) error {
 // Validate that every item is between 1 and 65535.
 func portsValid(p []string) bool {
 	for _, u := range p {
-		// Ignore negations for validation.
 		u = strings.TrimPrefix(u, "!")
 
 		// If this port range is a grouping, check the inner group.
@@ -524,9 +526,11 @@ func portsValid(p []string) bool {
 			}
 			return false
 		}
-		ports := strings.Split(u, ":")
+
+		ports := portSplitRE.Split(u, -1)
 		for _, port := range ports {
-			if port == "any" || strings.HasPrefix(port, "$") {
+			port = strings.TrimPrefix(port, "!")
+			if port == "any" || port == "" || strings.HasPrefix(port, "$") {
 				continue
 			}
 			x, err := strconv.Atoi(port)
@@ -558,7 +562,7 @@ func validNetworks(nets []string) bool {
 	for _, net := range nets {
 		net = strings.TrimPrefix(net, "!")
 		// If this network is a grouping, check the inner group.
-		if strings.HasPrefix(net, "[") {
+		if strings.HasPrefix(net, "[") || strings.Contains(net, ",") {
 			if validNetworks(strings.Split(strings.Trim(net, "[]"), ",")) {
 				continue
 			}

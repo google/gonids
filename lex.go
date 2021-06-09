@@ -98,13 +98,6 @@ func (l *lexer) skipNext() {
 	l.ignore()
 }
 
-// peek returns but does not consume the next rune in the input.
-func (l *lexer) peek() rune {
-	r := l.next()
-	l.backup()
-	return r
-}
-
 // len returns the current length of the item in processing.
 func (l *lexer) len() int {
 	if l.pos >= len(l.input) {
@@ -139,15 +132,6 @@ func (l *lexer) emit(t itemType, trimSpaces bool) {
 // ignore skips over the pending input before this point.
 func (l *lexer) ignore() {
 	l.start = l.pos
-}
-
-// accept consumes the next rune if it's from the valid set.
-func (l *lexer) accept(valid string) bool {
-	if strings.ContainsRune(valid, l.next()) {
-		return true
-	}
-	l.backup()
-	return false
 }
 
 // acceptRun consumes a run of runes from the valid set.

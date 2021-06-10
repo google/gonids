@@ -517,6 +517,7 @@ func (r *Rule) network(key item, l *lexer) error {
 // Validate that every item is between 1 and 65535.
 func portsValid(p []string) bool {
 	for _, u := range p {
+
 		if strings.Count(u, "[") != strings.Count(u, "]") {
 			// unbalanced groups.
 			return false

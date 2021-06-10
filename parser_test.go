@@ -2067,6 +2067,16 @@ func TestParseRule(t *testing.T) {
 			wantErr: true,
 		},
 		{
+			name:    "unbalanced network brackets",
+			rule:    `alert http [10.0.0.0/24,![10.0.0.10,10.0.0.11] any -> $EXTERNAL_NET any (msg:"unbalanced"; content:"foo"; sid:12345; rev:2;)`,
+			wantErr: true,
+		},
+		{
+			name:    "unbalanced port brackets",
+			rule:    `alert http $HOME_NET [1:80,![22,21] any -> $EXTERNAL_NET any (msg:"unbalanced"; content:"foo"; sid:12345; rev:2;)`,
+			wantErr: true,
+		},
+		{
 			name:    "unsupported option key",
 			rule:    `alert http $HOME_NET any -> $EXTERNAL_NET any (msg:"unsupported option key"; content:"foo"; zibzab:1; foobar:"wat"; content:"baz"; sid:4321; rev:1;)`,
 			wantErr: true,
@@ -2277,7 +2287,7 @@ func TestPortsValid(t *testing.T) {
 		},
 		{
 			name:  "invalid port",
-			input: []string{"8080", "0"},
+			input: []string{"8080", "87236423"},
 			want:  false,
 		},
 	} {

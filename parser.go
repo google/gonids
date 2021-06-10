@@ -517,8 +517,12 @@ func (r *Rule) network(key item, l *lexer) error {
 // Validate that every item is between 1 and 65535.
 func portsValid(p []string) bool {
 	for _, u := range p {
-		u = strings.TrimPrefix(u, "!")
+		if strings.Count(u, "[") != strings.Count(u, "]") {
+			// unbalanced groups.
+			return false
+		}
 
+		u = strings.TrimPrefix(u, "!")
 		// If this port range is a grouping, check the inner group.
 		if strings.HasPrefix(u, "[") {
 			if portsValid(strings.Split(strings.Trim(u, "[]"), ",")) {
@@ -537,7 +541,7 @@ func portsValid(p []string) bool {
 			if err != nil {
 				return false
 			}
-			if x > 65535 || x < 1 {
+			if x > 65535 || x < 0 {
 				return false
 			}
 		}
@@ -560,6 +564,11 @@ func validNetwork(i string) bool {
 // Validate every item is either a valid ip or ip range.
 func validNetworks(nets []string) bool {
 	for _, net := range nets {
+		if strings.Count(net, "[") != strings.Count(net, "]") {
+			// unbalanced groups.
+			return false
+		}
+
 		net = strings.TrimPrefix(net, "!")
 		// If this network is a grouping, check the inner group.
 		if strings.HasPrefix(net, "[") || strings.Contains(net, ",") {

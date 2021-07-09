@@ -69,7 +69,7 @@ var suri4StickyTo5Sticky = map[DataPos]DataPos{
 	dnsQuery: dnsQuery5,
 }
 
-// OptimizeHTTP tunes an old style rule to leverage port agnostic HTTP detection.
+// OptimizeHTTP tunes an old style rule to leverage port independent HTTP detection.
 func (r *Rule) OptimizeHTTP() bool {
 	if !r.ShouldBeHTTP() {
 		return false
@@ -77,7 +77,7 @@ func (r *Rule) OptimizeHTTP() bool {
 	// Switch protocol to HTTP.
 	r.Protocol = "http"
 
-	// Make detection port agnostic.
+	// Make detection port independent.
 	for i, p := range r.Source.Ports {
 		if p == "$HTTP_PORTS" {
 			r.Source.Ports[i] = "any"

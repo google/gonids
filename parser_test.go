@@ -1149,7 +1149,7 @@ func TestParseRule(t *testing.T) {
 		},
 		{
 			name: "Complex VRT rule",
-			rule: `alert tcp $HOME_NET any -> $EXTERNAL_NET $HTTP_PORTS (msg:"VRT BLACKLIST URI request for known malicious URI - /tongji.js"; flow:to_server,established; content:"/tongji.js"; fast_pattern:only; http_uri; content:"Host|3A| "; http_header; pcre:"/Host\x3a[^\r\n]*?\.tongji/Hi"; metadata:impact_flag red, policy balanced-ips drop, policy security-ips drop, ruleset community, service http; reference:url,labs.snort.org/docs/17904.html; classtype:trojan-activity; sid:17904; rev:6;)`,
+			rule: `alert tcp $HOME_NET any -> $EXTERNAL_NET $HTTP_PORTS (msg:"VRT BLOCKLIST URI request for known malicious URI - /tongji.js"; flow:to_server,established; content:"/tongji.js"; fast_pattern:only; http_uri; content:"Host|3A| "; http_header; pcre:"/Host\x3a[^\r\n]*?\.tongji/Hi"; metadata:impact_flag red, policy balanced-ips drop, policy security-ips drop, ruleset community, service http; reference:url,labs.snort.org/docs/17904.html; classtype:trojan-activity; sid:17904; rev:6;)`,
 			want: &Rule{
 				Action:   "alert",
 				Protocol: "tcp",
@@ -1162,7 +1162,7 @@ func TestParseRule(t *testing.T) {
 				},
 				SID:         17904,
 				Revision:    6,
-				Description: "VRT BLACKLIST URI request for known malicious URI - /tongji.js",
+				Description: "VRT BLOCKLIST URI request for known malicious URI - /tongji.js",
 				References:  []*Reference{{Type: "url", Value: "labs.snort.org/docs/17904.html"}},
 				Tags: map[string]string{
 					"flow":      "to_server,established",

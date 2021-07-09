@@ -88,7 +88,7 @@ func (r *Rule) ExpensivePCRE() bool {
 	// Look for a content with sufficient length to make performance acceptable.
 	short := true
 	for _, c := range cs {
-		// TODO: Identify a sane length.
+		// TODO: Identify a reasonable length.
 		if len(c.Pattern) >= minPCREContentLen {
 			short = false
 		}

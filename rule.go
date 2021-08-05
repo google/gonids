@@ -494,9 +494,12 @@ type LenMatch struct {
 
 // PCRE describes a PCRE item of a rule.
 type PCRE struct {
-	Pattern []byte
-	Negate  bool
-	Options []byte
+	// DataPosition defaults to pkt_data state, can be modified to apply to file_data, base64_data locations.
+	// This value will apply to all following contents, to reset to default you must reset DataPosition during processing.
+	DataPosition DataPos
+	Pattern      []byte
+	Negate       bool
+	Options      []byte
 }
 
 // FastPattern describes various properties of a fast_pattern value for a content.
@@ -916,6 +919,12 @@ func (r Rule) String() string {
 				}
 			}
 			if c, ok := m.(*LenMatch); ok {
+				if d != c.DataPosition {
+					d = c.DataPosition
+					s.WriteString(fmt.Sprintf("%s; ", d))
+				}
+			}
+			if c, ok := m.(*PCRE); ok {
 				if d != c.DataPosition {
 					d = c.DataPosition
 					s.WriteString(fmt.Sprintf("%s; ", d))

@@ -2005,6 +2005,44 @@ func TestParseRule(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "sticky buffer before content and PCRE",
+			rule: `alert tcp $HOME_NET any -> $EXTERNAL_NET $HTTP_PORTS (msg:"Foo msg"; flow:to_server,established; http.uri; content:"blah"; pkt_data; pcre:"/foo.*bar/i"; reference:url,www.google.com; classtype:trojan-activity; sid:12345; rev:1;)`,
+			want: &Rule{
+				Action:   "alert",
+				Protocol: "tcp",
+				Source: Network{
+					Nets:  []string{"$HOME_NET"},
+					Ports: []string{"any"},
+				},
+				Destination: Network{
+					Nets: []string{"$EXTERNAL_NET"}, Ports: []string{"$HTTP_PORTS"},
+				},
+				SID:         12345,
+				Revision:    1,
+				Description: "Foo msg",
+				References: []*Reference{
+					{
+						Type:  "url",
+						Value: "www.google.com"},
+				},
+				Tags: map[string]string{
+					"flow":      "to_server,established",
+					"classtype": "trojan-activity",
+				},
+				Matchers: []orderedMatcher{
+					&Content{
+						DataPosition: httpURI,
+						Pattern:      []byte("blah"),
+					},
+					&PCRE{
+						DataPosition: pktData,
+						Pattern:      []byte("foo.*bar"),
+						Options:      []byte("i"),
+					},
+				},
+			},
+		},
 		// Errors
 		{
 			name:    "invalid action",

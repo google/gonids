@@ -1106,6 +1106,36 @@ func TestRuleString(t *testing.T) {
 			},
 			want: `alert http [192.168.0.0/16,![192.168.86.0/24,192.168.87.0/24]] [1:80,![2,4],[6,7,8]] -> $EXTERNAL_NET any (msg:"grouped network bits"; http.method; content:"POST"; http.uri; content:"foo"; sid:1234; rev:2;)`,
 		},
+		{
+			name: "rule with sticky buffer before pcre",
+			input: Rule{
+				Action:   "alert",
+				Protocol: "http",
+				Source: Network{
+					Nets:  []string{"$HOME_NET"},
+					Ports: []string{"any"},
+				},
+				Destination: Network{
+					Nets:  []string{"$EXTERNAL_NET"},
+					Ports: []string{"any"},
+				},
+				SID:         1234,
+				Revision:    2,
+				Description: "pcre new sticky buffer",
+				Matchers: []orderedMatcher{
+					&Content{
+						DataPosition: httpMethod,
+						Pattern:      []byte("POST"),
+					},
+					&PCRE{
+						DataPosition: pktData,
+						Pattern:      []byte("foo.*bar"),
+						Options:      []byte("i"),
+					},
+				},
+			},
+			want: `alert http $HOME_NET any -> $EXTERNAL_NET any (msg:"pcre new sticky buffer"; http.method; content:"POST"; pkt_data; pcre:"/foo.*bar/i"; sid:1234; rev:2;)`,
+		},
 	} {
 		got := tt.input.String()
 		if got != tt.want {

@@ -802,6 +802,7 @@ func (r *Rule) option(key item, l *lexer) error {
 			if err != nil {
 				return err
 			}
+			p.DataPosition = dataPosition
 			p.Negate = negate
 			r.Matchers = append(r.Matchers, p)
 		} else {

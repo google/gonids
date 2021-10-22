@@ -615,7 +615,7 @@ func (r *Rule) option(key item, l *lexer) error {
 	}
 	switch {
 	// TODO: Many of these simple tags could be factored into nicer structures.
-	case inSlice(key.value, []string{"classtype", "flow", "tag", "priority", "app-layer-protocol", "noalert",
+	case inSlice(key.value, []string{"classtype", "flow", "tag", "priority", "app-layer-protocol", "noalert", "target",
 		"flags", "ipopts", "ip_proto", "geoip", "fragbits", "fragoffset", "tos",
 		"window",
 		"threshold", "detection_filter",

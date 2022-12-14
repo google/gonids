@@ -137,7 +137,7 @@ func TestOptimizeHTTP(t *testing.T) {
 		// Actual modifications correctness.
 		diff := pretty.Compare(tt.output, tt.input)
 		if tt.wantMod && diff != "" {
-			t.Fatal(fmt.Sprintf("diff (-got +want):\n%s", diff))
+			t.Fatalf("diff (-got +want):\n%s", diff)
 		}
 	}
 }
@@ -271,7 +271,7 @@ func TestSnortURILenFix(t *testing.T) {
 		// Actual modifications correctness.
 		diff := pretty.Compare(tt.output, tt.input)
 		if tt.wantMod && diff != "" {
-			t.Fatal(fmt.Sprintf("diff (-got +want):\n%s", diff))
+			t.Fatalf("diff (-got +want):\n%s", diff)
 		}
 	}
 }
@@ -386,7 +386,7 @@ func TestSnortHTTPHeaderFix(t *testing.T) {
 		// Actual modifications correctness.
 		diff := pretty.Compare(tt.output, tt.input)
 		if tt.wantMod && diff != "" {
-			t.Fatal(fmt.Sprintf("diff (-got +want):\n%s", diff))
+			t.Fatalf("diff (-got +want):\n%s", diff)
 		}
 	}
 }
@@ -519,7 +519,7 @@ func TestUpgradeToSuri5(t *testing.T) {
 		// Actual modifications correctness.
 		diff := pretty.Compare(tt.output, tt.input)
 		if tt.wantMod && diff != "" {
-			t.Fatal(fmt.Sprintf("diff (-got +want):\n%s", diff))
+			t.Fatalf("diff (-got +want):\n%s", diff)
 		}
 	}
 }

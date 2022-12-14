@@ -16,7 +16,6 @@ limitations under the License.
 package gonids
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/kylelemons/godebug/pretty"

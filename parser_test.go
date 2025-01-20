@@ -16,6 +16,7 @@ limitations under the License.
 package gonids
 
 import (
+	"fmt"
 	"reflect"
 	"testing"
 
@@ -2390,4 +2391,17 @@ func TestValidNetworks(t *testing.T) {
 			t.Fatalf("got=%v; want=%v:\n%s", got, tt.want, tt.name)
 		}
 	}
+}
+
+func TestXxx(t *testing.T) {
+	v := `alert ip any any -> any any (msg:"IPv4 header keyword example";ipv4.hdr;content:"|06|";offset:9; depth:1; sid:1; rev:1;)`
+	r, err := ParseRule(v)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, c := range r.Contents() {
+
+		fmt.Print(c.DataPosition.String())
+	}
+
 }

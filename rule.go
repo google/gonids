@@ -206,6 +206,10 @@ const (
 	// DNS Sticky Buffers
 	dnsQuery5
 	// SMB - Documentation lacking. Unknown.
+
+	//ip header
+	ipv4hdr
+	ipv6hdr
 )
 
 // Contains both Suricata 4.x and 5.0 buffers. Some day we'll deprecate the 4.x ones.
@@ -297,6 +301,10 @@ var stickyBuffers = map[DataPos]string{
 	// DNS Sticky Buffers
 	dnsQuery5: "dns.query",
 	// SMB - Documentation lacking. Unknown.
+
+	//ip header
+	ipv4hdr: "ipv4.hdr",
+	ipv6hdr: "ipv6.hdr",
 }
 
 func (d DataPos) String() string {

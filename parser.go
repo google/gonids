@@ -616,19 +616,26 @@ func (r *Rule) option(key item, l *lexer) error {
 	switch {
 	// TODO: Many of these simple tags could be factored into nicer structures.
 	case inSlice(key.value, []string{"classtype", "flow", "tag", "priority", "app-layer-protocol", "noalert", "target",
-		"flags", "ipopts", "ip_proto", "geoip", "fragbits", "fragoffset", "tos", "id",
+		"flags", "ipopts", "ip_proto", "geoip", "fragbits", "fragoffset", "tos",
 		"window",
 		"threshold", "detection_filter",
 		"dce_iface", "dce_opnum", "dce_stub_data",
 		"asn1"}):
 		nextItem := l.nextItem()
-		if nextItem.typ != itemOptionValue {
+
+		if nextItem.typ != itemOptionValue && !inSlice(key.value, []string{"tos"}) {
 			return fmt.Errorf("no valid value for %s tag", key.value)
 		}
 		if r.Tags == nil {
 			r.Tags = make(map[string]string)
 		}
-		r.Tags[key.value] = nextItem.value
+		if nextItem.typ == itemNot {
+			v := nextItem.value
+			nextItem = l.nextItem()
+			r.Tags[key.value] = v + nextItem.value
+		} else {
+			r.Tags[key.value] = nextItem.value
+		}
 	case inSlice(key.value, []string{"sameip", "tls.store", "ftpbounce"}):
 		r.Statements = append(r.Statements, key.value)
 	case inSlice(key.value, tlsTags):

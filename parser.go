@@ -623,7 +623,7 @@ func (r *Rule) option(key item, l *lexer) error {
 		"asn1"}):
 		nextItem := l.nextItem()
 
-		if nextItem.typ != itemOptionValue && !inSlice(key.value, []string{"tos"}) {
+		if nextItem.typ != itemOptionValue && !inSlice(key.value, []string{"tos", "fragbits"}) {
 			return fmt.Errorf("no valid value for %s tag", key.value)
 		}
 		if r.Tags == nil {

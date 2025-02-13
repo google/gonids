@@ -91,6 +91,8 @@ var appLayerProtocols = []string{
 	"udp",
 }
 
+var tcpKeyWords = []string{"tcp.flags"}
+
 // parseContent decodes rule content match. For now it only takes care of escaped and hex
 // encoded content.
 func parseContent(content string) ([]byte, error) {
@@ -615,12 +617,12 @@ func (r *Rule) option(key item, l *lexer) error {
 	}
 	switch {
 	// TODO: Many of these simple tags could be factored into nicer structures.
-	case inSlice(key.value, []string{"classtype", "flow", "tag", "priority", "app-layer-protocol", "noalert", "target",
+	case inSlice(key.value, append([]string{"classtype", "flow", "tag", "priority", "app-layer-protocol", "noalert", "target",
 		"flags", "ipopts", "ip_proto", "geoip", "fragbits", "fragoffset", "tos",
 		"window",
 		"threshold", "detection_filter",
 		"dce_iface", "dce_opnum", "dce_stub_data",
-		"asn1"}):
+		"asn1"}, tcpKeyWords...)):
 		nextItem := l.nextItem()
 
 		if nextItem.typ != itemOptionValue && !inSlice(key.value, []string{"tos", "fragbits"}) {

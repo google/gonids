@@ -111,7 +111,7 @@ func parseContent(content string) ([]byte, error) {
 
 	b = hexRE.ReplaceAllStringFunc(b,
 		func(h string) string {
-			r, err := hex.DecodeString(strings.Replace(strings.Trim(h, "|"), " ", "", -1))
+			r, err := hex.DecodeString(strings.ReplaceAll(strings.Trim(h, "|"), " ", ""))
 			if err != nil {
 				panic("invalid hexRE regexp")
 			}
@@ -408,7 +408,7 @@ func unquote(s string) string {
 	if strings.IndexByte(s, '"') < 0 {
 		return s
 	}
-	return strings.Replace(s, `\"`, `"`, -1)
+	return strings.ReplaceAll(s, `\"`, `"`)
 }
 
 func inSlice(str string, strings []string) bool {

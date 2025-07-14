@@ -15,8 +15,19 @@ limitations under the License.
 
 package gonids
 
+import (
+	"fmt"
+	"os"
+)
+
+var fuzzInit = false
+
 // FuzzParseRule is used by OSS-Fuzz to fuzz the library.
 func FuzzParseRule(data []byte) int {
+	if !fuzzInit {
+		fmt.Printf("GODEBUG=%s", os.Getenv("GODEBUG"))
+		fuzzInit = true
+	}
 	r, err := ParseRule(string(data))
 	if err != nil {
 		// Handle parse error

@@ -105,9 +105,12 @@ type Metadatas []*Metadata
 
 // Network describes the IP addresses and port numbers used in a rule.
 // TODO: Ensure all values either begin with $ (variable) or they are valid IPNet/int.
+// TODO: Refactor Nets and Ports into structs, each with their own bool for negation.
 type Network struct {
-	Nets  []string // Currently just []string because these can be variables $HOME_NET, not a valid IPNet.
-	Ports []string // Currently just []string because these can be variables $HTTP_PORTS, not just ints.
+	NegateNets  bool     // Negate the full set of Networks.
+	Nets        []string // Currently just []string because these can be variables $HOME_NET, not a valid IPNet.
+	NegatePorts bool     // Negate the full set of ports.
+	Ports       []string // Currently just []string because these can be variables $HTTP_PORTS, not just ints.
 }
 
 // DataPos indicates the data position for content matches. These should be referenced for creation
@@ -664,9 +667,19 @@ func netString(netPart []string) string {
 	return s.String()
 }
 
-// String retunrs a string for a Network.
+// String returns a string for a Network.
 func (n Network) String() string {
-	return fmt.Sprintf("%s %s", netString(n.Nets), netString(n.Ports))
+	var s strings.Builder
+	if n.NegateNets {
+		s.WriteString("!")
+	}
+	s.WriteString(netString(n.Nets))
+	s.WriteString(" ")
+	if n.NegatePorts {
+		s.WriteString("!")
+	}
+	s.WriteString(netString(n.Ports))
+	return s.String()
 }
 
 // String returns a string for a FastPattern.

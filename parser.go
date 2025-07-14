@@ -470,18 +470,13 @@ func (r *Rule) protocol(key item, l *lexer) error {
 
 // network decodes an IDS rule network (networks and ports) based on its key.
 func (r *Rule) network(key item, l *lexer) error {
-	// This is a hack. We use a regexp to replace the outer `,` with `___`
-	// to give us a discrete string to split on, avoiding the inner `,`.
-
-	// Specify TrimSuffix and TrimPrefix to ensure only one instance of `!`, `[` and `]` are trimmed.
-
-	// Notes to self, this fixes the "!" parsing issue, but drops the negation... maybe the negation needs to be set before calling this?
-	// Note: Network struct is slices of strings, negation is not yet a bool, so this might be fine for now?
-	// Note: Nope! Because we pop these off for validation we lose them entirely. So we end up with positive ports instead of negated ones.
-	// I also don't see tests covering negated networks like !$HOME_NET which this likely breaks. we'll need better handling of negation
-	// of the whole set, probably by adding a bool for each value. The *correct* way to do this is to finally move away from []string to a better structure...
+	// Identify if the whole network component is negated.
 	tmp := strings.TrimPrefix(key.value, "!")
 	negated := len(tmp) < len(key.value)
+
+	// This is a hack. We use a regexp to replace the outer `,` with `___`
+	// to give us a discrete string to split on, avoiding the inner `,`.
+	// Specify TrimSuffix and TrimPrefix to ensure only one instance of `[` and `]` are trimmed.
 	tmp = strings.TrimSuffix(strings.TrimPrefix(tmp, "["), "]")
 	items := strings.Split(nestedNetRE.ReplaceAllString(tmp, "___${1}"), "___")
 

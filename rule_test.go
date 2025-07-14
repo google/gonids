@@ -16,7 +16,6 @@ limitations under the License.
 package gonids
 
 import (
-	"fmt"
 	"reflect"
 	"testing"
 
@@ -1205,7 +1204,7 @@ func TestLastContent(t *testing.T) {
 		}
 		diff := pretty.Compare(r.LastContent(), tt.want)
 		if diff != "" {
-			t.Fatalf(fmt.Sprintf("diff (-got +want):\n%s", diff))
+			t.Fatalf("diff (-got +want):\n%s", diff)
 		}
 	}
 }
@@ -1543,7 +1542,7 @@ func TestInsertMatcher(t *testing.T) {
 		}
 		diff := pretty.Compare(tt.input, tt.want)
 		if diff != "" {
-			t.Fatal(fmt.Sprintf("%s: diff (-got +want):\n%s", tt.name, diff))
+			t.Fatalf("%s: diff (-got +want):\n%s", tt.name, diff)
 		}
 	}
 }

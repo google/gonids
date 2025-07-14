@@ -16,7 +16,6 @@ limitations under the License.
 package gonids
 
 import (
-	"fmt"
 	"reflect"
 	"testing"
 
@@ -213,7 +212,7 @@ func TestParseLenMatch(t *testing.T) {
 		got, err := parseLenMatch(tt.kind, tt.input)
 		diff := pretty.Compare(got, tt.want)
 		if diff != "" || (err != nil) != tt.wantErr {
-			t.Fatal(fmt.Sprintf("%s: gotErr:%#v, wantErr:%#v\n diff (-got +want):\n%s", tt.name, err, tt.wantErr, diff))
+			t.Fatalf("%s: gotErr:%#v, wantErr:%#v\n diff (-got +want):\n%s", tt.name, err, tt.wantErr, diff)
 		}
 	}
 }
@@ -316,7 +315,7 @@ func TestParseByteMatch(t *testing.T) {
 		got, err := parseByteMatch(tt.kind, tt.input)
 		diff := pretty.Compare(got, tt.want)
 		if diff != "" || (err != nil) != tt.wantErr {
-			t.Fatal(fmt.Sprintf("%s: gotErr:%#v, wantErr:%#v\n diff (-got +want):\n%s", tt.name, err, tt.wantErr, diff))
+			t.Fatalf("%s: gotErr:%#v, wantErr:%#v\n diff (-got +want):\n%s", tt.name, err, tt.wantErr, diff)
 		}
 	}
 }
@@ -370,7 +369,7 @@ func TestParseBase64Decode(t *testing.T) {
 		got, err := parseBase64Decode(tt.kind, tt.input)
 		diff := pretty.Compare(got, tt.want)
 		if diff != "" || (err != nil) != tt.wantErr {
-			t.Fatal(fmt.Sprintf("%s: gotErr:%#v, wantErr:%#v\n diff (-got +want):\n%s", tt.name, err, tt.wantErr, diff))
+			t.Fatalf("%s: gotErr:%#v, wantErr:%#v\n diff (-got +want):\n%s", tt.name, err, tt.wantErr, diff)
 		}
 	}
 }
@@ -405,7 +404,7 @@ func TestParseFlowbit(t *testing.T) {
 		got, err := parseFlowbit(tt.input)
 		diff := pretty.Compare(got, tt.want)
 		if diff != "" || (err != nil) != tt.wantErr {
-			t.Fatal(fmt.Sprintf("%s: gotErr:%#v, wantErr:%#v\n diff (-got +want):\n%s", tt.name, err, tt.wantErr, diff))
+			t.Fatalf("%s: gotErr:%#v, wantErr:%#v\n diff (-got +want):\n%s", tt.name, err, tt.wantErr, diff)
 		}
 	}
 }
@@ -471,7 +470,7 @@ func TestParseXbit(t *testing.T) {
 		got, err := parseXbit(tt.input)
 		diff := pretty.Compare(got, tt.want)
 		if diff != "" || (err != nil) != tt.wantErr {
-			t.Fatal(fmt.Sprintf("%s: gotErr:%#v, wantErr:%#v\n diff (-got +want):\n%s", tt.name, err, tt.wantErr, diff))
+			t.Fatalf("%s: gotErr:%#v, wantErr:%#v\n diff (-got +want):\n%s", tt.name, err, tt.wantErr, diff)
 		}
 	}
 }
@@ -515,7 +514,7 @@ func TestParseFlowint(t *testing.T) {
 		got, err := parseFlowint(tt.input)
 		diff := pretty.Compare(got, tt.want)
 		if diff != "" || (err != nil) != tt.wantErr {
-			t.Fatal(fmt.Sprintf("%s: gotErr:%#v, wantErr:%#v\n diff (-got +want):\n%s", tt.name, err, tt.wantErr, diff))
+			t.Fatalf("%s: gotErr:%#v, wantErr:%#v\n diff (-got +want):\n%s", tt.name, err, tt.wantErr, diff)
 		}
 	}
 }
@@ -2222,13 +2221,13 @@ func TestParseRule(t *testing.T) {
 		got, err := ParseRule(tt.rule)
 		diff := pretty.Compare(got, tt.want)
 		if diff != "" || (err != nil) != tt.wantErr {
-			t.Fatal(fmt.Sprintf("%s: gotErr:%#v, wantErr:%#v\n diff (-got +want):\n%s", tt.name, err, tt.wantErr, diff))
+			t.Fatalf("%s: gotErr:%#v, wantErr:%#v\n diff (-got +want):\n%s", tt.name, err, tt.wantErr, diff)
 		}
 		// Validate UnsupportedOptionError contents.
 		if uerr, ok := err.(*UnsupportedOptionError); ok {
 			diff := pretty.Compare(uerr, tt.optErr)
 			if diff != "" {
-				t.Fatal(fmt.Sprintf("%s: diff (-got +want)\n%s", tt.name, diff))
+				t.Fatalf("%s: diff (-got +want)\n%s", tt.name, diff)
 			}
 		}
 	}
@@ -2283,7 +2282,7 @@ func TestInEqualOut(t *testing.T) {
 		}
 		diff := pretty.Compare(first, second)
 		if diff != "" {
-			t.Fatal(fmt.Sprintf("%s: diff (-got +want):\n%s", tt.name, diff))
+			t.Fatalf("%s: diff (-got +want):\n%s", tt.name, diff)
 		}
 	}
 }

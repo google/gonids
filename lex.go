@@ -265,7 +265,7 @@ func lexProtocol(l *lexer) stateFn {
 		case r == ' ':
 			l.emit(itemProtocol, true)
 			return lexSourceAddress
-		case !unicode.IsLetter(r) && !unicode.IsDigit(r) && !(l.len() > 0 && r == '-'):
+		case !unicode.IsLetter(r) && !unicode.IsDigit(r) && (l.len() > 0 || r == '-'):
 			return l.errorf("invalid character %q for a rule protocol", r)
 		}
 	}

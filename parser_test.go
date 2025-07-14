@@ -1981,6 +1981,31 @@ func TestParseRule(t *testing.T) {
 			},
 		},
 		{
+			name: "negated port list",
+			rule: `alert tcp any any -> any ![80,443,9000] (msg:"negated port list"; content:"123"; sid:1; rev:1;)`,
+			want: &Rule{
+				Action:   "alert",
+				Protocol: "tcp",
+				Source: Network{
+					Nets:  []string{"any"},
+					Ports: []string{"any"},
+				},
+				Destination: Network{
+					Nets:        []string{"any"},
+					NegatePorts: true,
+					Ports:       []string{"80,443,9000"},
+				},
+				Description: "negated port list",
+				Matchers: []orderedMatcher{
+					&Content{
+						Pattern: []byte("123"),
+					},
+				},
+				SID:      1,
+				Revision: 1,
+			},
+		},
+		{
 			name: "raw network list",
 			rule: `alert tcp [174.129.0.0/16,67.202.0.0/18] any -> $HOME_NET any (msg:"raw network list"; content:"hi"; sid:12345; rev:1;)`,
 			want: &Rule{

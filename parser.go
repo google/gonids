@@ -470,11 +470,14 @@ func (r *Rule) protocol(key item, l *lexer) error {
 
 // network decodes an IDS rule network (networks and ports) based on its key.
 func (r *Rule) network(key item, l *lexer) error {
+	// Identify if the whole network component is negated.
+	tmp := strings.TrimPrefix(key.value, "!")
+	negated := len(tmp) < len(key.value)
+
 	// This is a hack. We use a regexp to replace the outer `,` with `___`
 	// to give us a discrete string to split on, avoiding the inner `,`.
-
 	// Specify TrimSuffix and TrimPrefix to ensure only one instance of `[` and `]` are trimmed.
-	tmp := strings.TrimSuffix(strings.TrimPrefix(key.value, "["), "]")
+	tmp = strings.TrimSuffix(strings.TrimPrefix(tmp, "["), "]")
 	items := strings.Split(nestedNetRE.ReplaceAllString(tmp, "___${1}"), "___")
 
 	// Validate that no items contain spaces.
@@ -485,24 +488,28 @@ func (r *Rule) network(key item, l *lexer) error {
 	}
 	switch key.typ {
 	case itemSourceAddress:
+		r.Source.NegateNets = negated
 		if validNetworks(items) {
 			r.Source.Nets = append(r.Source.Nets, items...)
 		} else {
 			return fmt.Errorf("some or all source ips are invalid: %v", items)
 		}
 	case itemSourcePort:
+		r.Source.NegatePorts = negated
 		if portsValid(items) {
 			r.Source.Ports = append(r.Source.Ports, items...)
 		} else {
 			return fmt.Errorf("some or all source ports are invalid: %v", items)
 		}
 	case itemDestinationAddress:
+		r.Destination.NegateNets = negated
 		if validNetworks(items) {
 			r.Destination.Nets = append(r.Destination.Nets, items...)
 		} else {
 			return fmt.Errorf("some or all destination ips are invalid: %v", items)
 		}
 	case itemDestinationPort:
+		r.Destination.NegatePorts = negated
 		if portsValid(items) {
 			r.Destination.Ports = append(r.Destination.Ports, items...)
 		} else {

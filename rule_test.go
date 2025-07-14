@@ -342,9 +342,9 @@ func TestNetworkString(t *testing.T) {
 			name: "complex net",
 			input: Network{
 				Nets:  []string{"$HOME_NET", "!$FOO_NET", "192.168.0.0/16"},
-				Ports: []string{"$HTTP_PORTS", "!53", "$BAR_NET"},
+				Ports: []string{"$HTTP_PORTS", "!53", "$BAR_PORTS"},
 			},
-			want: "[$HOME_NET,!$FOO_NET,192.168.0.0/16] [$HTTP_PORTS,!53,$BAR_NET]",
+			want: "[$HOME_NET,!$FOO_NET,192.168.0.0/16] [$HTTP_PORTS,!53,$BAR_PORTS]",
 		},
 		{
 			name: "grouped ports",
@@ -357,10 +357,19 @@ func TestNetworkString(t *testing.T) {
 		{
 			name: "grouped networks",
 			input: Network{
-				Nets:  []string{"192.168.0.0/16", "![192.168.86.0/24,192.168.87.0/24]"},
-				Ports: []string{"$HTTP_PORTS", "!53", "$BAR_NET"},
+				Nets:  []string{"192.168.0.0/16", "[192.168.86.0/24,192.168.87.0/24]"},
+				Ports: []string{"$HTTP_PORTS", "!53", "$BAR_PORTS"},
 			},
-			want: "[192.168.0.0/16,![192.168.86.0/24,192.168.87.0/24]] [$HTTP_PORTS,!53,$BAR_NET]",
+			want: "[192.168.0.0/16,[192.168.86.0/24,192.168.87.0/24]] [$HTTP_PORTS,!53,$BAR_PORTS]",
+		},
+		{
+			name: "negated networks",
+			input: Network{
+				NegateNets: true,
+				Nets:       []string{"192.168.0.0/16", "[192.168.86.0/24,192.168.87.0/24]"},
+				Ports:      []string{"$HTTP_PORTS", "!53", "$BAR_PORTS"},
+			},
+			want: "![192.168.0.0/16,[192.168.86.0/24,192.168.87.0/24]] [$HTTP_PORTS,!53,$BAR_PORTS]",
 		},
 	} {
 		got := tt.input.String()

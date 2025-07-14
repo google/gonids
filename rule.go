@@ -850,7 +850,7 @@ func (p PCRE) String() string {
 
 	// escape quote signs, if necessary
 	if bytes.IndexByte(pattern, '"') > -1 {
-		pattern = bytes.Replace(pattern, []byte(`"`), []byte(`\"`), -1)
+		pattern = bytes.ReplaceAll(pattern, []byte(`"`), []byte(`\"`))
 	}
 
 	var s strings.Builder

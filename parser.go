@@ -421,7 +421,7 @@ func inSlice(str string, strings []string) bool {
 }
 
 // comment decodes a comment (commented rule, or just a comment.)
-func (r *Rule) comment(key item, l *lexer) error {
+func (r *Rule) comment(key item) error {
 	if key.typ != itemComment {
 		panic("item is not a comment")
 	}
@@ -445,7 +445,7 @@ func (r *Rule) comment(key item, l *lexer) error {
 }
 
 // action decodes an IDS rule option based on its key.
-func (r *Rule) action(key item, l *lexer) error {
+func (r *Rule) action(key item) error {
 	if key.typ != itemAction {
 		panic("item is not an action")
 	}
@@ -457,7 +457,7 @@ func (r *Rule) action(key item, l *lexer) error {
 }
 
 // protocol decodes an IDS rule protocol based on its key.
-func (r *Rule) protocol(key item, l *lexer) error {
+func (r *Rule) protocol(key item) error {
 	if key.typ != itemProtocol {
 		panic("item is not a protocol")
 	}
@@ -469,7 +469,7 @@ func (r *Rule) protocol(key item, l *lexer) error {
 }
 
 // network decodes an IDS rule network (networks and ports) based on its key.
-func (r *Rule) network(key item, l *lexer) error {
+func (r *Rule) network(key item) error {
 	// Identify if the whole network component is negated.
 	tmp := strings.TrimPrefix(key.value, "!")
 	negated := len(tmp) < len(key.value)
@@ -598,7 +598,7 @@ func validNetworks(nets []string) bool {
 }
 
 // direction decodes an IDS rule direction based on its key.
-func (r *Rule) direction(key item, l *lexer) error {
+func (r *Rule) direction(key item) error {
 	if key.typ != itemDirection {
 		panic("item is not a direction")
 	}
@@ -930,7 +930,7 @@ func parseRuleAux(rule string, commented bool) (*Rule, error) {
 				// Ignore comment ending rule.
 				return r, nil
 			}
-			err = r.comment(item, l)
+			err = r.comment(item)
 			// Error here means that the comment was not a commented rule.
 			// So we're not parsing a rule and we need to break out.
 			if err != nil {
@@ -939,13 +939,13 @@ func parseRuleAux(rule string, commented bool) (*Rule, error) {
 			// This line was a commented rule.
 			return r, nil
 		case itemAction:
-			err = r.action(item, l)
+			err = r.action(item)
 		case itemProtocol:
-			err = r.protocol(item, l)
+			err = r.protocol(item)
 		case itemSourceAddress, itemDestinationAddress, itemSourcePort, itemDestinationPort:
-			err = r.network(item, l)
+			err = r.network(item)
 		case itemDirection:
-			err = r.direction(item, l)
+			err = r.direction(item)
 		case itemOptionKey:
 			err = r.option(item, l)
 			// We will continue to parse a rule with unsupported options.

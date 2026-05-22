@@ -653,16 +653,16 @@ func (r *Rule) PCREs() []*PCRE {
 func netString(netPart []string) string {
 	var s strings.Builder
 	if len(netPart) > 1 {
-		s.WriteString("[")
+		fmt.Fprintf(&s, "[")
 	}
 	for i, n := range netPart {
-		s.WriteString(n)
+		fmt.Fprintf(&s, "%s", n)
 		if i < len(netPart)-1 {
-			s.WriteString(",")
+			fmt.Fprintf(&s, ",")
 		}
 	}
 	if len(netPart) > 1 {
-		s.WriteString("]")
+		fmt.Fprintf(&s, "]")
 	}
 	return s.String()
 }

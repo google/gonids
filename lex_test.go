@@ -146,6 +146,22 @@ func TestLexer(t *testing.T) {
 			},
 		},
 		{
+			name:  "spaces in network component",
+			input: "alert tcp [1.1.1.1, 1.1.1.2] [80, 443] -> [2.2.2.2, 2.2.2.3] [8080, 8443] (key1:value1;)",
+			items: []item{
+				{itemAction, "alert"},
+				{itemProtocol, "tcp"},
+				{itemSourceAddress, "[1.1.1.1, 1.1.1.2]"},
+				{itemSourcePort, "[80, 443]"},
+				{itemDirection, "->"},
+				{itemDestinationAddress, "[2.2.2.2, 2.2.2.3]"},
+				{itemDestinationPort, "[8080, 8443]"},
+				{itemOptionKey, "key1"},
+				{itemOptionValue, "value1"},
+				{itemEOR, ""},
+			},
+		},
+		{
 			name:  "parentheses in value",
 			input: `alert dns $HOME_NET any -> any any (reference:url,en.wikipedia.org/wiki/Tor_(anonymity_network); sid:42;)`,
 			items: []item{

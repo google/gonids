@@ -470,9 +470,10 @@ func (r *Rule) protocol(key item) error {
 
 // network decodes an IDS rule network (networks and ports) based on its key.
 func (r *Rule) network(key item) error {
+	val := strings.ReplaceAll(key.value, " ", "")
 	// Identify if the whole network component is negated.
-	tmp := strings.TrimPrefix(key.value, "!")
-	negated := len(tmp) < len(key.value)
+	tmp := strings.TrimPrefix(val, "!")
+	negated := len(tmp) < len(val)
 
 	// This is a hack. We use a regexp to replace the outer `,` with `___`
 	// to give us a discrete string to split on, avoiding the inner `,`.

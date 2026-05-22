@@ -671,14 +671,14 @@ func netString(netPart []string) string {
 func (n Network) String() string {
 	var s strings.Builder
 	if n.NegateNets {
-		s.WriteString("!")
+		fmt.Fprintf(&s, "!")
 	}
-	s.WriteString(netString(n.Nets))
-	s.WriteString(" ")
+	fmt.Fprintf(&s, "%s", netString(n.Nets))
+	fmt.Fprintf(&s, " ")
 	if n.NegatePorts {
-		s.WriteString("!")
+		fmt.Fprintf(&s, "!")
 	}
-	s.WriteString(netString(n.Ports))
+	fmt.Fprintf(&s, "%s", netString(n.Ports))
 	return s.String()
 }
 
@@ -693,18 +693,18 @@ func (f FastPattern) String() string {
 	}
 
 	var s strings.Builder
-	s.WriteString("fast_pattern")
+	fmt.Fprintf(&s, "fast_pattern")
 	if f.Only {
-		s.WriteString(":only;")
+		fmt.Fprintf(&s, ":only;")
 		return s.String()
 	}
 
 	// "only" and "chop" modes are mutually exclusive.
 	if f.Offset != 0 || f.Length != 0 {
-		s.WriteString(fmt.Sprintf(":%d,%d", f.Offset, f.Length))
+		fmt.Fprintf(&s, ":%d,%d", f.Offset, f.Length)
 	}
 
-	s.WriteString(";")
+	fmt.Fprintf(&s, ";")
 	return s.String()
 }
 
@@ -724,16 +724,16 @@ func (r Reference) String() string {
 // String returns a string for a Content (ignoring sticky buffers.)
 func (c Content) String() string {
 	var s strings.Builder
-	s.WriteString("content:")
+	fmt.Fprintf(&s, "content:")
 	if c.Negate {
-		s.WriteString("!")
+		fmt.Fprintf(&s, "!")
 	}
-	s.WriteString(fmt.Sprintf(`"%s";`, c.FormatPattern()))
+	fmt.Fprintf(&s, `"%s";`, c.FormatPattern())
 	for _, o := range c.Options {
-		s.WriteString(fmt.Sprintf(" %s", o))
+		fmt.Fprintf(&s, " %s", o)
 	}
 	if c.FastPattern.Enabled {
-		s.WriteString(fmt.Sprintf(" %s", c.FastPattern))
+		fmt.Fprintf(&s, " %s", c.FastPattern)
 	}
 
 	return s.String()
@@ -761,47 +761,47 @@ func (b ByteMatch) String() string {
 	// TODO: Support dataPos?
 	// TODO: Write tests.
 	var s strings.Builder
-	s.WriteString(fmt.Sprintf("%s:", byteMatchTypeVals[b.Kind]))
+	fmt.Fprintf(&s, "%s:", byteMatchTypeVals[b.Kind])
 
 	switch b.Kind {
 	case bExtract:
-		s.WriteString(fmt.Sprintf("%s,%d,%s", b.NumBytes, b.Offset, b.Variable))
+		fmt.Fprintf(&s, "%s,%d,%s", b.NumBytes, b.Offset, b.Variable)
 	case bJump:
-		s.WriteString(fmt.Sprintf("%s,%d", b.NumBytes, b.Offset))
+		fmt.Fprintf(&s, "%s,%d", b.NumBytes, b.Offset)
 	case bTest:
-		s.WriteString(fmt.Sprintf("%s,%s,%s,%d", b.NumBytes, b.Operator, b.Value, b.Offset))
+		fmt.Fprintf(&s, "%s,%s,%s,%d", b.NumBytes, b.Operator, b.Value, b.Offset)
 	case isDataAt:
 		if b.Negate {
-			s.WriteString("!")
+			fmt.Fprintf(&s, "!")
 		}
-		s.WriteString(b.NumBytes)
+		fmt.Fprintf(&s, "%s", b.NumBytes)
 	// Logic for this case is a bit different so it's handled outside.
 	case b64Decode:
 		return b.base64DecodeString()
 	}
 	for _, o := range b.Options {
-		s.WriteString(fmt.Sprintf(",%s", o))
+		fmt.Fprintf(&s, ",%s", o)
 	}
-	s.WriteString(";")
+	fmt.Fprintf(&s, ";")
 	return s.String()
 }
 
 // String returns a string for an length match.
 func (i LenMatch) String() string {
 	var s strings.Builder
-	s.WriteString(fmt.Sprintf("%s:", i.Kind))
+	fmt.Fprintf(&s, "%s:", i.Kind)
 	switch {
 	case i.Operator == "<>":
-		s.WriteString(fmt.Sprintf("%d%s%d", i.Min, i.Operator, i.Max))
+		fmt.Fprintf(&s, "%d%s%d", i.Min, i.Operator, i.Max)
 	case i.Operator != "":
-		s.WriteString(fmt.Sprintf("%s%d", i.Operator, i.Num))
+		fmt.Fprintf(&s, "%s%d", i.Operator, i.Num)
 	default:
-		s.WriteString(fmt.Sprintf("%d", i.Num))
+		fmt.Fprintf(&s, "%d", i.Num)
 	}
 	for _, o := range i.Options {
-		s.WriteString(fmt.Sprintf(",%s", o))
+		fmt.Fprintf(&s, ",%s", o)
 	}
-	s.WriteString(";")
+	fmt.Fprintf(&s, ";")
 	return s.String()
 }
 
@@ -811,28 +811,28 @@ func (ms Metadatas) String() string {
 	if len(ms) < 1 {
 		return ""
 	}
-	s.WriteString("metadata:")
+	fmt.Fprintf(&s, "metadata:")
 	for i, m := range ms {
 		if i < len(ms)-1 {
-			s.WriteString(fmt.Sprintf("%s %s, ", m.Key, m.Value))
+			fmt.Fprintf(&s, "%s %s, ", m.Key, m.Value)
 			continue
 		}
-		s.WriteString(fmt.Sprintf("%s %s;", m.Key, m.Value))
+		fmt.Fprintf(&s, "%s %s;", m.Key, m.Value)
 	}
 	return s.String()
 }
 
 func (t *TLSTag) String() string {
 	var s strings.Builder
-	s.WriteString(fmt.Sprintf("%s:", t.Key))
+	fmt.Fprintf(&s, "%s:", t.Key)
 	if t.Negate {
-		s.WriteString("!")
+		fmt.Fprintf(&s, "!")
 	}
 	// Values for these get wrapped in `"`.
 	if inSlice(t.Key, []string{"tls.issuerdn", "tls.subject", "tls.fingerprint"}) {
-		s.WriteString(fmt.Sprintf(`"%s";`, t.Value))
+		fmt.Fprintf(&s, `"%s";`, t.Value)
 	} else {
-		s.WriteString(fmt.Sprintf("%s;", t.Value))
+		fmt.Fprintf(&s, "%s;", t.Value)
 	}
 	return s.String()
 }
@@ -854,11 +854,11 @@ func (p PCRE) String() string {
 	}
 
 	var s strings.Builder
-	s.WriteString("pcre:")
+	fmt.Fprintf(&s, "pcre:")
 	if p.Negate {
-		s.WriteString("!")
+		fmt.Fprintf(&s, "!")
 	}
-	s.WriteString(fmt.Sprintf(`"/%s/%s";`, pattern, p.Options))
+	fmt.Fprintf(&s, `"/%s/%s";`, pattern, p.Options)
 	return s.String()
 }
 
@@ -868,36 +868,36 @@ func (fb Flowbit) String() string {
 		return ""
 	}
 	var s strings.Builder
-	s.WriteString(fmt.Sprintf("flowbits:%s", fb.Action))
+	fmt.Fprintf(&s, "flowbits:%s", fb.Action)
 	if fb.Value != "" {
-		s.WriteString(fmt.Sprintf(",%s", fb.Value))
+		fmt.Fprintf(&s, ",%s", fb.Value)
 	}
-	s.WriteString(";")
+	fmt.Fprintf(&s, ";")
 	return s.String()
 }
 
 // String returns a string for a Flowbit.
 func (fi Flowint) String() string {
 	var s strings.Builder
-	s.WriteString(fmt.Sprintf("flowint:%s", fi.Name))
+	fmt.Fprintf(&s, "flowint:%s", fi.Name)
 	if inSlice(fi.Modifier, []string{"isset", "isnotset"}) {
-		s.WriteString(fmt.Sprintf(",%s", fi.Modifier))
+		fmt.Fprintf(&s, ",%s", fi.Modifier)
 	}
 	if inSlice(fi.Modifier, []string{"+", "-", "=", ">", "<", ">=", "<=", "==", "!="}) && fi.Value != "" {
-		s.WriteString(fmt.Sprintf(",%s,%s", fi.Modifier, fi.Value))
+		fmt.Fprintf(&s, ",%s,%s", fi.Modifier, fi.Value)
 	}
-	s.WriteString(";")
+	fmt.Fprintf(&s, ";")
 	return s.String()
 }
 
 // String returns a string for a Flowbit.
 func (xb Xbit) String() string {
 	var s strings.Builder
-	s.WriteString(fmt.Sprintf("xbits:%s,%s,track %s", xb.Action, xb.Name, xb.Track))
+	fmt.Fprintf(&s, "xbits:%s,%s,track %s", xb.Action, xb.Name, xb.Track)
 	if xb.Expire != "" {
-		s.WriteString(fmt.Sprintf(",expire %s", xb.Expire))
+		fmt.Fprintf(&s, ",expire %s", xb.Expire)
 	}
-	s.WriteString(";")
+	fmt.Fprintf(&s, ";")
 	return s.String()
 }
 
@@ -905,20 +905,20 @@ func (xb Xbit) String() string {
 func (r Rule) String() string {
 	var s strings.Builder
 	if r.Disabled {
-		s.WriteString("#")
+		fmt.Fprintf(&s, "#")
 	}
-	s.WriteString(fmt.Sprintf("%s %s %s ", r.Action, r.Protocol, r.Source))
+	fmt.Fprintf(&s, "%s %s %s ", r.Action, r.Protocol, r.Source)
 	if !r.Bidirectional {
-		s.WriteString("-> ")
+		fmt.Fprintf(&s, "-> ")
 	} else {
-		s.WriteString("<> ")
+		fmt.Fprintf(&s, "<> ")
 	}
 
-	s.WriteString(fmt.Sprintf(`%s (msg:"%s"; `, r.Destination, r.Description))
+	fmt.Fprintf(&s, `%s (msg:"%s"; `, r.Destination, r.Description)
 
 	// Pull flow out of tags if it exists, we like flow at the beginning of rules.
 	if v, ok := r.Tags["flow"]; ok {
-		s.WriteString(fmt.Sprintf("flow:%s; ", v))
+		fmt.Fprintf(&s, "flow:%s; ", v)
 	}
 
 	// Write out matchers in order (because things can be relative.)
@@ -928,67 +928,67 @@ func (r Rule) String() string {
 			if c, ok := m.(*Content); ok {
 				if d != c.DataPosition {
 					d = c.DataPosition
-					s.WriteString(fmt.Sprintf("%s; ", d))
+					fmt.Fprintf(&s, "%s; ", d)
 				}
 			}
 			if c, ok := m.(*LenMatch); ok {
 				if d != c.DataPosition {
 					d = c.DataPosition
-					s.WriteString(fmt.Sprintf("%s; ", d))
+					fmt.Fprintf(&s, "%s; ", d)
 				}
 			}
 			if c, ok := m.(*PCRE); ok {
 				if d != c.DataPosition {
 					d = c.DataPosition
-					s.WriteString(fmt.Sprintf("%s; ", d))
+					fmt.Fprintf(&s, "%s; ", d)
 				}
 			}
-			s.WriteString(fmt.Sprintf("%s ", m))
+			fmt.Fprintf(&s, "%s ", m)
 		}
 	}
 
 	if r.StreamMatch != nil {
-		s.WriteString(fmt.Sprintf("%s ", r.StreamMatch))
+		fmt.Fprintf(&s, "%s ", r.StreamMatch)
 	}
 
 	if len(r.TLSTags) > 0 {
 		for _, t := range r.TLSTags {
-			s.WriteString(fmt.Sprintf("%s ", t))
+			fmt.Fprintf(&s, "%s ", t)
 		}
 	}
 
 	if len(r.Metas) > 0 {
-		s.WriteString(fmt.Sprintf("%s ", r.Metas))
+		fmt.Fprintf(&s, "%s ", r.Metas)
 	}
 
 	for k, v := range r.Tags {
 		if k == "flow" {
 			continue
 		}
-		s.WriteString(fmt.Sprintf("%s:%s; ", k, v))
+		fmt.Fprintf(&s, "%s:%s; ", k, v)
 	}
 
 	for _, v := range r.Statements {
-		s.WriteString(fmt.Sprintf("%s; ", v))
+		fmt.Fprintf(&s, "%s; ", v)
 	}
 
 	for _, fb := range r.Flowbits {
-		s.WriteString(fmt.Sprintf("%s ", fb))
+		fmt.Fprintf(&s, "%s ", fb)
 	}
 
 	for _, fi := range r.Flowints {
-		s.WriteString(fmt.Sprintf("%s ", fi))
+		fmt.Fprintf(&s, "%s ", fi)
 	}
 
 	for _, xb := range r.Xbits {
-		s.WriteString(fmt.Sprintf("%s ", xb))
+		fmt.Fprintf(&s, "%s ", xb)
 	}
 
 	for _, ref := range r.References {
-		s.WriteString(fmt.Sprintf("%s ", ref))
+		fmt.Fprintf(&s, "%s ", ref)
 	}
 
-	s.WriteString(fmt.Sprintf("sid:%d; rev:%d;)", r.SID, r.Revision))
+	fmt.Fprintf(&s, "sid:%d; rev:%d;)", r.SID, r.Revision)
 	return s.String()
 
 }
@@ -1064,9 +1064,9 @@ func (r *Rule) HasVar(s string) bool {
 // GetSidMsg returns a string representing a sidmsg.map entry.
 func (r *Rule) GetSidMsg() string {
 	var sidmsg strings.Builder
-	sidmsg.WriteString(fmt.Sprintf("%s || %s", strconv.Itoa(r.SID), r.Description))
+	fmt.Fprintf(&sidmsg, "%s || %s", strconv.Itoa(r.SID), r.Description)
 	for _, ref := range r.References {
-		sidmsg.WriteString(fmt.Sprintf(" || %s,%s", ref.Type, ref.Value))
+		fmt.Fprintf(&sidmsg, " || %s,%s", ref.Type, ref.Value)
 	}
 	return sidmsg.String()
 }

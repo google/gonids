@@ -557,6 +557,30 @@ func TestParseRule(t *testing.T) {
 			},
 		},
 		{
+			name: "spaces in network object",
+			rule: `alert tcp any any -> [1.1.1.1, 1.1.1.2] any (msg:"test"; content:"123"; sid:1; rev:1;)`,
+			want: &Rule{
+				Action:   "alert",
+				Protocol: "tcp",
+				Source: Network{
+					Nets:  []string{"any"},
+					Ports: []string{"any"},
+				},
+				Destination: Network{
+					Nets:  []string{"1.1.1.1,1.1.1.2"},
+					Ports: []string{"any"},
+				},
+				SID:         1,
+				Revision:    1,
+				Description: "test",
+				Matchers: []orderedMatcher{
+					&Content{
+						Pattern: []byte("123"),
+					},
+				},
+			},
+		},
+		{
 			name: "simple content",
 			rule: `alert udp $HOME_NET any -> $EXTERNAL_NET any (sid:1337; msg:"foo"; content:"AA"; rev:2;)`,
 			want: &Rule{
@@ -2167,9 +2191,22 @@ func TestParseRule(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name:    "network with space",
-			rule:    `alert tcp $EXTERNAL_NET 443 -> $HOME_NET [123, 234] (msg:"bad network definition"; sid:4321;)`,
-			wantErr: true,
+			name: "network with space",
+			rule: `alert tcp $EXTERNAL_NET 443 -> $HOME_NET [123, 234] (msg:"bad network definition"; sid:4321;)`,
+			want: &Rule{
+				Action:   "alert",
+				Protocol: "tcp",
+				Source: Network{
+					Nets:  []string{"$EXTERNAL_NET"},
+					Ports: []string{"443"},
+				},
+				Destination: Network{
+					Nets:  []string{"$HOME_NET"},
+					Ports: []string{"123,234"},
+				},
+				SID:         4321,
+				Description: "bad network definition",
+			},
 		},
 		{
 			name:    "content with backslash at end",

@@ -275,11 +275,18 @@ func lexProtocol(l *lexer) stateFn {
 // lexSourceAddress consumes a source address.
 func lexSourceAddress(l *lexer) stateFn {
 	l.ignoreSpaces()
+	var depth int
 	for {
 		switch l.next() {
+		case '[':
+			depth++
+		case ']':
+			depth--
 		case ' ':
-			l.emit(itemSourceAddress, true)
-			return lexSourcePort
+			if depth <= 0 {
+				l.emit(itemSourceAddress, true)
+				return lexSourcePort
+			}
 		case eof:
 			return l.unexpectedEOF()
 		}
@@ -289,11 +296,18 @@ func lexSourceAddress(l *lexer) stateFn {
 // lexSourcePort consumes a source port.
 func lexSourcePort(l *lexer) stateFn {
 	l.ignoreSpaces()
+	var depth int
 	for {
 		switch l.next() {
+		case '[':
+			depth++
+		case ']':
+			depth--
 		case ' ':
-			l.emit(itemSourcePort, true)
-			return lexDirection
+			if depth <= 0 {
+				l.emit(itemSourcePort, true)
+				return lexDirection
+			}
 		case eof:
 			return l.unexpectedEOF()
 		}
@@ -314,11 +328,18 @@ func lexDirection(l *lexer) stateFn {
 // lexDestinationAddress consumes a destination address.
 func lexDestinationAddress(l *lexer) stateFn {
 	l.ignoreSpaces()
+	var depth int
 	for {
 		switch l.next() {
+		case '[':
+			depth++
+		case ']':
+			depth--
 		case ' ':
-			l.emit(itemDestinationAddress, true)
-			return lexDestinationPort
+			if depth <= 0 {
+				l.emit(itemDestinationAddress, true)
+				return lexDestinationPort
+			}
 		case eof:
 			return l.unexpectedEOF()
 		}
@@ -327,13 +348,20 @@ func lexDestinationAddress(l *lexer) stateFn {
 
 // lexDestinationPort consumes a destination port.
 func lexDestinationPort(l *lexer) stateFn {
+	var depth int
 	for {
 		switch l.next() {
+		case '[':
+			depth++
+		case ']':
+			depth--
 		case '(':
-			l.backup()
-			l.emit(itemDestinationPort, true)
-			l.skipNext()
-			return lexOptionKey
+			if depth <= 0 {
+				l.backup()
+				l.emit(itemDestinationPort, true)
+				l.skipNext()
+				return lexOptionKey
+			}
 		case eof:
 			return l.unexpectedEOF()
 		}

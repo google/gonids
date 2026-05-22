@@ -999,9 +999,9 @@ func (c *Content) ToRegexp() string {
 	var buffer bytes.Buffer
 	for _, b := range c.Pattern {
 		if b > 126 || b < 32 {
-			buffer.WriteString(".")
+			fmt.Fprintf(&buffer, ".")
 		} else {
-			buffer.WriteByte(b)
+			fmt.Fprintf(&buffer, "%c", b)
 		}
 	}
 	return regexp.QuoteMeta(buffer.String())
@@ -1017,9 +1017,9 @@ func (c *Content) FormatPattern() string {
 				buffer.WriteByte('|')
 				pipe = true
 			} else {
-				buffer.WriteString(" ")
+				fmt.Fprintf(&buffer, " ")
 			}
-			buffer.WriteString(fmt.Sprintf("%.2X", b))
+			fmt.Fprintf(&buffer, "%.2X", b)
 		} else {
 			if pipe {
 				buffer.WriteByte('|')

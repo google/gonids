@@ -630,13 +630,22 @@ func (r *Rule) option(key item, l *lexer) error {
 		"dce_iface", "dce_opnum", "dce_stub_data",
 		"asn1"}):
 		nextItem := l.nextItem()
+		negate := false
+		if nextItem.typ == itemNot {
+			negate = true
+			nextItem = l.nextItem()
+		}
 		if nextItem.typ != itemOptionValue {
 			return fmt.Errorf("no valid value for %s tag", key.value)
 		}
 		if r.Tags == nil {
 			r.Tags = make(map[string]string)
 		}
-		r.Tags[key.value] = nextItem.value
+		if negate {
+			r.Tags[key.value] = "!" + nextItem.value
+		} else {
+			r.Tags[key.value] = nextItem.value
+		}
 	case inSlice(key.value, []string{"sameip", "tls.store", "ftpbounce"}):
 		r.Statements = append(r.Statements, key.value)
 	case inSlice(key.value, tlsTags):

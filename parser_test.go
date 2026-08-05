@@ -365,6 +365,26 @@ func TestParseBase64Decode(t *testing.T) {
 				Options:  []string{"relative"},
 			},
 		},
+		{
+			name:  "offset 0",
+			input: "offset 0",
+			kind:  b64Decode,
+			want: &ByteMatch{
+				Kind:   b64Decode,
+				Offset: 0,
+			},
+		},
+		{
+			name:  "offset 0 with bytes and relative",
+			input: "bytes 100, offset 0, relative",
+			kind:  b64Decode,
+			want: &ByteMatch{
+				Kind:     b64Decode,
+				NumBytes: "100",
+				Offset:   0,
+				Options:  []string{"relative"},
+			},
+		},
 	} {
 		got, err := parseBase64Decode(tt.kind, tt.input)
 		diff := pretty.Compare(got, tt.want)
@@ -1585,6 +1605,37 @@ func TestParseRule(t *testing.T) {
 						Negate:   true,
 						NumBytes: "2",
 						Options:  []string{"relative"},
+					},
+				},
+			},
+		},
+		{
+			name: "base64 keywords offset 0",
+			rule: `alert tcp $HOME_NET any -> $EXTERNAL_NET any (msg:"test base64 keywords offset 0"; base64_decode:bytes 100, offset 0, relative; base64_data; content:"thing I see"; sid:123; rev:1;)`,
+			want: &Rule{
+				Action:   "alert",
+				Protocol: "tcp",
+				Source: Network{
+					Nets:  []string{"$HOME_NET"},
+					Ports: []string{"any"},
+				},
+				Destination: Network{
+					Nets:  []string{"$EXTERNAL_NET"},
+					Ports: []string{"any"},
+				},
+				SID:         123,
+				Revision:    1,
+				Description: "test base64 keywords offset 0",
+				Matchers: []orderedMatcher{
+					&ByteMatch{
+						Kind:     b64Decode,
+						NumBytes: "100",
+						Offset:   0,
+						Options:  []string{"relative"},
+					},
+					&Content{
+						DataPosition: base64Data,
+						Pattern:      []byte("thing I see"),
 					},
 				},
 			},

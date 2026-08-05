@@ -224,8 +224,8 @@ func parseBase64Decode(k byteMatchType, s string) (*ByteMatch, error) {
 			if err != nil {
 				return nil, fmt.Errorf("offset is not an int: %s; %s", val, err)
 			}
-			if i < 1 {
-				return nil, fmt.Errorf("offset must be positive, non-zero values only")
+			if i < 0 {
+				return nil, fmt.Errorf("offset must be non-negative: %d", i)
 			}
 			b.Offset = i
 		case strings.HasPrefix(v, "relative"):

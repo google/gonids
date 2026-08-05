@@ -428,7 +428,7 @@ type ByteMatch struct {
 	// Value to compare against using byte_test.
 	Value string
 	// Offset within given buffer to operate on.
-	Offset int
+	Offset string
 	// Other specifics required for jump/test here. This might make sense to pull out into a "ByteMatchOption" later.
 	Options []string
 }
@@ -745,8 +745,8 @@ func (b ByteMatch) base64DecodeString() string {
 	if b.NumBytes != "" {
 		parts = append(parts, fmt.Sprintf("bytes %s", b.NumBytes))
 	}
-	if b.Offset > 0 {
-		parts = append(parts, fmt.Sprintf("offset %d", b.Offset))
+	if b.Offset != "" && b.Offset != "0" {
+		parts = append(parts, fmt.Sprintf("offset %s", b.Offset))
 	}
 	// This should only be "relative" but we'll support "anything"
 	parts = append(parts, b.Options...)
@@ -765,11 +765,11 @@ func (b ByteMatch) String() string {
 
 	switch b.Kind {
 	case bExtract:
-		fmt.Fprintf(&s, "%s,%d,%s", b.NumBytes, b.Offset, b.Variable)
+		fmt.Fprintf(&s, "%s,%s,%s", b.NumBytes, b.Offset, b.Variable)
 	case bJump:
-		fmt.Fprintf(&s, "%s,%d", b.NumBytes, b.Offset)
+		fmt.Fprintf(&s, "%s,%s", b.NumBytes, b.Offset)
 	case bTest:
-		fmt.Fprintf(&s, "%s,%s,%s,%d", b.NumBytes, b.Operator, b.Value, b.Offset)
+		fmt.Fprintf(&s, "%s,%s,%s,%s", b.NumBytes, b.Operator, b.Value, b.Offset)
 	case isDataAt:
 		if b.Negate {
 			fmt.Fprintf(&s, "!")

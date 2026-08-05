@@ -392,7 +392,7 @@ func TestByteMatchString(t *testing.T) {
 				NumBytes: "3",
 				Operator: ">",
 				Value:    "300",
-				Offset:   42,
+				Offset:   "42",
 			},
 			want: `byte_test:3,>,300,42;`,
 		},
@@ -401,7 +401,7 @@ func TestByteMatchString(t *testing.T) {
 			input: ByteMatch{
 				Kind:     bJump,
 				NumBytes: "3",
-				Offset:   42,
+				Offset:   "42",
 			},
 			want: `byte_jump:3,42;`,
 		},
@@ -410,7 +410,7 @@ func TestByteMatchString(t *testing.T) {
 			input: ByteMatch{
 				Kind:     bExtract,
 				NumBytes: "3",
-				Offset:   42,
+				Offset:   "42",
 				Variable: "foobar",
 			},
 			want: `byte_extract:3,42,foobar;`,
@@ -422,7 +422,7 @@ func TestByteMatchString(t *testing.T) {
 				NumBytes: "3",
 				Operator: ">",
 				Value:    "300",
-				Offset:   42,
+				Offset:   "42",
 				Options:  []string{"string", "dec"},
 			},
 			want: `byte_test:3,>,300,42,string,dec;`,
@@ -432,7 +432,7 @@ func TestByteMatchString(t *testing.T) {
 			input: ByteMatch{
 				Kind:     bJump,
 				NumBytes: "3",
-				Offset:   42,
+				Offset:   "42",
 				Options:  []string{"relative", "post_offset 2", "bitmask 0x03f0"},
 			},
 			want: `byte_jump:3,42,relative,post_offset 2,bitmask 0x03f0;`,
@@ -442,7 +442,7 @@ func TestByteMatchString(t *testing.T) {
 			input: ByteMatch{
 				Kind:     bExtract,
 				NumBytes: "3",
-				Offset:   42,
+				Offset:   "42",
 				Variable: "foobar",
 				Options:  []string{"relative", "bitmask 0x03ff"},
 			},
@@ -483,7 +483,7 @@ func TestBase64DecodeString(t *testing.T) {
 			input: ByteMatch{
 				Kind:     b64Decode,
 				NumBytes: "1",
-				Offset:   2,
+				Offset:   "2",
 				Options:  []string{"relative"},
 			},
 			want: `base64_decode:bytes 1,offset 2,relative;`,

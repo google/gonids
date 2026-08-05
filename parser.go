@@ -36,7 +36,7 @@ var hexRE = regexp.MustCompile(`(?i)(\|(?:\s*[a-f0-9]{2}\s*)+\|)`)
 var escapeRE = regexp.MustCompile(`([()+.'\\])`)
 
 // escapeContent matches escaped special characters.
-var escapeContent = regexp.MustCompile(`\\([\\;":])`)
+var escapeContent = regexp.MustCompile(`\\([\\;":|\[\]+ .])`)
 
 // metaSplitRE matches string in metadata.
 var metaSplitRE = regexp.MustCompile(`,\s*`)
@@ -386,7 +386,7 @@ func containsUnescaped(s string) bool {
 	for _, b := range s {
 		if esc {
 			switch b {
-			case '\\', ';', '"', ':':
+			case '\\', ';', '"', ':', '|', '[', ']', '+', '.', ' ':
 				esc = false
 			default:
 				return true

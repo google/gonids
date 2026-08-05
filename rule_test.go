@@ -1144,6 +1144,35 @@ func TestRuleString(t *testing.T) {
 			},
 			want: `alert http $HOME_NET any -> $EXTERNAL_NET any (msg:"pcre new sticky buffer"; http.method; content:"POST"; pkt_data; pcre:"/foo.*bar/i"; sid:1234; rev:2;)`,
 		},
+		{
+			name: "rule with sticky buffer and chained transforms",
+			input: Rule{
+				Action:   "alert",
+				Protocol: "http",
+				Source: Network{
+					Nets:  []string{"$HOME_NET"},
+					Ports: []string{"any"},
+				},
+				Destination: Network{
+					Nets:  []string{"$EXTERNAL_NET"},
+					Ports: []string{"any"},
+				},
+				SID:         1234,
+				Revision:    2,
+				Description: "chained transforms test",
+				Matchers: []orderedMatcher{
+					&Content{
+						DataPosition: httpURI,
+						Transforms: []*Transform{
+							{Name: "to_lowercase"},
+							{Name: "url_decode"},
+						},
+						Pattern: []byte("foo"),
+					},
+				},
+			},
+			want: `alert http $HOME_NET any -> $EXTERNAL_NET any (msg:"chained transforms test"; http.uri; to_lowercase; url_decode; content:"foo"; sid:1234; rev:2;)`,
+		},
 	} {
 		got := tt.input.String()
 		if got != tt.want {

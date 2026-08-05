@@ -232,6 +232,7 @@ func TestParseByteMatch(t *testing.T) {
 			want: &ByteMatch{
 				Kind:     bExtract,
 				NumBytes: "3",
+				Offset:   "0",
 				Variable: "Certs.len",
 			},
 		},
@@ -242,6 +243,7 @@ func TestParseByteMatch(t *testing.T) {
 			want: &ByteMatch{
 				Kind:     bExtract,
 				NumBytes: "3",
+				Offset:   "0",
 				Variable: "Certs.len",
 				Options:  []string{"relative", "little"},
 			},
@@ -253,7 +255,7 @@ func TestParseByteMatch(t *testing.T) {
 			want: &ByteMatch{
 				Kind:     bJump,
 				NumBytes: "3",
-				Offset:   0,
+				Offset:   "0",
 			},
 		},
 		{
@@ -263,10 +265,22 @@ func TestParseByteMatch(t *testing.T) {
 			want: &ByteMatch{
 				Kind:     bJump,
 				NumBytes: "3",
-				Offset:   0,
+				Offset:   "0",
 				Options:  []string{"relative", "little"},
 			},
 		},
+		{
+			name:  "byte_jump with variable offset",
+			input: "4, cn_len, relative",
+			kind:  bJump,
+			want: &ByteMatch{
+				Kind:     bJump,
+				NumBytes: "4",
+				Offset:   "cn_len",
+				Options:  []string{"relative"},
+			},
+		},
+
 		{
 			name:  "basic byte_test",
 			input: "2,=,0x01,0",
@@ -275,7 +289,7 @@ func TestParseByteMatch(t *testing.T) {
 				Kind:     bTest,
 				NumBytes: "2",
 				Operator: "=",
-				Offset:   0,
+				Offset:   "0",
 				Value:    "0x01",
 			},
 		},
@@ -288,7 +302,7 @@ func TestParseByteMatch(t *testing.T) {
 				NumBytes: "4",
 				Operator: "=",
 				Value:    "1337",
-				Offset:   1,
+				Offset:   "1",
 				Options:  []string{"relative", "string", "dec"},
 			},
 		},
@@ -351,7 +365,7 @@ func TestParseBase64Decode(t *testing.T) {
 			kind:  b64Decode,
 			want: &ByteMatch{
 				Kind:   b64Decode,
-				Offset: 4,
+				Offset: "4",
 			},
 		},
 		{
@@ -361,7 +375,7 @@ func TestParseBase64Decode(t *testing.T) {
 			want: &ByteMatch{
 				Kind:     b64Decode,
 				NumBytes: "5",
-				Offset:   4,
+				Offset:   "4",
 				Options:  []string{"relative"},
 			},
 		},
@@ -371,7 +385,7 @@ func TestParseBase64Decode(t *testing.T) {
 			kind:  b64Decode,
 			want: &ByteMatch{
 				Kind:   b64Decode,
-				Offset: 0,
+				Offset: "0",
 			},
 		},
 		{
@@ -381,7 +395,7 @@ func TestParseBase64Decode(t *testing.T) {
 			want: &ByteMatch{
 				Kind:     b64Decode,
 				NumBytes: "100",
-				Offset:   0,
+				Offset:   "0",
 				Options:  []string{"relative"},
 			},
 		},
@@ -598,6 +612,39 @@ func TestParseRule(t *testing.T) {
 						Pattern: []byte("123"),
 					},
 				},
+			},
+		},
+		{
+			name: "test byte_jump var",
+			rule: `alert tcp any any -> any any (msg:"test byte_jump var"; byte_extract:2,0,cn_len; byte_jump:4,cn_len,relative; sid:1; rev:1;)`,
+			want: &Rule{
+				Action:   "alert",
+				Protocol: "tcp",
+				Source: Network{
+					Nets:  []string{"any"},
+					Ports: []string{"any"},
+				},
+				Destination: Network{
+					Nets:  []string{"any"},
+					Ports: []string{"any"},
+				},
+				Description: "test byte_jump var",
+				Matchers: []orderedMatcher{
+					&ByteMatch{
+						Kind:     bExtract,
+						NumBytes: "2",
+						Offset:   "0",
+						Variable: "cn_len",
+					},
+					&ByteMatch{
+						Kind:     bJump,
+						NumBytes: "4",
+						Offset:   "cn_len",
+						Options:  []string{"relative"},
+					},
+				},
+				SID:      1,
+				Revision: 1,
 			},
 		},
 		{
@@ -1495,6 +1542,7 @@ func TestParseRule(t *testing.T) {
 					&ByteMatch{
 						Kind:     bExtract,
 						NumBytes: "3",
+						Offset:   "0",
 						Variable: "Certs.len",
 						Options:  []string{"relative", "little"},
 					},
@@ -1534,7 +1582,7 @@ func TestParseRule(t *testing.T) {
 						NumBytes: "5",
 						Operator: "<",
 						Value:    "65537",
-						Offset:   0,
+						Offset:   "0",
 						Options:  []string{"relative", "string"},
 					},
 				},
@@ -1564,7 +1612,7 @@ func TestParseRule(t *testing.T) {
 					&ByteMatch{
 						Kind:     bJump,
 						NumBytes: "4",
-						Offset:   0,
+						Offset:   "0",
 						Options:  []string{"relative", "little", "post_offset -1"},
 					},
 				},
@@ -1597,7 +1645,7 @@ func TestParseRule(t *testing.T) {
 					&ByteMatch{
 						Kind:     bJump,
 						NumBytes: "2",
-						Offset:   3,
+						Offset:   "3",
 						Options:  []string{"post_offset -1"},
 					},
 					&ByteMatch{
@@ -1630,7 +1678,7 @@ func TestParseRule(t *testing.T) {
 					&ByteMatch{
 						Kind:     b64Decode,
 						NumBytes: "100",
-						Offset:   0,
+						Offset:   "0",
 						Options:  []string{"relative"},
 					},
 					&Content{
@@ -1661,7 +1709,7 @@ func TestParseRule(t *testing.T) {
 					&ByteMatch{
 						Kind:     b64Decode,
 						NumBytes: "150",
-						Offset:   17,
+						Offset:   "17",
 						Options:  []string{"relative"},
 					},
 					&Content{

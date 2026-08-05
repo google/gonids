@@ -220,14 +220,12 @@ func parseBase64Decode(k byteMatchType, s string) (*ByteMatch, error) {
 			b.NumBytes = strings.TrimSpace(strings.SplitAfter(v, "bytes")[1])
 		case strings.HasPrefix(v, "offset"):
 			val := strings.TrimSpace(strings.SplitAfter(v, "offset")[1])
-			i, err := strconv.Atoi(val)
-			if err != nil {
-				return nil, fmt.Errorf("offset is not an int: %s; %s", val, err)
+			b.Offset = val
+			if i, err := strconv.Atoi(val); err == nil {
+				if i < 0 {
+					return nil, fmt.Errorf("offset must be non-negative: %d", i)
+				}
 			}
-			if i < 0 {
-				return nil, fmt.Errorf("offset must be non-negative: %d", i)
-			}
-			b.Offset = i
 		case strings.HasPrefix(v, "relative"):
 			b.Options = []string{"relative"}
 		}
@@ -255,11 +253,7 @@ func parseByteMatch(k byteMatchType, s string) (*ByteMatch, error) {
 
 	if k == bExtract || k == bJump {
 		// Parse offset.
-		offset, err := strconv.Atoi(strings.TrimSpace(parts[1]))
-		if err != nil {
-			return nil, fmt.Errorf("%s offset is not an int: %v; %s", b.Kind, parts[1], err)
-		}
-		b.Offset = offset
+		b.Offset = strings.TrimSpace(parts[1])
 	}
 
 	if k == bExtract {
@@ -274,11 +268,7 @@ func parseByteMatch(k byteMatchType, s string) (*ByteMatch, error) {
 		// Parse value. Can use a variable.
 		b.Value = strings.TrimSpace(parts[2])
 		// Parse offset.
-		offset, err := strconv.Atoi(strings.TrimSpace(parts[3]))
-		if err != nil {
-			return nil, fmt.Errorf("%s offset is not an int: %v; %s", b.Kind, parts[1], err)
-		}
-		b.Offset = offset
+		b.Offset = strings.TrimSpace(parts[3])
 	}
 
 	// The rest of the options, for all types not b64decode
@@ -867,6 +857,15 @@ func (r *Rule) option(key item, l *lexer) error {
 				}
 			}
 		}
+
+		if b.Offset != "" {
+			if _, err := strconv.Atoi(b.Offset); err != nil {
+				if !r.HasVar(b.Offset) {
+					return fmt.Errorf("offset is not an int, or an extracted variable: %s; %s", b.Offset, err)
+				}
+			}
+		}
+
 		b.Negate = negate
 
 		r.Matchers = append(r.Matchers, b)

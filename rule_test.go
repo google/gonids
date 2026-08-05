@@ -828,6 +828,35 @@ func TestRuleString(t *testing.T) {
 		want  string
 	}{
 		{
+			name: "rule with tcp.hdr and others",
+			input: Rule{
+				Action:   "alert",
+				Protocol: "tcp",
+				Source: Network{
+					Nets:  []string{"$HOME_NET"},
+					Ports: []string{"any"},
+				},
+				Destination: Network{
+					Nets:  []string{"$EXTERNAL_NET"},
+					Ports: []string{"any"},
+				},
+				SID:         1337,
+				Revision:    2,
+				Description: "test tcp.hdr",
+				Matchers: []orderedMatcher{
+					&Content{
+						Pattern:      []byte("AA"),
+						DataPosition: tcpHdr,
+					},
+					&Content{
+						Pattern:      []byte("BB"),
+						DataPosition: udpHdr,
+					},
+				},
+			},
+			want: `alert tcp $HOME_NET any -> $EXTERNAL_NET any (msg:"test tcp.hdr"; tcp.hdr; content:"AA"; udp.hdr; content:"BB"; sid:1337; rev:2;)`,
+		},
+		{
 			name: "rule",
 			input: Rule{
 				Action:   "alert",
@@ -1316,6 +1345,30 @@ func TestDataPosString(t *testing.T) {
 			val:  fileMagic,
 			want: "file.magic",
 		},
+		{
+			val:  tcpHdr,
+			want: "tcp.hdr",
+		},
+		{
+			val:  tcpFlags,
+			want: "tcp.flags",
+		},
+		{
+			val:  udpHdr,
+			want: "udp.hdr",
+		},
+		{
+			val:  icmpv4Hdr,
+			want: "icmpv4.hdr",
+		},
+		{
+			val:  icmpv6Hdr,
+			want: "icmpv6.hdr",
+		},
+		{
+			val:  ipv6Hdr,
+			want: "ipv6.hdr",
+		},
 	} {
 		s := tt.val.String()
 		if s != tt.want {
@@ -1359,6 +1412,30 @@ func TestIsStickyBuffer(t *testing.T) {
 		},
 		{
 			buf:  "file.magic",
+			want: true,
+		},
+		{
+			buf:  "tcp.hdr",
+			want: true,
+		},
+		{
+			buf:  "tcp.flags",
+			want: true,
+		},
+		{
+			buf:  "udp.hdr",
+			want: true,
+		},
+		{
+			buf:  "icmpv4.hdr",
+			want: true,
+		},
+		{
+			buf:  "icmpv6.hdr",
+			want: true,
+		},
+		{
+			buf:  "ipv6.hdr",
 			want: true,
 		},
 	} {
@@ -1413,6 +1490,36 @@ func TestStickyBuffer(t *testing.T) {
 		{
 			s:       "file.magic",
 			want:    fileMagic,
+			wantErr: false,
+		},
+		{
+			s:       "tcp.hdr",
+			want:    tcpHdr,
+			wantErr: false,
+		},
+		{
+			s:       "tcp.flags",
+			want:    tcpFlags,
+			wantErr: false,
+		},
+		{
+			s:       "udp.hdr",
+			want:    udpHdr,
+			wantErr: false,
+		},
+		{
+			s:       "icmpv4.hdr",
+			want:    icmpv4Hdr,
+			wantErr: false,
+		},
+		{
+			s:       "icmpv6.hdr",
+			want:    icmpv6Hdr,
+			wantErr: false,
+		},
+		{
+			s:       "ipv6.hdr",
+			want:    ipv6Hdr,
 			wantErr: false,
 		},
 	} {

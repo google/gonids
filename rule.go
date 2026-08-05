@@ -217,6 +217,12 @@ const (
 	httpRequestHeader
 	httpResponseHeader
 	fileMagic
+	tcpHdr
+	tcpFlags
+	udpHdr
+	icmpv4Hdr
+	icmpv6Hdr
+	ipv6Hdr
 )
 
 // Contains both Suricata 4.x and 5.0 buffers. Some day we'll deprecate the 4.x ones.
@@ -312,6 +318,13 @@ var stickyBuffers = map[DataPos]string{
 	httpRequestHeader:  "http.request_header",
 	httpResponseHeader: "http.response_header",
 	fileMagic:          "file.magic",
+	tcpHdr:             "tcp.hdr",
+	tcpFlags:           "tcp.flags",
+	udpHdr:             "udp.hdr",
+	icmpv4Hdr:          "icmpv4.hdr",
+	icmpv6Hdr:          "icmpv6.hdr",
+	ipv6Hdr:            "ipv6.hdr",
+
 	// SMB - Documentation lacking. Unknown.
 }
 

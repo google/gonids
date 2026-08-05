@@ -48,6 +48,7 @@ var nestedNetRE = regexp.MustCompile(`,(!?\[[^]]*\])`)
 var portSplitRE = regexp.MustCompile(`[:,]`)
 
 var appLayerProtocols = []string{
+	"bittorrent-dht",
 	"dcerpc",
 	"dhcp",
 	"dnp3",
@@ -56,10 +57,12 @@ var appLayerProtocols = []string{
 	"ftp",
 	"ftp-data",
 	"http",
+	"http1",
 	"http2",
 	"icmp",
 	"icmpv4",
 	"icmpv6",
+	"ike",
 	"ikev2",
 	"imap",
 	"ip",
@@ -74,7 +77,9 @@ var appLayerProtocols = []string{
 	"mqtt",
 	"nfs",
 	"ntp",
+	"pgsql",
 	"pkthdr",
+	"quic",
 	"rdp",
 	"rfb",
 	"sctp",
@@ -86,6 +91,7 @@ var appLayerProtocols = []string{
 	"tcp",
 	"tcp-pkt",
 	"tcp-stream",
+	"telnet",
 	"tftp",
 	"tls",
 	"udp",

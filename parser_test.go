@@ -562,6 +562,276 @@ func TestParseRule(t *testing.T) {
 		optErr  *UnsupportedOptionError
 	}{
 		{
+			name: "test http1",
+			rule: `alert http1 $HOME_NET any -> $EXTERNAL_NET any (msg:"test http1"; http.uri; content:"/index.html"; sid:1; rev:1;)`,
+			want: &Rule{
+				Action:   "alert",
+				Protocol: "http1",
+				Source: Network{
+					Nets:  []string{"$HOME_NET"},
+					Ports: []string{"any"},
+				},
+				Destination: Network{
+					Nets:  []string{"$EXTERNAL_NET"},
+					Ports: []string{"any"},
+				},
+				SID:         1,
+				Revision:    1,
+				Description: "test http1",
+				Matchers: []orderedMatcher{
+					&Content{
+						DataPosition: httpURI,
+						Pattern:      []byte("/index.html"),
+					},
+				},
+			},
+		},
+		{
+			name: "test ike",
+			rule: `alert ike $HOME_NET any -> $EXTERNAL_NET any (msg:"test ike"; sid:2; rev:1;)`,
+			want: &Rule{
+				Action:   "alert",
+				Protocol: "ike",
+				Source: Network{
+					Nets:  []string{"$HOME_NET"},
+					Ports: []string{"any"},
+				},
+				Destination: Network{
+					Nets:  []string{"$EXTERNAL_NET"},
+					Ports: []string{"any"},
+				},
+				SID:         2,
+				Revision:    1,
+				Description: "test ike",
+			},
+		},
+		{
+			name: "test telnet",
+			rule: `alert telnet $HOME_NET any -> $EXTERNAL_NET any (msg:"test telnet"; sid:3; rev:1;)`,
+			want: &Rule{
+				Action:   "alert",
+				Protocol: "telnet",
+				Source: Network{
+					Nets:  []string{"$HOME_NET"},
+					Ports: []string{"any"},
+				},
+				Destination: Network{
+					Nets:  []string{"$EXTERNAL_NET"},
+					Ports: []string{"any"},
+				},
+				SID:         3,
+				Revision:    1,
+				Description: "test telnet",
+			},
+		},
+		{
+			name: "test bittorrent-dht",
+			rule: `alert bittorrent-dht $HOME_NET any -> $EXTERNAL_NET any (msg:"test bittorrent-dht"; sid:4; rev:1;)`,
+			want: &Rule{
+				Action:   "alert",
+				Protocol: "bittorrent-dht",
+				Source: Network{
+					Nets:  []string{"$HOME_NET"},
+					Ports: []string{"any"},
+				},
+				Destination: Network{
+					Nets:  []string{"$EXTERNAL_NET"},
+					Ports: []string{"any"},
+				},
+				SID:         4,
+				Revision:    1,
+				Description: "test bittorrent-dht",
+			},
+		},
+		{
+			name: "test quic",
+			rule: `alert quic $HOME_NET any -> $EXTERNAL_NET any (msg:"test quic"; sid:5; rev:1;)`,
+			want: &Rule{
+				Action:   "alert",
+				Protocol: "quic",
+				Source: Network{
+					Nets:  []string{"$HOME_NET"},
+					Ports: []string{"any"},
+				},
+				Destination: Network{
+					Nets:  []string{"$EXTERNAL_NET"},
+					Ports: []string{"any"},
+				},
+				SID:         5,
+				Revision:    1,
+				Description: "test quic",
+			},
+		},
+		{
+			name: "test pgsql",
+			rule: `alert pgsql $HOME_NET any -> $EXTERNAL_NET any (msg:"test pgsql"; sid:6; rev:1;)`,
+			want: &Rule{
+				Action:   "alert",
+				Protocol: "pgsql",
+				Source: Network{
+					Nets:  []string{"$HOME_NET"},
+					Ports: []string{"any"},
+				},
+				Destination: Network{
+					Nets:  []string{"$EXTERNAL_NET"},
+					Ports: []string{"any"},
+				},
+				SID:         6,
+				Revision:    1,
+				Description: "test pgsql",
+			},
+		},
+		{
+			name: "test tcp.hdr",
+			rule: `alert tcp any any -> any any (msg:"test tcp.hdr"; tcp.hdr; content:"|00 00|"; sid:7; rev:1;)`,
+			want: &Rule{
+				Action:   "alert",
+				Protocol: "tcp",
+				Source: Network{
+					Nets:  []string{"any"},
+					Ports: []string{"any"},
+				},
+				Destination: Network{
+					Nets:  []string{"any"},
+					Ports: []string{"any"},
+				},
+				SID:         7,
+				Revision:    1,
+				Description: "test tcp.hdr",
+				Matchers: []orderedMatcher{
+					&Content{
+						DataPosition: tcpHdr,
+						Pattern:      []byte{0, 0},
+					},
+				},
+			},
+		},
+		{
+			name: "test tcp.flags",
+			rule: `alert tcp any any -> any any (msg:"test tcp.flags"; tcp.flags; content:"|02|"; sid:8; rev:1;)`,
+			want: &Rule{
+				Action:   "alert",
+				Protocol: "tcp",
+				Source: Network{
+					Nets:  []string{"any"},
+					Ports: []string{"any"},
+				},
+				Destination: Network{
+					Nets:  []string{"any"},
+					Ports: []string{"any"},
+				},
+				SID:         8,
+				Revision:    1,
+				Description: "test tcp.flags",
+				Matchers: []orderedMatcher{
+					&Content{
+						DataPosition: tcpFlags,
+						Pattern:      []byte{2},
+					},
+				},
+			},
+		},
+		{
+			name: "test udp.hdr",
+			rule: `alert udp any any -> any any (msg:"test udp.hdr"; udp.hdr; content:"|00 00|"; sid:9; rev:1;)`,
+			want: &Rule{
+				Action:   "alert",
+				Protocol: "udp",
+				Source: Network{
+					Nets:  []string{"any"},
+					Ports: []string{"any"},
+				},
+				Destination: Network{
+					Nets:  []string{"any"},
+					Ports: []string{"any"},
+				},
+				SID:         9,
+				Revision:    1,
+				Description: "test udp.hdr",
+				Matchers: []orderedMatcher{
+					&Content{
+						DataPosition: udpHdr,
+						Pattern:      []byte{0, 0},
+					},
+				},
+			},
+		},
+		{
+			name: "test icmpv4.hdr",
+			rule: `alert icmpv4 any any -> any any (msg:"test icmpv4.hdr"; icmpv4.hdr; content:"|08 00|"; sid:10; rev:1;)`,
+			want: &Rule{
+				Action:   "alert",
+				Protocol: "icmpv4",
+				Source: Network{
+					Nets:  []string{"any"},
+					Ports: []string{"any"},
+				},
+				Destination: Network{
+					Nets:  []string{"any"},
+					Ports: []string{"any"},
+				},
+				SID:         10,
+				Revision:    1,
+				Description: "test icmpv4.hdr",
+				Matchers: []orderedMatcher{
+					&Content{
+						DataPosition: icmpv4Hdr,
+						Pattern:      []byte{8, 0},
+					},
+				},
+			},
+		},
+		{
+			name: "test icmpv6.hdr",
+			rule: `alert icmpv6 any any -> any any (msg:"test icmpv6.hdr"; icmpv6.hdr; content:"|80 00|"; sid:11; rev:1;)`,
+			want: &Rule{
+				Action:   "alert",
+				Protocol: "icmpv6",
+				Source: Network{
+					Nets:  []string{"any"},
+					Ports: []string{"any"},
+				},
+				Destination: Network{
+					Nets:  []string{"any"},
+					Ports: []string{"any"},
+				},
+				SID:         11,
+				Revision:    1,
+				Description: "test icmpv6.hdr",
+				Matchers: []orderedMatcher{
+					&Content{
+						DataPosition: icmpv6Hdr,
+						Pattern:      []byte{0x80, 0},
+					},
+				},
+			},
+		},
+		{
+			name: "test ipv6.hdr",
+			rule: `alert ipv6 any any -> any any (msg:"test ipv6.hdr"; ipv6.hdr; content:"|60 00|"; sid:12; rev:1;)`,
+			want: &Rule{
+				Action:   "alert",
+				Protocol: "ipv6",
+				Source: Network{
+					Nets:  []string{"any"},
+					Ports: []string{"any"},
+				},
+				Destination: Network{
+					Nets:  []string{"any"},
+					Ports: []string{"any"},
+				},
+				SID:         12,
+				Revision:    1,
+				Description: "test ipv6.hdr",
+				Matchers: []orderedMatcher{
+					&Content{
+						DataPosition: ipv6Hdr,
+						Pattern:      []byte{0x60, 0},
+					},
+				},
+			},
+		},
+		{
 			name: "tls.certs sticky buffer",
 			rule: `alert tls $HOME_NET any -> $EXTERNAL_NET any (msg:"test tls.certs"; tls.certs; content:"Let's Encrypt"; sid:1; rev:1;)`,
 			want: &Rule{

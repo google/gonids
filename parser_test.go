@@ -561,6 +561,38 @@ func TestParseRule(t *testing.T) {
 		wantErr bool
 		optErr  *UnsupportedOptionError
 	}{
+
+		{
+			name: "uppercase options",
+			rule: `alert http any any -> any any (Msg:"test uppercase keywords"; Content:"Software.txt"; Content:"UserInformation.txt"; Sid:2044432; Rev:1; Classtype:trojan-activity; Flow:established,to_server;)`,
+			want: &Rule{
+				Action:   "alert",
+				Protocol: "http",
+				Source: Network{
+					Nets:  []string{"any"},
+					Ports: []string{"any"},
+				},
+				Destination: Network{
+					Nets:  []string{"any"},
+					Ports: []string{"any"},
+				},
+				SID:         2044432,
+				Revision:    1,
+				Description: "test uppercase keywords",
+				Tags: map[string]string{
+					"classtype": "trojan-activity",
+					"flow":      "established,to_server",
+				},
+				Matchers: []orderedMatcher{
+					&Content{
+						Pattern: []byte("Software.txt"),
+					},
+					&Content{
+						Pattern: []byte("UserInformation.txt"),
+					},
+				},
+			},
+		},
 		{
 			name:    "non-rule comment",
 			rule:    `# Foo header, this describes a file.`,

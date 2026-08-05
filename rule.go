@@ -322,6 +322,20 @@ func isStickyBuffer(s string) bool {
 	return err == nil
 }
 
+// Transform describes a sticky buffer transformation (e.g. dotprefix, to_lowercase, xor, pcrexform).
+type Transform struct {
+	Name  string
+	Value string
+}
+
+// String returns a string for a Transform.
+func (t Transform) String() string {
+	if t.Value == "" {
+		return fmt.Sprintf("%s;", t.Name)
+	}
+	return fmt.Sprintf("%s:%s;", t.Name, t.Value)
+}
+
 // Content describes a rule content. A content is composed of a pattern followed by options.
 type Content struct {
 	// DataPosition defaults to pkt_data state, can be modified to apply to file_data, base64_data locations.
@@ -335,6 +349,8 @@ type Content struct {
 	Negate bool
 	// Options are the option associated to the content (e.g. http_header).
 	Options []*ContentOption
+	// Transforms is the list of transforms attached to this content (sticky buffer).
+	Transforms []*Transform
 }
 
 // byteMatchType describes the kinds of byte matches and comparisons that are supported.
@@ -503,6 +519,7 @@ type PCRE struct {
 	Pattern      []byte
 	Negate       bool
 	Options      []byte
+	Transforms   []*Transform
 }
 
 // FastPattern describes various properties of a fast_pattern value for a content.
@@ -735,7 +752,6 @@ func (c Content) String() string {
 	if c.FastPattern.Enabled {
 		fmt.Fprintf(&s, " %s", c.FastPattern)
 	}
-
 	return s.String()
 }
 
@@ -929,6 +945,9 @@ func (r Rule) String() string {
 				if d != c.DataPosition {
 					d = c.DataPosition
 					fmt.Fprintf(&s, "%s; ", d)
+					for _, t := range c.Transforms {
+						fmt.Fprintf(&s, "%s ", t)
+					}
 				}
 			}
 			if c, ok := m.(*LenMatch); ok {
@@ -941,6 +960,9 @@ func (r Rule) String() string {
 				if d != c.DataPosition {
 					d = c.DataPosition
 					fmt.Fprintf(&s, "%s; ", d)
+					for _, t := range c.Transforms {
+						fmt.Fprintf(&s, "%s ", t)
+					}
 				}
 			}
 			fmt.Fprintf(&s, "%s ", m)

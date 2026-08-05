@@ -594,6 +594,139 @@ func TestParseRule(t *testing.T) {
 			},
 		},
 		{
+			name: "chained transforms on content",
+			rule: `alert http $HOME_NET any -> $EXTERNAL_NET any (msg:"test chained"; http.uri; to_lowercase; url_decode; content:"/test"; sid:1; rev:1;)`,
+			want: &Rule{
+				Action:   "alert",
+				Protocol: "http",
+				Source: Network{
+					Nets:  []string{"$HOME_NET"},
+					Ports: []string{"any"},
+				},
+				Destination: Network{
+					Nets:  []string{"$EXTERNAL_NET"},
+					Ports: []string{"any"},
+				},
+				SID:         1,
+				Revision:    1,
+				Description: "test chained",
+				Matchers: []orderedMatcher{
+					&Content{
+						DataPosition: httpURI,
+						Pattern:      []byte("/test"),
+						Transforms: []*Transform{
+							{Name: "to_lowercase"},
+							{Name: "url_decode"},
+						},
+					},
+				},
+				Metas:      Metadatas{},
+				Tags:       map[string]string{},
+				References: []*Reference{},
+				Flowbits:   []*Flowbit{},
+			},
+		},
+		{
+			name: "chained transforms on content (dotprefix)",
+			rule: `alert tls $HOME_NET any -> $EXTERNAL_NET any (msg:"test dotprefix"; tls.sni; dotprefix; content:".google.com"; endswith; sid:2; rev:1;)`,
+			want: &Rule{
+				Action:   "alert",
+				Protocol: "tls",
+				Source: Network{
+					Nets:  []string{"$HOME_NET"},
+					Ports: []string{"any"},
+				},
+				Destination: Network{
+					Nets:  []string{"$EXTERNAL_NET"},
+					Ports: []string{"any"},
+				},
+				SID:         2,
+				Revision:    1,
+				Description: "test dotprefix",
+				Matchers: []orderedMatcher{
+					&Content{
+						DataPosition: tlsSNI5,
+						Pattern:      []byte(".google.com"),
+						Options: []*ContentOption{
+							{Name: "endswith"},
+						},
+						Transforms: []*Transform{
+							{Name: "dotprefix"},
+						},
+					},
+				},
+				Metas:      Metadatas{},
+				Tags:       map[string]string{},
+				References: []*Reference{},
+				Flowbits:   []*Flowbit{},
+			},
+		},
+		{
+			name: "chained transforms on content (http2)",
+			rule: `alert http $HOME_NET any -> $EXTERNAL_NET any (msg:"test http2"; http.header_names; strip_pseudo_headers; header_lowercase; content:"user-agent:"; sid:3; rev:1;)`,
+			want: &Rule{
+				Action:   "alert",
+				Protocol: "http",
+				Source: Network{
+					Nets:  []string{"$HOME_NET"},
+					Ports: []string{"any"},
+				},
+				Destination: Network{
+					Nets:  []string{"$EXTERNAL_NET"},
+					Ports: []string{"any"},
+				},
+				SID:         3,
+				Revision:    1,
+				Description: "test http2",
+				Matchers: []orderedMatcher{
+					&Content{
+						DataPosition: httpHeaderNames5,
+						Pattern:      []byte("user-agent:"),
+						Transforms: []*Transform{
+							{Name: "strip_pseudo_headers"},
+							{Name: "header_lowercase"},
+						},
+					},
+				},
+				Metas:      Metadatas{},
+				Tags:       map[string]string{},
+				References: []*Reference{},
+				Flowbits:   []*Flowbit{},
+			},
+		},
+		{
+			name: "chained transforms on content (pcrexform)",
+			rule: `alert http any any -> any any (msg:"test pcrexform"; http.request_line; pcrexform:"[a-zA-Z]+\s+(.*)\s+HTTP"; content:"/dropper.php"; sid:4; rev:1;)`,
+			want: &Rule{
+				Action:   "alert",
+				Protocol: "http",
+				Source: Network{
+					Nets:  []string{"any"},
+					Ports: []string{"any"},
+				},
+				Destination: Network{
+					Nets:  []string{"any"},
+					Ports: []string{"any"},
+				},
+				SID:         4,
+				Revision:    1,
+				Description: "test pcrexform",
+				Matchers: []orderedMatcher{
+					&Content{
+						DataPosition: httpRequestLine5,
+						Pattern:      []byte("/dropper.php"),
+						Transforms: []*Transform{
+							{Name: "pcrexform", Value: `"[a-zA-Z]+\s+(.*)\s+HTTP"`},
+						},
+					},
+				},
+				Metas:      Metadatas{},
+				Tags:       map[string]string{},
+				References: []*Reference{},
+				Flowbits:   []*Flowbit{},
+			},
+		},
+		{
 			name:    "non-rule comment",
 			rule:    `# Foo header, this describes a file.`,
 			wantErr: true,

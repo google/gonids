@@ -605,6 +605,7 @@ func (r *Rule) direction(key item) error {
 }
 
 var dataPosition = pktData
+var activeTransforms []*Transform
 
 // option decodes an IDS rule option based on its key.
 func (r *Rule) option(key item, l *lexer) error {
@@ -715,12 +716,22 @@ func (r *Rule) option(key item, l *lexer) error {
 		}
 		r.Description = nextItem.value
 	case isStickyBuffer(key.value):
+		activeTransforms = nil
 		var d DataPos
 		var err error
 		if d, err = StickyBuffer(key.value); err != nil {
 			return err
 		}
 		dataPosition = d
+	case inSlice(key.value, []string{"dotprefix", "to_lowercase", "to_uppercase", "header_lowercase", "url_decode", "strip_whitespace", "compress_whitespace", "strip_pseudo_headers", "to_sha1", "to_sha256", "to_md5"}):
+		activeTransforms = append(activeTransforms, &Transform{Name: key.value})
+	case inSlice(key.value, []string{"pcrexform", "xor"}):
+		nextItem := l.nextItem()
+		val := nextItem.value
+		if nextItem.typ == itemOptionValueString {
+			val = `"` + val + `"`
+		}
+		activeTransforms = append(activeTransforms, &Transform{Name: key.value, Value: val})
 	case inSlice(key.value, []string{"content", "uricontent"}):
 		nextItem := l.nextItem()
 		negate := false
@@ -742,6 +753,7 @@ func (r *Rule) option(key item, l *lexer) error {
 				Pattern:      c,
 				Negate:       negate,
 				Options:      options,
+				Transforms:   activeTransforms,
 			}
 			r.Matchers = append(r.Matchers, con)
 		} else {
@@ -812,6 +824,7 @@ func (r *Rule) option(key item, l *lexer) error {
 			}
 			p.DataPosition = dataPosition
 			p.Negate = negate
+			p.Transforms = activeTransforms
 			r.Matchers = append(r.Matchers, p)
 		} else {
 			return fmt.Errorf("invalid type %q for option content", nextItem.typ)
@@ -931,6 +944,7 @@ func parseRuleAux(rule string, commented bool) (*Rule, error) {
 	}
 	defer l.close()
 	dataPosition = pktData
+	activeTransforms = nil
 	r := &Rule{}
 	var unsupportedOptions = make([]string, 0, 3)
 	for item := l.nextItem(); item.typ != itemEOR && item.typ != itemEOF && err == nil; item = l.nextItem() {

@@ -605,6 +605,31 @@ func TestParseRule(t *testing.T) {
 			},
 		},
 		{
+			name: "negated tags",
+			rule: `alert tcp any any -> any any (msg:"test"; fragbits:!M; flags:!F; tos:!0; ipopts:!rr; sid:1; rev:1;)`,
+			want: &Rule{
+				Action:   "alert",
+				Protocol: "tcp",
+				Source: Network{
+					Nets:  []string{"any"},
+					Ports: []string{"any"},
+				},
+				Destination: Network{
+					Nets:  []string{"any"},
+					Ports: []string{"any"},
+				},
+				SID:         1,
+				Revision:    1,
+				Description: "test",
+				Tags: map[string]string{
+					"fragbits": "!M",
+					"flags":    "!F",
+					"tos":      "!0",
+					"ipopts":   "!rr",
+				},
+			},
+		},
+		{
 			name: "commented rule content",
 			rule: `#alert udp $HOME_NET any -> $EXTERNAL_NET any (sid:1337; msg:"foo"; content:"AA"; rev:2;)`,
 			want: &Rule{

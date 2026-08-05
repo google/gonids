@@ -2139,6 +2139,25 @@ func TestParseRule(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "content match with escaped pipe and characters",
+			rule: `alert tcp any any -> any any (msg:"test"; content:"\|test\| \[abc\] \+ \. \ "; sid:1; rev:1;)`,
+			want: &Rule{
+				Action:      "alert",
+				Protocol:    "tcp",
+				Source:      Network{Nets: []string{"any"}, Ports: []string{"any"}},
+				Destination: Network{Nets: []string{"any"}, Ports: []string{"any"}},
+				SID:         1,
+				Revision:    1,
+				Description: "test",
+				Matchers: []orderedMatcher{
+					&Content{
+						DataPosition: pktData,
+						Pattern:      []byte("|test| [abc] + .  "),
+					},
+				},
+			},
+		},
 		// Errors
 		{
 			name:    "invalid action",
@@ -2362,6 +2381,21 @@ func TestContainsUnescaped(t *testing.T) {
 		{
 			name:  "odd slashes semicolon",
 			input: `\\\\\\\\\;`,
+			want:  false,
+		},
+		{
+			name:  "escaped pipe",
+			input: `\|`,
+			want:  false,
+		},
+		{
+			name:  "escaped bracket",
+			input: `\[`,
+			want:  false,
+		},
+		{
+			name:  "escaped plus dot space",
+			input: `\+\.\ `,
 			want:  false,
 		},
 	} {

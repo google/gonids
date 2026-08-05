@@ -209,6 +209,14 @@ const (
 	// DNS Sticky Buffers
 	dnsQuery5
 	// SMB - Documentation lacking. Unknown.
+	//
+	// Suricata 7.x Sticky Buffers
+	//
+	tlsCerts
+	tlsRandom
+	httpRequestHeader
+	httpResponseHeader
+	fileMagic
 )
 
 // Contains both Suricata 4.x and 5.0 buffers. Some day we'll deprecate the 4.x ones.
@@ -296,9 +304,14 @@ var stickyBuffers = map[DataPos]string{
 	// SSH Sticky Buffers
 	sshProto5:    "ssh.proto",
 	sshSoftware5: "ssh.software",
-	// Kerberos Sticky Buffers - Unchanged from Suricata 4.x
 	// DNS Sticky Buffers
 	dnsQuery5: "dns.query",
+	// Suricata 7.x Sticky Buffers
+	tlsCerts:           "tls.certs",
+	tlsRandom:          "tls.random",
+	httpRequestHeader:  "http.request_header",
+	httpResponseHeader: "http.response_header",
+	fileMagic:          "file.magic",
 	// SMB - Documentation lacking. Unknown.
 }
 

@@ -880,6 +880,47 @@ func TestRuleString(t *testing.T) {
 			want: `alert udp $HOME_NET any -> $EXTERNAL_NET any (msg:"foo"; content:"AA"; file_data; content:"BB"; sid:1337; rev:2;)`,
 		},
 		{
+			name: "rule with datapos suricata 7",
+			input: Rule{
+				Action:   "alert",
+				Protocol: "tls",
+				Source: Network{
+					Nets:  []string{"$HOME_NET"},
+					Ports: []string{"any"},
+				},
+				Destination: Network{
+					Nets:  []string{"$EXTERNAL_NET"},
+					Ports: []string{"any"},
+				},
+				SID:         1338,
+				Revision:    1,
+				Description: "test tls.certs",
+				Matchers: []orderedMatcher{
+					&Content{
+						Pattern:      []byte("Let's Encrypt"),
+						DataPosition: tlsCerts,
+					},
+					&Content{
+						Pattern:      []byte{0x00, 0x00, 0x00, 0x00},
+						DataPosition: tlsRandom,
+					},
+					&Content{
+						Pattern:      []byte("User-Agent: evil"),
+						DataPosition: httpRequestHeader,
+					},
+					&Content{
+						Pattern:      []byte("Server: Apache"),
+						DataPosition: httpResponseHeader,
+					},
+					&Content{
+						Pattern:      []byte("PE32 executable"),
+						DataPosition: fileMagic,
+					},
+				},
+			},
+			want: `alert tls $HOME_NET any -> $EXTERNAL_NET any (msg:"test tls.certs"; tls.certs; content:"Let's Encrypt"; tls.random; content:"|00 00 00 00|"; http.request_header; content:"User-Agent|3A| evil"; http.response_header; content:"Server|3A| Apache"; file.magic; content:"PE32 executable"; sid:1338; rev:1;)`,
+		},
+		{
 			name: "rule with flow and tag",
 			input: Rule{
 				Action:   "alert",
@@ -1255,6 +1296,26 @@ func TestDataPosString(t *testing.T) {
 			val:  httpRequestLine,
 			want: "http_request_line",
 		},
+		{
+			val:  tlsCerts,
+			want: "tls.certs",
+		},
+		{
+			val:  tlsRandom,
+			want: "tls.random",
+		},
+		{
+			val:  httpRequestHeader,
+			want: "http.request_header",
+		},
+		{
+			val:  httpResponseHeader,
+			want: "http.response_header",
+		},
+		{
+			val:  fileMagic,
+			want: "file.magic",
+		},
 	} {
 		s := tt.val.String()
 		if s != tt.want {
@@ -1278,6 +1339,26 @@ func TestIsStickyBuffer(t *testing.T) {
 		},
 		{
 			buf:  "http_request_line",
+			want: true,
+		},
+		{
+			buf:  "tls.certs",
+			want: true,
+		},
+		{
+			buf:  "tls.random",
+			want: true,
+		},
+		{
+			buf:  "http.request_header",
+			want: true,
+		},
+		{
+			buf:  "http.response_header",
+			want: true,
+		},
+		{
+			buf:  "file.magic",
 			want: true,
 		},
 	} {
@@ -1307,6 +1388,31 @@ func TestStickyBuffer(t *testing.T) {
 		{
 			s:       "http_request_line",
 			want:    httpRequestLine,
+			wantErr: false,
+		},
+		{
+			s:       "tls.certs",
+			want:    tlsCerts,
+			wantErr: false,
+		},
+		{
+			s:       "tls.random",
+			want:    tlsRandom,
+			wantErr: false,
+		},
+		{
+			s:       "http.request_header",
+			want:    httpRequestHeader,
+			wantErr: false,
+		},
+		{
+			s:       "http.response_header",
+			want:    httpResponseHeader,
+			wantErr: false,
+		},
+		{
+			s:       "file.magic",
+			want:    fileMagic,
 			wantErr: false,
 		},
 	} {

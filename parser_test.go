@@ -561,6 +561,131 @@ func TestParseRule(t *testing.T) {
 		wantErr bool
 		optErr  *UnsupportedOptionError
 	}{
+		{
+			name: "tls.certs sticky buffer",
+			rule: `alert tls $HOME_NET any -> $EXTERNAL_NET any (msg:"test tls.certs"; tls.certs; content:"Let's Encrypt"; sid:1; rev:1;)`,
+			want: &Rule{
+				Action:   "alert",
+				Protocol: "tls",
+				Source: Network{
+					Nets:  []string{"$HOME_NET"},
+					Ports: []string{"any"},
+				},
+				Destination: Network{
+					Nets:  []string{"$EXTERNAL_NET"},
+					Ports: []string{"any"},
+				},
+				SID:         1,
+				Revision:    1,
+				Description: "test tls.certs",
+				Matchers: []orderedMatcher{
+					&Content{
+						Pattern:      []byte("Let's Encrypt"),
+						DataPosition: tlsCerts,
+					},
+				},
+			},
+		},
+		{
+			name: "tls.random sticky buffer",
+			rule: `alert tls $HOME_NET any -> $EXTERNAL_NET any (msg:"test tls.random"; tls.random; content:"|00 00 00 00|"; sid:2; rev:1;)`,
+			want: &Rule{
+				Action:   "alert",
+				Protocol: "tls",
+				Source: Network{
+					Nets:  []string{"$HOME_NET"},
+					Ports: []string{"any"},
+				},
+				Destination: Network{
+					Nets:  []string{"$EXTERNAL_NET"},
+					Ports: []string{"any"},
+				},
+				SID:         2,
+				Revision:    1,
+				Description: "test tls.random",
+				Matchers: []orderedMatcher{
+					&Content{
+						Pattern:      []byte{0, 0, 0, 0},
+						DataPosition: tlsRandom,
+					},
+				},
+			},
+		},
+		{
+			name: "http.request_header sticky buffer",
+			rule: `alert http $HOME_NET any -> $EXTERNAL_NET any (msg:"test http.request_header"; http.request_header; content:"User-Agent: evil"; sid:3; rev:1;)`,
+			want: &Rule{
+				Action:   "alert",
+				Protocol: "http",
+				Source: Network{
+					Nets:  []string{"$HOME_NET"},
+					Ports: []string{"any"},
+				},
+				Destination: Network{
+					Nets:  []string{"$EXTERNAL_NET"},
+					Ports: []string{"any"},
+				},
+				SID:         3,
+				Revision:    1,
+				Description: "test http.request_header",
+				Matchers: []orderedMatcher{
+					&Content{
+						Pattern:      []byte("User-Agent: evil"),
+						DataPosition: httpRequestHeader,
+					},
+				},
+			},
+		},
+		{
+			name: "http.response_header sticky buffer",
+			rule: `alert http $EXTERNAL_NET any -> $HOME_NET any (msg:"test http.response_header"; http.response_header; content:"Server: Apache"; sid:4; rev:1;)`,
+			want: &Rule{
+				Action:   "alert",
+				Protocol: "http",
+				Source: Network{
+					Nets:  []string{"$EXTERNAL_NET"},
+					Ports: []string{"any"},
+				},
+				Destination: Network{
+					Nets:  []string{"$HOME_NET"},
+					Ports: []string{"any"},
+				},
+				SID:         4,
+				Revision:    1,
+				Description: "test http.response_header",
+				Matchers: []orderedMatcher{
+					&Content{
+						Pattern:      []byte("Server: Apache"),
+						DataPosition: httpResponseHeader,
+					},
+				},
+			},
+		},
+		{
+			name: "file.magic sticky buffer",
+			rule: `alert http any any -> any any (msg:"test file.magic"; file.magic; content:"PE32 executable"; sid:5; rev:1;)`,
+			want: &Rule{
+				Action:   "alert",
+				Protocol: "http",
+				Source: Network{
+					Nets:  []string{"any"},
+					Ports: []string{"any"},
+				},
+				Destination: Network{
+					Nets:  []string{"any"},
+					Ports: []string{"any"},
+				},
+				SID:         5,
+				Revision:    1,
+				Description: "test file.magic",
+				Matchers: []orderedMatcher{
+					&Content{
+						Pattern:      []byte("PE32 executable"),
+						DataPosition: fileMagic,
+					},
+				},
+			},
+		},
 
 		{
 			name: "uppercase options",

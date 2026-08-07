@@ -847,6 +847,13 @@ func TestFlowbitsString(t *testing.T) {
 			},
 			want: `flowbits:set,EvilIP;`,
 		},
+		{
+			name: "reset action",
+			input: &Flowbit{
+				Action: "reset",
+			},
+			want: `flowbits:reset;`,
+		},
 	} {
 		got := tt.input.String()
 		if got != tt.want {

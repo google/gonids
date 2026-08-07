@@ -669,6 +669,35 @@ func TestParseFlowbit(t *testing.T) {
 				Value:  "foo",
 			},
 		},
+		{
+			name:  "reset action",
+			input: "reset",
+			want: &Flowbit{
+				Action: "reset",
+			},
+		},
+		{
+			name:  "case-insensitive SET",
+			input: "SET,FOO",
+			want: &Flowbit{
+				Action: "set",
+				Value:  "FOO",
+			},
+		},
+		{
+			name:  "case-insensitive NOALERT",
+			input: "NOALERT",
+			want: &Flowbit{
+				Action: "noalert",
+			},
+		},
+		{
+			name:  "case-insensitive RESET",
+			input: "RESET",
+			want: &Flowbit{
+				Action: "reset",
+			},
+		},
 		// Errors
 		{
 			name:    "not valid action",
@@ -678,6 +707,41 @@ func TestParseFlowbit(t *testing.T) {
 		{
 			name:    "noalert with value",
 			input:   "noalert,foo",
+			wantErr: true,
+		},
+		{
+			name:    "reset with value",
+			input:   "reset,foo",
+			wantErr: true,
+		},
+		{
+			name:    "set missing value",
+			input:   "set",
+			wantErr: true,
+		},
+		{
+			name:    "unset missing value",
+			input:   "unset",
+			wantErr: true,
+		},
+		{
+			name:    "isset missing value",
+			input:   "isset",
+			wantErr: true,
+		},
+		{
+			name:    "isnotset missing value",
+			input:   "isnotset",
+			wantErr: true,
+		},
+		{
+			name:    "toggle missing value",
+			input:   "toggle",
+			wantErr: true,
+		},
+		{
+			name:    "extra parts",
+			input:   "set,foo,bar",
 			wantErr: true,
 		},
 	} {
@@ -3796,6 +3860,55 @@ func TestParseRule(t *testing.T) {
 			name:    "test invalid target",
 			rule:    `alert tcp $HOME_NET any -> any any (msg:"test invalid target"; target:foo_bar; sid:24; rev:1;)`,
 			wantErr: true,
+		},
+		{
+			name: "test flowbits reset",
+			rule: `alert tcp $HOME_NET any -> any any (msg:"test flowbits reset"; flowbits:reset; sid:25; rev:1;)`,
+			want: &Rule{
+				Action:   "alert",
+				Protocol: "tcp",
+				Source: Network{
+					Nets:  []string{"$HOME_NET"},
+					Ports: []string{"any"},
+				},
+				Destination: Network{
+					Nets:  []string{"any"},
+					Ports: []string{"any"},
+				},
+				SID:         25,
+				Revision:    1,
+				Description: "test flowbits reset",
+				Flowbits: []*Flowbit{
+					{
+						Action: "reset",
+					},
+				},
+			},
+		},
+		{
+			name: "test flowbits uppercase SET",
+			rule: `alert tcp $HOME_NET any -> any any (msg:"test flowbits uppercase"; FLOWBITS:SET,foo; sid:26; rev:1;)`,
+			want: &Rule{
+				Action:   "alert",
+				Protocol: "tcp",
+				Source: Network{
+					Nets:  []string{"$HOME_NET"},
+					Ports: []string{"any"},
+				},
+				Destination: Network{
+					Nets:  []string{"any"},
+					Ports: []string{"any"},
+				},
+				SID:         26,
+				Revision:    1,
+				Description: "test flowbits uppercase",
+				Flowbits: []*Flowbit{
+					{
+						Action: "set",
+						Value:  "foo",
+					},
+				},
+			},
 		},
 	} {
 		got, err := ParseRule(tt.rule)

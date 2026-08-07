@@ -1000,7 +1000,7 @@ func (p PCRE) String() string {
 
 // String returns a string for a Flowbit.
 func (fb Flowbit) String() string {
-	if !inSlice(fb.Action, []string{"noalert", "isset", "isnotset", "set", "unset", "toggle"}) {
+	if !inSlice(fb.Action, []string{"noalert", "isset", "isnotset", "set", "unset", "toggle", "reset"}) {
 		return ""
 	}
 	var s strings.Builder

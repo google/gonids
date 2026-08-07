@@ -25,13 +25,14 @@ import (
 // RuleScanner provides a convenient interface for reading IDS rules sequentially from an io.Reader.
 // It transparently handles multi-line rules ending with backslash (\), blank lines, and comments.
 type RuleScanner struct {
-	reader    *bufio.Reader
-	currRule  *Rule
-	currRaw   string
-	currLine  int
-	startLine int
-	err       error
-	eof       bool
+	reader          *bufio.Reader
+	currRule        *Rule
+	currRaw         string
+	currLine        int
+	startLine       int
+	err             error
+	eof             bool
+	IncludeComments bool
 }
 
 // NewRuleScanner returns a new RuleScanner to read from r.
@@ -68,10 +69,55 @@ func (s *RuleScanner) Scan() bool {
 	}
 
 	for {
-		var combined strings.Builder
-		ruleStartLine := 0
+		line, err := s.reader.ReadString('\n')
+		if len(line) > 0 {
+			s.currLine++
+		}
+		if err != nil {
+			if err == io.EOF {
+				s.eof = true
+				if len(line) == 0 {
+					return false
+				}
+			} else {
+				s.err = fmt.Errorf("read error at line %d: %w", s.currLine, err)
+				return false
+			}
+		}
 
-		for {
+		cleanLine := strings.TrimRight(line, "\r\n")
+		trimmedEnd := strings.TrimRight(cleanLine, " \t")
+		hasContinuation := strings.HasSuffix(trimmedEnd, "\\")
+		if hasContinuation {
+			cleanLine = strings.TrimSuffix(trimmedEnd, "\\")
+		}
+		trimmed := strings.TrimSpace(cleanLine)
+
+		if trimmed == "" {
+			if s.IncludeComments {
+				s.currRule = nil
+				s.currRaw = ""
+				s.startLine = s.currLine
+				return true
+			}
+			continue
+		}
+
+		if !isRuleCandidate(trimmed) {
+			if s.IncludeComments {
+				s.currRule = nil
+				s.currRaw = cleanLine
+				s.startLine = s.currLine
+				return true
+			}
+			continue
+		}
+
+		var combined strings.Builder
+		ruleStartLine := s.currLine
+		combined.WriteString(trimmed)
+
+		for hasContinuation && !s.eof {
 			line, err := s.reader.ReadString('\n')
 			if len(line) > 0 {
 				s.currLine++
@@ -84,61 +130,20 @@ func (s *RuleScanner) Scan() bool {
 					return false
 				}
 			}
-
-			// Clean line endings
-			line = strings.TrimRight(line, "\r\n")
-
-			// Check if line ends with a backslash continuation
-			trimmedEnd := strings.TrimRight(line, " \t")
-			hasContinuation := strings.HasSuffix(trimmedEnd, "\\")
+			cleanContLine := strings.TrimRight(line, "\r\n")
+			trimmedContEnd := strings.TrimRight(cleanContLine, " \t")
+			hasContinuation = strings.HasSuffix(trimmedContEnd, "\\")
 			if hasContinuation {
-				line = strings.TrimSuffix(trimmedEnd, "\\")
+				cleanContLine = strings.TrimSuffix(trimmedContEnd, "\\")
 			}
-
-			trimmed := strings.TrimSpace(line)
-
-			// If we haven't started accumulating a rule yet
-			if combined.Len() == 0 {
-				if trimmed == "" {
-					if s.eof {
-						return false
-					}
-					continue
-				}
-
-				// Check if line is a rule candidate vs comment
-				if !isRuleCandidate(trimmed) {
-					if s.eof {
-						return false
-					}
-					continue
-				}
-
-				ruleStartLine = s.currLine
-				combined.WriteString(trimmed)
-			} else {
-				// We are continuing a multi-line rule
-				// If the continuation line starts with '#', strip '#' and leading whitespace
-				continuationLine := strings.TrimSpace(line)
-				if strings.HasPrefix(continuationLine, "#") {
-					continuationLine = strings.TrimLeft(continuationLine, "# \t")
-				}
-				if continuationLine != "" {
-					combined.WriteString(" ")
-					combined.WriteString(continuationLine)
-				}
+			continuationLine := strings.TrimSpace(cleanContLine)
+			if strings.HasPrefix(continuationLine, "#") {
+				continuationLine = strings.TrimLeft(continuationLine, "# \t")
 			}
-
-			if !hasContinuation || s.eof {
-				break
+			if continuationLine != "" {
+				combined.WriteString(" ")
+				combined.WriteString(continuationLine)
 			}
-		}
-
-		if combined.Len() == 0 {
-			if s.eof {
-				return false
-			}
-			continue
 		}
 
 		raw := combined.String()

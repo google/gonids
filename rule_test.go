@@ -758,6 +758,40 @@ func TestPCREString(t *testing.T) {
 	}
 }
 
+func TestThresholdString(t *testing.T) {
+	for _, tt := range []struct {
+		name  string
+		input Threshold
+		want  string
+	}{
+		{
+			name: "standard limit",
+			input: Threshold{
+				Type:    "limit",
+				Track:   "by_src",
+				Count:   1,
+				Seconds: 60,
+			},
+			want: "threshold:type limit, track by_src, count 1, seconds 60;",
+		},
+		{
+			name: "backoff with multiplier",
+			input: Threshold{
+				Type:       "backoff",
+				Track:      "by_flow",
+				Count:      1,
+				Multiplier: 10,
+			},
+			want: "threshold:type backoff, track by_flow, count 1, multiplier 10;",
+		},
+	} {
+		got := tt.input.String()
+		if got != tt.want {
+			t.Fatalf("%s: got %v -- expected %v", tt.name, got, tt.want)
+		}
+	}
+}
+
 func TestFlowbitsString(t *testing.T) {
 	for _, tt := range []struct {
 		name  string

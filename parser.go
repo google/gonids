@@ -402,6 +402,92 @@ func parseFlowint(s string) (*Flowint, error) {
 	return fi, nil
 }
 
+// parseThreshold parses a threshold option.
+func parseThreshold(s string) (*Threshold, error) {
+	t := &Threshold{}
+	for _, p := range strings.Split(s, ",") {
+		kv := strings.Fields(strings.TrimSpace(p))
+		if len(kv) < 2 {
+			return nil, fmt.Errorf("invalid threshold key-value pair: %q", p)
+		}
+		key := strings.ToLower(kv[0])
+		val := kv[1]
+		switch key {
+		case "type":
+			switch strings.ToLower(val) {
+			case "limit", "threshold", "both", "backoff":
+				t.Type = strings.ToLower(val)
+			default:
+				return nil, fmt.Errorf("invalid threshold type: %s", val)
+			}
+		case "track":
+			switch strings.ToLower(val) {
+			case "by_src", "by_dst", "by_both", "by_flow", "by_rule":
+				t.Track = strings.ToLower(val)
+			default:
+				return nil, fmt.Errorf("invalid threshold track: %s", val)
+			}
+		case "count":
+			c, err := strconv.Atoi(val)
+			if err != nil {
+				return nil, fmt.Errorf("invalid threshold count: %v", err)
+			}
+			if c <= 0 {
+				return nil, fmt.Errorf("threshold count must be positive, non-zero: %d", c)
+			}
+			t.Count = c
+		case "seconds":
+			sec, err := strconv.Atoi(val)
+			if err != nil {
+				return nil, fmt.Errorf("invalid threshold seconds: %v", err)
+			}
+			if sec <= 0 {
+				return nil, fmt.Errorf("threshold seconds must be positive, non-zero: %d", sec)
+			}
+			t.Seconds = sec
+		case "multiplier":
+			m, err := strconv.Atoi(val)
+			if err != nil {
+				return nil, fmt.Errorf("invalid threshold multiplier: %v", err)
+			}
+			if m <= 0 {
+				return nil, fmt.Errorf("threshold multiplier must be positive, non-zero: %d", m)
+			}
+			t.Multiplier = m
+		default:
+			return nil, fmt.Errorf("unknown threshold parameter: %s", key)
+		}
+	}
+
+	if t.Type == "" {
+		return nil, fmt.Errorf("threshold requires a type")
+	}
+	if t.Track == "" {
+		return nil, fmt.Errorf("threshold requires a track option")
+	}
+	if t.Count <= 0 {
+		return nil, fmt.Errorf("threshold requires a positive count option")
+	}
+
+	if t.Type == "backoff" {
+		if t.Track != "by_flow" {
+			return nil, fmt.Errorf("type backoff can only be used with track by_flow, got: %s", t.Track)
+		}
+		if t.Multiplier <= 0 {
+			return nil, fmt.Errorf("type backoff requires a positive multiplier")
+		}
+		if t.Seconds > 0 {
+			return nil, fmt.Errorf("seconds cannot be used with type backoff")
+		}
+	} else {
+		if t.Multiplier > 0 {
+			return nil, fmt.Errorf("multiplier can only be used with type backoff")
+		}
+	}
+
+	return t, nil
+}
+
 // containsUnescaped checks content whether special characters are properly escaped.
 func containsUnescaped(s string) bool {
 	esc := false
@@ -654,7 +740,7 @@ func (r *Rule) option(key item, l *lexer) error {
 		"dnp3_func", "dnp3_ind", "krb5_err_code", "dns.opcode",
 		"ipv4-csum", "tcpv4-csum", "udpv4-csum", "icmpv4-csum", "tcpv6-csum", "udpv6-csum", "icmpv6-csum", "igmp-csum",
 		"filemagic", "fileext", "filemd5", "filesha1", "filesha256", "filename", "ftpdata_command",
-		"threshold", "detection_filter",
+		"detection_filter",
 		"dce_iface", "dce_opnum",
 		"lua", "luajit",
 		"asn1"}):
@@ -675,6 +761,13 @@ func (r *Rule) option(key item, l *lexer) error {
 		} else {
 			r.Tags[key.value] = nextItem.value
 		}
+	case key.value == "threshold":
+		nextItem := l.nextItem()
+		t, err := parseThreshold(nextItem.value)
+		if err != nil {
+			return fmt.Errorf("error parsing threshold: %v", err)
+		}
+		r.Threshold = t
 	case inSlice(key.value, []string{"sameip", "tls.store", "ftpbounce", "noalert", "filestore"}):
 		r.Statements = append(r.Statements, key.value)
 	case inSlice(key.value, tlsTags):

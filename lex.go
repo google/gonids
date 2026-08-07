@@ -379,7 +379,7 @@ func lexOptionKey(l *lexer) stateFn {
 			return lexOptionValueBegin
 		case ';':
 			l.backup()
-			if l.pos > l.start {
+			if strings.TrimSpace(l.input[l.start:l.pos]) != "" {
 				l.emit(itemOptionKey, true)
 				l.emit(itemOptionNoValue, true)
 			}
@@ -387,7 +387,7 @@ func lexOptionKey(l *lexer) stateFn {
 			return lexOptionKey
 		case ')':
 			l.backup()
-			if l.pos > l.start {
+			if strings.TrimSpace(l.input[l.start:l.pos]) != "" {
 				l.emit(itemOptionKey, true)
 			}
 			l.skipNext()

@@ -656,6 +656,7 @@ func (r *Rule) option(key item, l *lexer) error {
 		"filemagic", "fileext", "filemd5", "filesha1", "filesha256", "filename", "ftpdata_command",
 		"threshold", "detection_filter",
 		"dce_iface", "dce_opnum",
+		"lua", "luajit",
 		"asn1"}):
 		nextItem := l.nextItem()
 		negate := false

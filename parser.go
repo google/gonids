@@ -62,6 +62,7 @@ var appLayerProtocols = []string{
 	"icmp",
 	"icmpv4",
 	"icmpv6",
+	"igmp",
 	"ike",
 	"ikev2",
 	"imap",
@@ -73,12 +74,15 @@ var appLayerProtocols = []string{
 	"irc",
 	"jabber",
 	"krb5",
+	"ldap",
+	"mdns",
 	"modbus",
 	"mqtt",
 	"nfs",
 	"ntp",
 	"pgsql",
 	"pkthdr",
+	"pop3",
 	"quic",
 	"rdp",
 	"rfb",
@@ -95,6 +99,7 @@ var appLayerProtocols = []string{
 	"tftp",
 	"tls",
 	"udp",
+	"websocket",
 }
 
 // parseContent decodes rule content match. For now it only takes care of escaped and hex
@@ -166,11 +171,12 @@ func parseLenMatch(k lenMatchType, s string) (*LenMatch, error) {
 
 	// Leading operator, single number.
 	case strings.HasPrefix(s, ">") || strings.HasPrefix(s, "<"):
-		m.Operator = s[0:1]
-		// Strip leading < or >.
-		numTmp := strings.TrimLeft(s, "><")
-		// Ignore options after ','.
-		numTmp = strings.Split(numTmp, ",")[0]
+		if strings.HasPrefix(s, ">=") || strings.HasPrefix(s, "<=") {
+			m.Operator = s[:2]
+		} else {
+			m.Operator = s[:1]
+		}
+		numTmp := strings.Split(s[len(m.Operator):], ",")[0]
 		num, err := strconv.Atoi(strings.TrimSpace(numTmp))
 		if err != nil {
 			return nil, fmt.Errorf("%v is not an integer", s)
@@ -245,6 +251,27 @@ func parseByteMatch(k byteMatchType, s string) (*ByteMatch, error) {
 	b.Kind = k
 
 	parts := strings.Split(s, ",")
+
+	if k == bMath {
+		for _, p := range parts {
+			p = strings.TrimSpace(p)
+			switch {
+			case strings.HasPrefix(p, "bytes "):
+				b.NumBytes = strings.TrimSpace(strings.TrimPrefix(p, "bytes "))
+			case strings.HasPrefix(p, "offset "):
+				b.Offset = strings.TrimSpace(strings.TrimPrefix(p, "offset "))
+			case strings.HasPrefix(p, "oper "):
+				b.Operator = strings.TrimSpace(strings.TrimPrefix(p, "oper "))
+			case strings.HasPrefix(p, "rvalue "):
+				b.Value = strings.TrimSpace(strings.TrimPrefix(p, "rvalue "))
+			case strings.HasPrefix(p, "result "):
+				b.Variable = strings.TrimSpace(strings.TrimPrefix(p, "result "))
+			default:
+				b.Options = append(b.Options, p)
+			}
+		}
+		return b, nil
+	}
 
 	// Num bytes is required for all byteMatchType keywords.
 	if len(parts) < 1 {
@@ -621,11 +648,14 @@ func (r *Rule) option(key item, l *lexer) error {
 	key.value = strings.ToLower(key.value)
 	switch {
 	// TODO: Many of these simple tags could be factored into nicer structures.
-	case inSlice(key.value, []string{"classtype", "flow", "tag", "priority", "app-layer-protocol", "noalert", "target",
+	case inSlice(key.value, []string{"classtype", "flow", "tag", "priority", "app-layer-protocol", "target",
 		"flags", "ipopts", "ip_proto", "geoip", "fragbits", "fragoffset", "tos",
-		"window",
+		"window", "app-layer-event", "decode-event", "stream-event", "engine-event", "snmp.version",
+		"dnp3_func", "dnp3_ind", "krb5_err_code", "dns.opcode",
+		"ipv4-csum", "tcpv4-csum", "udpv4-csum", "icmpv4-csum", "tcpv6-csum", "udpv6-csum", "icmpv6-csum", "igmp-csum",
+		"filemagic", "fileext", "filemd5", "filesha1", "filesha256", "filename", "ftpdata_command",
 		"threshold", "detection_filter",
-		"dce_iface", "dce_opnum", "dce_stub_data",
+		"dce_iface", "dce_opnum",
 		"asn1"}):
 		nextItem := l.nextItem()
 		negate := false
@@ -633,7 +663,7 @@ func (r *Rule) option(key item, l *lexer) error {
 			negate = true
 			nextItem = l.nextItem()
 		}
-		if nextItem.typ != itemOptionValue {
+		if nextItem.typ != itemOptionValue && nextItem.typ != itemOptionValueString {
 			return fmt.Errorf("no valid value for %s tag", key.value)
 		}
 		if r.Tags == nil {
@@ -644,7 +674,7 @@ func (r *Rule) option(key item, l *lexer) error {
 		} else {
 			r.Tags[key.value] = nextItem.value
 		}
-	case inSlice(key.value, []string{"sameip", "tls.store", "ftpbounce"}):
+	case inSlice(key.value, []string{"sameip", "tls.store", "ftpbounce", "noalert", "filestore"}):
 		r.Statements = append(r.Statements, key.value)
 	case inSlice(key.value, tlsTags):
 		t := &TLSTag{
@@ -887,6 +917,7 @@ func (r *Rule) option(key item, l *lexer) error {
 		}
 
 		b.Negate = negate
+		b.DataPosition = dataPosition
 
 		r.Matchers = append(r.Matchers, b)
 	case inSlice(key.value, allLenMatchTypeNames()):

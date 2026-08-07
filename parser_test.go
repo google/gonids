@@ -2957,6 +2957,460 @@ func TestParseRule(t *testing.T) {
 				Options: []string{"zibzab", "foobar"},
 			},
 		},
+		{
+			name: "test noalert",
+			rule: `alert http any any -> any any (msg:"test noalert"; noalert; sid:1; rev:1;)`,
+			want: &Rule{
+				Action:   "alert",
+				Protocol: "http",
+				Source: Network{
+					Nets:  []string{"any"},
+					Ports: []string{"any"},
+				},
+				Destination: Network{
+					Nets:  []string{"any"},
+					Ports: []string{"any"},
+				},
+				SID:         1,
+				Revision:    1,
+				Description: "test noalert",
+				Statements:  []string{"noalert"},
+			},
+		},
+		{
+			name: "test byte_math",
+			rule: `alert tcp-pkt $HOME_NET any -> $EXTERNAL_NET any (msg:"test byte_math"; byte_math:bytes 4, offset 0,oper +,rvalue 6,result length,relative; isdataat:!length; sid:2; rev:1;)`,
+			want: &Rule{
+				Action:   "alert",
+				Protocol: "tcp-pkt",
+				Source: Network{
+					Nets:  []string{"$HOME_NET"},
+					Ports: []string{"any"},
+				},
+				Destination: Network{
+					Nets:  []string{"$EXTERNAL_NET"},
+					Ports: []string{"any"},
+				},
+				SID:         2,
+				Revision:    1,
+				Description: "test byte_math",
+				Matchers: []orderedMatcher{
+					&ByteMatch{
+						Kind:     bMath,
+						NumBytes: "4",
+						Offset:   "0",
+						Operator: "+",
+						Value:    "6",
+						Variable: "length",
+						Options:  []string{"relative"},
+					},
+					&ByteMatch{
+						Kind:     isDataAt,
+						NumBytes: "length",
+						Negate:   true,
+					},
+				},
+			},
+		},
+		{
+			name: "test dsize lte",
+			rule: `alert ip any any -> any any (msg:"test dsize lte"; dsize:<=500; sid:3; rev:1;)`,
+			want: &Rule{
+				Action:   "alert",
+				Protocol: "ip",
+				Source: Network{
+					Nets:  []string{"any"},
+					Ports: []string{"any"},
+				},
+				Destination: Network{
+					Nets:  []string{"any"},
+					Ports: []string{"any"},
+				},
+				SID:         3,
+				Revision:    1,
+				Description: "test dsize lte",
+				Matchers: []orderedMatcher{
+					&LenMatch{
+						Kind:     dSize,
+						Num:      500,
+						Operator: "<=",
+					},
+				},
+			},
+		},
+		{
+			name: "test dsize gte",
+			rule: `alert ip any any -> any any (msg:"test dsize gte"; dsize:>=500; sid:4; rev:1;)`,
+			want: &Rule{
+				Action:   "alert",
+				Protocol: "ip",
+				Source: Network{
+					Nets:  []string{"any"},
+					Ports: []string{"any"},
+				},
+				Destination: Network{
+					Nets:  []string{"any"},
+					Ports: []string{"any"},
+				},
+				SID:         4,
+				Revision:    1,
+				Description: "test dsize gte",
+				Matchers: []orderedMatcher{
+					&LenMatch{
+						Kind:     dSize,
+						Num:      500,
+						Operator: ">=",
+					},
+				},
+			},
+		},
+		{
+			name: "test filesize",
+			rule: `alert tcp any any -> any any (msg:"test filesize"; filesize:<10000; sid:5; rev:1;)`,
+			want: &Rule{
+				Action:   "alert",
+				Protocol: "tcp",
+				Source: Network{
+					Nets:  []string{"any"},
+					Ports: []string{"any"},
+				},
+				Destination: Network{
+					Nets:  []string{"any"},
+					Ports: []string{"any"},
+				},
+				SID:         5,
+				Revision:    1,
+				Description: "test filesize",
+				Matchers: []orderedMatcher{
+					&LenMatch{
+						Kind:     fileSize,
+						Num:      10000,
+						Operator: "<",
+					},
+				},
+			},
+		},
+		{
+			name: "test app-layer-event",
+			rule: `alert tls any any -> any any (msg:"test app-layer-event"; app-layer-event:tls.invalid_record; sid:6; rev:1;)`,
+			want: &Rule{
+				Action:   "alert",
+				Protocol: "tls",
+				Source: Network{
+					Nets:  []string{"any"},
+					Ports: []string{"any"},
+				},
+				Destination: Network{
+					Nets:  []string{"any"},
+					Ports: []string{"any"},
+				},
+				SID:         6,
+				Revision:    1,
+				Description: "test app-layer-event",
+				Tags: map[string]string{
+					"app-layer-event": "tls.invalid_record",
+				},
+			},
+		},
+		{
+			name: "test decode-event",
+			rule: `alert ip any any -> any any (msg:"test decode-event"; decode-event:ipv4.opt_eol; sid:7; rev:1;)`,
+			want: &Rule{
+				Action:   "alert",
+				Protocol: "ip",
+				Source: Network{
+					Nets:  []string{"any"},
+					Ports: []string{"any"},
+				},
+				Destination: Network{
+					Nets:  []string{"any"},
+					Ports: []string{"any"},
+				},
+				SID:         7,
+				Revision:    1,
+				Description: "test decode-event",
+				Tags: map[string]string{
+					"decode-event": "ipv4.opt_eol",
+				},
+			},
+		},
+		{
+			name: "test snmp.version",
+			rule: `alert snmp any any -> any any (msg:"test snmp.version"; snmp.version:<=2; sid:8; rev:1;)`,
+			want: &Rule{
+				Action:   "alert",
+				Protocol: "snmp",
+				Source: Network{
+					Nets:  []string{"any"},
+					Ports: []string{"any"},
+				},
+				Destination: Network{
+					Nets:  []string{"any"},
+					Ports: []string{"any"},
+				},
+				SID:         8,
+				Revision:    1,
+				Description: "test snmp.version",
+				Tags: map[string]string{
+					"snmp.version": "<=2",
+				},
+			},
+		},
+		{
+			name: "test stream-event",
+			rule: `alert tcp any any -> any any (msg:"test stream-event"; stream-event:3way_handshake_wrong_seq; sid:9; rev:1;)`,
+			want: &Rule{
+				Action:   "alert",
+				Protocol: "tcp",
+				Source: Network{
+					Nets:  []string{"any"},
+					Ports: []string{"any"},
+				},
+				Destination: Network{
+					Nets:  []string{"any"},
+					Ports: []string{"any"},
+				},
+				SID:         9,
+				Revision:    1,
+				Description: "test stream-event",
+				Tags: map[string]string{
+					"stream-event": "3way_handshake_wrong_seq",
+				},
+			},
+		},
+		{
+			name: "test engine-event",
+			rule: `alert ip any any -> any any (msg:"test engine-event"; engine-event:event_id; sid:10; rev:1;)`,
+			want: &Rule{
+				Action:   "alert",
+				Protocol: "ip",
+				Source: Network{
+					Nets:  []string{"any"},
+					Ports: []string{"any"},
+				},
+				Destination: Network{
+					Nets:  []string{"any"},
+					Ports: []string{"any"},
+				},
+				SID:         10,
+				Revision:    1,
+				Description: "test engine-event",
+				Tags: map[string]string{
+					"engine-event": "event_id",
+				},
+			},
+		},
+		{
+			name: "test ipv4.hdr",
+			rule: `alert udp any any -> any any (msg:"test ipv4.hdr"; ipv4.hdr; byte_test:2,!&,0x1FFF,6,relative; sid:11; rev:1;)`,
+			want: &Rule{
+				Action:   "alert",
+				Protocol: "udp",
+				Source: Network{
+					Nets:  []string{"any"},
+					Ports: []string{"any"},
+				},
+				Destination: Network{
+					Nets:  []string{"any"},
+					Ports: []string{"any"},
+				},
+				SID:         11,
+				Revision:    1,
+				Description: "test ipv4.hdr",
+				Matchers: []orderedMatcher{
+					&ByteMatch{
+						Kind:     bTest,
+						NumBytes: "2",
+						Operator: "!&",
+						Value:    "0x1FFF",
+						Offset:   "6",
+						Options:  []string{"relative"},
+						DataPosition: ipv4Hdr,
+					},
+				},
+			},
+		},
+		{
+			name: "test dce_stub_data",
+			rule: `alert tcp any any -> any 445 (msg:"test dce_stub_data"; dce_stub_data; content:"MZ"; sid:12; rev:1;)`,
+			want: &Rule{
+				Action:   "alert",
+				Protocol: "tcp",
+				Source: Network{
+					Nets:  []string{"any"},
+					Ports: []string{"any"},
+				},
+				Destination: Network{
+					Nets:  []string{"any"},
+					Ports: []string{"445"},
+				},
+				SID:         12,
+				Revision:    1,
+				Description: "test dce_stub_data",
+				Matchers: []orderedMatcher{
+					&Content{
+						Pattern:      []byte("MZ"),
+						DataPosition: dceStubData,
+					},
+				},
+			},
+		},
+		{
+			name: "test dnp3_func and dnp3_ind",
+			rule: `alert tcp any any -> any any (msg:"test dnp3"; dnp3_func:13; dnp3_ind:no_func_code_support; sid:13; rev:1;)`,
+			want: &Rule{
+				Action:   "alert",
+				Protocol: "tcp",
+				Source: Network{
+					Nets:  []string{"any"},
+					Ports: []string{"any"},
+				},
+				Destination: Network{
+					Nets:  []string{"any"},
+					Ports: []string{"any"},
+				},
+				SID:         13,
+				Revision:    1,
+				Description: "test dnp3",
+				Tags: map[string]string{
+					"dnp3_func": "13",
+					"dnp3_ind":  "no_func_code_support",
+				},
+			},
+		},
+		{
+			name: "test krb5_err_code",
+			rule: `alert krb5 any any -> any any (msg:"test krb5_err_code"; krb5_err_code:6; sid:14; rev:1;)`,
+			want: &Rule{
+				Action:   "alert",
+				Protocol: "krb5",
+				Source: Network{
+					Nets:  []string{"any"},
+					Ports: []string{"any"},
+				},
+				Destination: Network{
+					Nets:  []string{"any"},
+					Ports: []string{"any"},
+				},
+				SID:         14,
+				Revision:    1,
+				Description: "test krb5_err_code",
+				Tags: map[string]string{
+					"krb5_err_code": "6",
+				},
+			},
+		},
+		{
+			name: "test dns.opcode",
+			rule: `alert dns any any -> any any (msg:"test dns.opcode"; dns.opcode:0; sid:15; rev:1;)`,
+			want: &Rule{
+				Action:   "alert",
+				Protocol: "dns",
+				Source: Network{
+					Nets:  []string{"any"},
+					Ports: []string{"any"},
+				},
+				Destination: Network{
+					Nets:  []string{"any"},
+					Ports: []string{"any"},
+				},
+				SID:         15,
+				Revision:    1,
+				Description: "test dns.opcode",
+				Tags: map[string]string{
+					"dns.opcode": "0",
+				},
+			},
+		},
+		{
+			name: "test protocols and checksums",
+			rule: `alert igmp any any -> any any (msg:"test igmp"; igmp-csum:invalid; sid:16; rev:1;)`,
+			want: &Rule{
+				Action:   "alert",
+				Protocol: "igmp",
+				Source: Network{
+					Nets:  []string{"any"},
+					Ports: []string{"any"},
+				},
+				Destination: Network{
+					Nets:  []string{"any"},
+					Ports: []string{"any"},
+				},
+				SID:         16,
+				Revision:    1,
+				Description: "test igmp",
+				Tags: map[string]string{
+					"igmp-csum": "invalid",
+				},
+			},
+		},
+		{
+			name: "test ldap and pop3 and mdns and websocket",
+			rule: `alert ldap any any -> any any (msg:"test ldap"; sid:17; rev:1;)`,
+			want: &Rule{
+				Action:   "alert",
+				Protocol: "ldap",
+				Source: Network{
+					Nets:  []string{"any"},
+					Ports: []string{"any"},
+				},
+				Destination: Network{
+					Nets:  []string{"any"},
+					Ports: []string{"any"},
+				},
+				SID:         17,
+				Revision:    1,
+				Description: "test ldap",
+			},
+		},
+		{
+			name: "test file options and filestore",
+			rule: `alert http any any -> any any (msg:"test files"; fileext:"jpg"; filemagic:"PNG image"; filemd5:chksum.list; filestore; sid:18; rev:1;)`,
+			want: &Rule{
+				Action:   "alert",
+				Protocol: "http",
+				Source: Network{
+					Nets:  []string{"any"},
+					Ports: []string{"any"},
+				},
+				Destination: Network{
+					Nets:  []string{"any"},
+					Ports: []string{"any"},
+				},
+				SID:         18,
+				Revision:    1,
+				Description: "test files",
+				Tags: map[string]string{
+					"fileext":   "jpg",
+					"filemagic": "PNG image",
+					"filemd5":   "chksum.list",
+				},
+				Statements: []string{"filestore"},
+			},
+		},
+		{
+			name: "issue 89 - negated app-layer-protocol",
+			rule: `alert tcp any any -> any 80 (msg:"SURICATA Port 80 but not HTTP"; flow:to_server; app-layer-protocol:!http; sid:2271002; rev:1;)`,
+			want: &Rule{
+				Action:   "alert",
+				Protocol: "tcp",
+				Source: Network{
+					Nets:  []string{"any"},
+					Ports: []string{"any"},
+				},
+				Destination: Network{
+					Nets:  []string{"any"},
+					Ports: []string{"80"},
+				},
+				SID:         2271002,
+				Revision:    1,
+				Description: "SURICATA Port 80 but not HTTP",
+				Tags: map[string]string{
+					"flow":               "to_server",
+					"app-layer-protocol": "!http",
+				},
+			},
+		},
 	} {
 		got, err := ParseRule(tt.rule)
 		diff := pretty.Compare(got, tt.want)

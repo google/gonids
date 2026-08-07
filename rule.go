@@ -222,7 +222,9 @@ const (
 	udpHdr
 	icmpv4Hdr
 	icmpv6Hdr
+	ipv4Hdr
 	ipv6Hdr
+	dceStubData
 )
 
 // Contains both Suricata 4.x and 5.0 buffers. Some day we'll deprecate the 4.x ones.
@@ -323,7 +325,9 @@ var stickyBuffers = map[DataPos]string{
 	udpHdr:             "udp.hdr",
 	icmpv4Hdr:          "icmpv4.hdr",
 	icmpv6Hdr:          "icmpv6.hdr",
+	ipv4Hdr:            "ipv4.hdr",
 	ipv6Hdr:            "ipv6.hdr",
+	dceStubData:        "dce_stub_data",
 
 	// SMB - Documentation lacking. Unknown.
 }
@@ -389,6 +393,7 @@ const (
 	bJump
 	isDataAt
 	b64Decode
+	bMath
 )
 
 var byteMatchTypeVals = map[byteMatchType]string{
@@ -397,6 +402,7 @@ var byteMatchTypeVals = map[byteMatchType]string{
 	bTest:     "byte_test",
 	isDataAt:  "isdataat",
 	b64Decode: "base64_decode",
+	bMath:     "byte_math",
 }
 
 // allbyteMatchTypeNames returns a slice of valid byte_* keywords.
@@ -446,7 +452,7 @@ func (b byteMatchType) minLen() int {
 		return 4
 	case isDataAt:
 		return 1
-	case b64Decode:
+	case b64Decode, bMath:
 		return 0
 	}
 	return -1
@@ -491,21 +497,23 @@ const (
 	tcpSeq
 	tcpACK
 	bSize
+	fileSize
 )
 
 // lenMatchTypeVals map len types to string representations.
 var lenMatchTypeVals = map[lenMatchType]string{
-	iType:  "itype",
-	iCode:  "icode",
-	iID:    "icmp_id",
-	iSeq:   "icmp_seq",
-	uriLen: "urilen",
-	dSize:  "dsize",
-	ipTTL:  "ttl",
-	ipID:   "id",
-	tcpSeq: "seq",
-	tcpACK: "ack",
-	bSize:  "bsize",
+	iType:    "itype",
+	iCode:    "icode",
+	iID:      "icmp_id",
+	iSeq:     "icmp_seq",
+	uriLen:   "urilen",
+	dSize:    "dsize",
+	ipTTL:    "ttl",
+	ipID:     "id",
+	tcpSeq:   "seq",
+	tcpACK:   "ack",
+	bSize:    "bsize",
+	fileSize: "filesize",
 }
 
 // allLenMatchTypeNames returns a slice of string containing all length match keywords.
@@ -798,6 +806,28 @@ func (b ByteMatch) base64DecodeString() string {
 	return fmt.Sprintf("%s:%s;", byteMatchTypeVals[b.Kind], strings.Join(parts, ","))
 }
 
+// byteMathString returns a string for a byte_math ByteMatch.
+func (b ByteMatch) byteMathString() string {
+	var parts []string
+	if b.NumBytes != "" {
+		parts = append(parts, fmt.Sprintf("bytes %s", b.NumBytes))
+	}
+	if b.Offset != "" {
+		parts = append(parts, fmt.Sprintf("offset %s", b.Offset))
+	}
+	if b.Operator != "" {
+		parts = append(parts, fmt.Sprintf("oper %s", b.Operator))
+	}
+	if b.Value != "" {
+		parts = append(parts, fmt.Sprintf("rvalue %s", b.Value))
+	}
+	if b.Variable != "" {
+		parts = append(parts, fmt.Sprintf("result %s", b.Variable))
+	}
+	parts = append(parts, b.Options...)
+	return fmt.Sprintf("byte_math:%s;", strings.Join(parts, ","))
+}
+
 // String returns a string for a ByteMatch.
 func (b ByteMatch) String() string {
 	// TODO: Support dataPos?
@@ -820,6 +850,8 @@ func (b ByteMatch) String() string {
 	// Logic for this case is a bit different so it's handled outside.
 	case b64Decode:
 		return b.base64DecodeString()
+	case bMath:
+		return b.byteMathString()
 	}
 	for _, o := range b.Options {
 		fmt.Fprintf(&s, ",%s", o)

@@ -448,6 +448,19 @@ func TestByteMatchString(t *testing.T) {
 			},
 			want: `byte_extract:3,42,foobar,relative,bitmask 0x03ff;`,
 		},
+		{
+			name: "byte_math",
+			input: ByteMatch{
+				Kind:     bMath,
+				NumBytes: "4",
+				Offset:   "0",
+				Operator: "+",
+				Value:    "6",
+				Variable: "length",
+				Options:  []string{"relative"},
+			},
+			want: `byte_math:bytes 4,offset 0,oper +,rvalue 6,result length,relative;`,
+		},
 	} {
 		got := tt.input.String()
 		if got != tt.want {
@@ -588,6 +601,33 @@ func TestLenMatchString(t *testing.T) {
 				Options:  []string{"raw"},
 			},
 			want: `urilen:1<>2,raw;`,
+		},
+		{
+			name: "filesize",
+			input: &LenMatch{
+				Kind:     fileSize,
+				Num:      10000,
+				Operator: "<",
+			},
+			want: `filesize:<10000;`,
+		},
+		{
+			name: "dsize lte",
+			input: &LenMatch{
+				Kind:     dSize,
+				Num:      500,
+				Operator: "<=",
+			},
+			want: `dsize:<=500;`,
+		},
+		{
+			name: "dsize gte",
+			input: &LenMatch{
+				Kind:     dSize,
+				Num:      500,
+				Operator: ">=",
+			},
+			want: `dsize:>=500;`,
 		},
 	} {
 		got := tt.input.String()
@@ -1366,8 +1406,16 @@ func TestDataPosString(t *testing.T) {
 			want: "icmpv6.hdr",
 		},
 		{
+			val:  ipv4Hdr,
+			want: "ipv4.hdr",
+		},
+		{
 			val:  ipv6Hdr,
 			want: "ipv6.hdr",
+		},
+		{
+			val:  dceStubData,
+			want: "dce_stub_data",
 		},
 	} {
 		s := tt.val.String()
@@ -1435,7 +1483,15 @@ func TestIsStickyBuffer(t *testing.T) {
 			want: true,
 		},
 		{
+			buf:  "ipv4.hdr",
+			want: true,
+		},
+		{
 			buf:  "ipv6.hdr",
+			want: true,
+		},
+		{
+			buf:  "dce_stub_data",
 			want: true,
 		},
 	} {
@@ -1518,8 +1574,18 @@ func TestStickyBuffer(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			s:       "ipv4.hdr",
+			want:    ipv4Hdr,
+			wantErr: false,
+		},
+		{
 			s:       "ipv6.hdr",
 			want:    ipv6Hdr,
+			wantErr: false,
+		},
+		{
+			s:       "dce_stub_data",
+			want:    dceStubData,
 			wantErr: false,
 		},
 	} {

@@ -320,17 +320,25 @@ func parseFlowbit(s string) (*Flowbit, error) {
 		return nil, fmt.Errorf("couldn't parse flowbit string: %s", s)
 	}
 	// Ensure all actions are of valid type.
-	a := strings.TrimSpace(parts[0])
-	if !inSlice(a, []string{"noalert", "isset", "isnotset", "set", "unset", "toggle"}) {
+	a := strings.ToLower(strings.TrimSpace(parts[0]))
+	if !inSlice(a, []string{"noalert", "isset", "isnotset", "set", "unset", "toggle", "reset"}) {
 		return nil, fmt.Errorf("invalid action for flowbit: %s", a)
 	}
 	fb := &Flowbit{
 		Action: a,
 	}
-	if fb.Action == "noalert" && len(parts) > 1 {
-		return nil, fmt.Errorf("noalert shouldn't have a value")
-	}
-	if len(parts) == 2 {
+	switch fb.Action {
+	case "noalert", "reset":
+		if len(parts) > 1 && strings.TrimSpace(parts[1]) != "" {
+			return nil, fmt.Errorf("%s shouldn't have a value", fb.Action)
+		}
+	default:
+		if len(parts) < 2 || strings.TrimSpace(parts[1]) == "" {
+			return nil, fmt.Errorf("%s requires a value", fb.Action)
+		}
+		if len(parts) > 2 {
+			return nil, fmt.Errorf("wrong number of parts for flowbit: %s", s)
+		}
 		fb.Value = strings.TrimSpace(parts[1])
 	}
 	return fb, nil
@@ -344,7 +352,7 @@ func parseXbit(s string) (*Xbit, error) {
 		return nil, fmt.Errorf("not enough parts for xbits: %s", s)
 	}
 	// Ensure all actions are of valid type.
-	a := strings.TrimSpace(parts[0])
+	a := strings.ToLower(strings.TrimSpace(parts[0]))
 	if !inSlice(a, []string{"set", "unset", "isset", "isnotset", "toggle"}) {
 		return nil, fmt.Errorf("invalid action for xbits: %s", a)
 	}
@@ -358,7 +366,7 @@ func parseXbit(s string) (*Xbit, error) {
 	if len(t) != 2 {
 		return nil, fmt.Errorf("wrong number of parts for track: %v", t)
 	}
-	if t[0] != "track" {
+	if strings.ToLower(t[0]) != "track" {
 		return nil, fmt.Errorf("%s should be 'track'", t[0])
 	}
 	xb.Track = t[1]
@@ -369,7 +377,7 @@ func parseXbit(s string) (*Xbit, error) {
 		if len(e) != 2 {
 			return nil, fmt.Errorf("wrong number of parts for expire: %v", e)
 		}
-		if e[0] != "expire" {
+		if strings.ToLower(e[0]) != "expire" {
 			return nil, fmt.Errorf("%s should be 'expire'", e[0])
 		}
 		xb.Expire = e[1]
@@ -386,7 +394,7 @@ func parseFlowint(s string) (*Flowint, error) {
 		return nil, fmt.Errorf("not enough parts for flowint: %s", s)
 	}
 	// Ensure all actions are of valid type.
-	m := strings.TrimSpace(parts[1])
+	m := strings.ToLower(strings.TrimSpace(parts[1]))
 	if !inSlice(m, []string{"+", "-", "=", ">", "<", ">=", "<=", "==", "!=", "isset", "isnotset"}) {
 		return nil, fmt.Errorf("invalid modifier for flowint: %s", m)
 	}

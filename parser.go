@@ -23,6 +23,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"io"
 	"net"
 	"regexp"
 	"strconv"
@@ -1215,3 +1216,17 @@ func parseRuleAux(rule string, commented bool) (*Rule, error) {
 func ParseRule(rule string) (*Rule, error) {
 	return parseRuleAux(rule, false)
 }
+
+// ParseRules reads from an io.Reader and returns all rules parsed from the stream.
+func ParseRules(r io.Reader) ([]*Rule, error) {
+	scanner := NewRuleScanner(r)
+	var rules []*Rule
+	for scanner.Scan() {
+		rules = append(rules, scanner.Rule())
+	}
+	if err := scanner.Err(); err != nil {
+		return rules, err
+	}
+	return rules, nil
+}
+

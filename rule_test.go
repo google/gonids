@@ -979,13 +979,14 @@ func TestRuleString(t *testing.T) {
 				SID:         1337,
 				Revision:    2,
 				Description: "foo",
+				Target:      "src_ip",
 				Matchers: []orderedMatcher{
 					&Content{
 						Pattern: []byte("AA"),
 					},
 				},
 			},
-			want: `alert udp $HOME_NET any -> $EXTERNAL_NET any (msg:"foo"; content:"AA"; sid:1337; rev:2;)`,
+			want: `alert udp $HOME_NET any -> $EXTERNAL_NET any (msg:"foo"; content:"AA"; target:src_ip; sid:1337; rev:2;)`,
 		},
 		{
 			name: "rule with datapos",

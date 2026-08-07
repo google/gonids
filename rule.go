@@ -55,6 +55,8 @@ type Rule struct {
 	StreamMatch *StreamCmp
 	// Threshold holds threshold parameters.
 	Threshold *Threshold
+	// DetectionFilter holds detection_filter parameters.
+	DetectionFilter *DetectionFilter
 	// Metas is a slice of Metadata.
 	Metas Metadatas
 	// Flowbits is a slice of Flowbit.
@@ -947,6 +949,32 @@ func (t *Threshold) String() string {
 	return fmt.Sprintf("threshold:%s;", strings.Join(parts, ", "))
 }
 
+// DetectionFilter describes a rule detection_filter option.
+type DetectionFilter struct {
+	Track    string
+	Count    int
+	Seconds  int
+	UniqueOn string
+}
+
+// String returns a string for a DetectionFilter.
+func (d *DetectionFilter) String() string {
+	var parts []string
+	if d.Track != "" {
+		parts = append(parts, fmt.Sprintf("track %s", d.Track))
+	}
+	if d.Count > 0 {
+		parts = append(parts, fmt.Sprintf("count %d", d.Count))
+	}
+	if d.Seconds > 0 {
+		parts = append(parts, fmt.Sprintf("seconds %d", d.Seconds))
+	}
+	if d.UniqueOn != "" {
+		parts = append(parts, fmt.Sprintf("unique_on %s", d.UniqueOn))
+	}
+	return fmt.Sprintf("detection_filter:%s;", strings.Join(parts, ", "))
+}
+
 // String returns a string for a PCRE.
 func (p PCRE) String() string {
 	pattern := p.Pattern
@@ -1065,6 +1093,10 @@ func (r Rule) String() string {
 
 	if r.Threshold != nil {
 		fmt.Fprintf(&s, "%s ", r.Threshold)
+	}
+
+	if r.DetectionFilter != nil {
+		fmt.Fprintf(&s, "%s ", r.DetectionFilter)
 	}
 
 	if len(r.TLSTags) > 0 {

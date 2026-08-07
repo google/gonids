@@ -549,6 +549,111 @@ func TestParseThreshold(t *testing.T) {
 	}
 }
 
+func TestParseDetectionFilter(t *testing.T) {
+	for _, tt := range []struct {
+		name    string
+		input   string
+		want    *DetectionFilter
+		wantErr bool
+	}{
+		{
+			name:  "standard detection_filter",
+			input: "track by_src, count 10, seconds 60",
+			want: &DetectionFilter{
+				Track:   "by_src",
+				Count:   10,
+				Seconds: 60,
+			},
+		},
+		{
+			name:  "with unique_on src_port",
+			input: "track by_dst, count 5, seconds 30, unique_on src_port",
+			want: &DetectionFilter{
+				Track:    "by_dst",
+				Count:    5,
+				Seconds:  30,
+				UniqueOn: "src_port",
+			},
+		},
+		{
+			name:  "case-insensitive with unique_on dst_port",
+			input: "TRACK BY_SRC, COUNT 20, SECONDS 120, UNIQUE_ON DST_PORT",
+			want: &DetectionFilter{
+				Track:    "by_src",
+				Count:    20,
+				Seconds:  120,
+				UniqueOn: "dst_port",
+			},
+		},
+		{
+			name:    "invalid key-value",
+			input:   "track",
+			wantErr: true,
+		},
+		{
+			name:    "invalid track",
+			input:   "track unknown, count 10, seconds 60",
+			wantErr: true,
+		},
+		{
+			name:    "invalid count not an int",
+			input:   "track by_src, count abc, seconds 60",
+			wantErr: true,
+		},
+		{
+			name:    "count zero",
+			input:   "track by_src, count 0, seconds 60",
+			wantErr: true,
+		},
+		{
+			name:    "count negative",
+			input:   "track by_src, count -1, seconds 60",
+			wantErr: true,
+		},
+		{
+			name:    "seconds zero",
+			input:   "track by_src, count 10, seconds 0",
+			wantErr: true,
+		},
+		{
+			name:    "seconds negative",
+			input:   "track by_src, count 10, seconds -60",
+			wantErr: true,
+		},
+		{
+			name:    "missing track",
+			input:   "count 10, seconds 60",
+			wantErr: true,
+		},
+		{
+			name:    "missing count",
+			input:   "track by_src, seconds 60",
+			wantErr: true,
+		},
+		{
+			name:    "missing seconds",
+			input:   "track by_src, count 10",
+			wantErr: true,
+		},
+		{
+			name:    "invalid unique_on",
+			input:   "track by_src, count 10, seconds 60, unique_on invalid_port",
+			wantErr: true,
+		},
+		{
+			name:    "unknown parameter",
+			input:   "track by_src, count 10, seconds 60, foo bar",
+			wantErr: true,
+		},
+	} {
+		got, err := parseDetectionFilter(tt.input)
+		diff := pretty.Compare(got, tt.want)
+		if diff != "" || (err != nil) != tt.wantErr {
+			t.Fatalf("%s: gotErr:%#v, wantErr:%#v\n diff (-got +want):\n%s", tt.name, err, tt.wantErr, diff)
+		}
+	}
+}
+
 func TestParseFlowbit(t *testing.T) {
 	for _, tt := range []struct {
 		name    string
@@ -3619,6 +3724,31 @@ func TestParseRule(t *testing.T) {
 					Track:   "by_src",
 					Count:   1,
 					Seconds: 60,
+				},
+			},
+		},
+		{
+			name: "test detection_filter",
+			rule: `alert tcp $HOME_NET any -> any any (msg:"test detection_filter"; detection_filter:track by_src, count 10, seconds 60, unique_on dst_port; sid:21; rev:1;)`,
+			want: &Rule{
+				Action:   "alert",
+				Protocol: "tcp",
+				Source: Network{
+					Nets:  []string{"$HOME_NET"},
+					Ports: []string{"any"},
+				},
+				Destination: Network{
+					Nets:  []string{"any"},
+					Ports: []string{"any"},
+				},
+				SID:         21,
+				Revision:    1,
+				Description: "test detection_filter",
+				DetectionFilter: &DetectionFilter{
+					Track:    "by_src",
+					Count:    10,
+					Seconds:  60,
+					UniqueOn: "dst_port",
 				},
 			},
 		},

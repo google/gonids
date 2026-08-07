@@ -1662,7 +1662,7 @@ func TestParseRule(t *testing.T) {
 				},
 				SID:         1337,
 				Description: "foo",
-				Tags:        map[string]string{"target": "src_ip"},
+				Target:      "src_ip",
 				Matchers: []orderedMatcher{
 					&Content{
 						Pattern: []byte("AA"), Negate: true},
@@ -3751,6 +3751,51 @@ func TestParseRule(t *testing.T) {
 					UniqueOn: "dst_port",
 				},
 			},
+		},
+		{
+			name: "test target src_ip",
+			rule: `alert tcp $HOME_NET any -> any any (msg:"test target src_ip"; target:src_ip; sid:22; rev:1;)`,
+			want: &Rule{
+				Action:   "alert",
+				Protocol: "tcp",
+				Source: Network{
+					Nets:  []string{"$HOME_NET"},
+					Ports: []string{"any"},
+				},
+				Destination: Network{
+					Nets:  []string{"any"},
+					Ports: []string{"any"},
+				},
+				SID:         22,
+				Revision:    1,
+				Description: "test target src_ip",
+				Target:      "src_ip",
+			},
+		},
+		{
+			name: "test target dest_ip uppercase",
+			rule: `alert tcp $HOME_NET any -> any any (msg:"test target dest_ip"; TARGET:DEST_IP; sid:23; rev:1;)`,
+			want: &Rule{
+				Action:   "alert",
+				Protocol: "tcp",
+				Source: Network{
+					Nets:  []string{"$HOME_NET"},
+					Ports: []string{"any"},
+				},
+				Destination: Network{
+					Nets:  []string{"any"},
+					Ports: []string{"any"},
+				},
+				SID:         23,
+				Revision:    1,
+				Description: "test target dest_ip",
+				Target:      "dest_ip",
+			},
+		},
+		{
+			name:    "test invalid target",
+			rule:    `alert tcp $HOME_NET any -> any any (msg:"test invalid target"; target:foo_bar; sid:24; rev:1;)`,
+			wantErr: true,
 		},
 	} {
 		got, err := ParseRule(tt.rule)

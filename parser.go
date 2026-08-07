@@ -795,7 +795,7 @@ func (r *Rule) option(key item, l *lexer) error {
 	key.value = strings.ToLower(key.value)
 	switch {
 	// TODO: Many of these simple tags could be factored into nicer structures.
-	case inSlice(key.value, []string{"classtype", "flow", "tag", "priority", "app-layer-protocol", "target",
+	case inSlice(key.value, []string{"classtype", "flow", "tag", "priority", "app-layer-protocol",
 		"flags", "ipopts", "ip_proto", "geoip", "fragbits", "fragoffset", "tos",
 		"window", "app-layer-event", "decode-event", "stream-event", "engine-event", "snmp.version",
 		"dnp3_func", "dnp3_ind", "krb5_err_code", "dns.opcode",
@@ -821,6 +821,13 @@ func (r *Rule) option(key item, l *lexer) error {
 		} else {
 			r.Tags[key.value] = nextItem.value
 		}
+	case key.value == "target":
+		nextItem := l.nextItem()
+		val := strings.ToLower(nextItem.value)
+		if val != "src_ip" && val != "dest_ip" {
+			return fmt.Errorf("invalid target value: %q, must be 'src_ip' or 'dest_ip'", nextItem.value)
+		}
+		r.Target = val
 	case key.value == "threshold":
 		nextItem := l.nextItem()
 		t, err := parseThreshold(nextItem.value)

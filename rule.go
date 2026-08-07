@@ -43,6 +43,8 @@ type Rule struct {
 	Revision int
 	// Description is the msg field of the rule.
 	Description string
+	// Target specifies the attack target (src_ip or dest_ip).
+	Target string
 	// References contains references associated to the rule (e.g. CVE number).
 	References []*Reference
 	// Contents are all the decoded content matches.
@@ -1097,6 +1099,10 @@ func (r Rule) String() string {
 
 	if r.DetectionFilter != nil {
 		fmt.Fprintf(&s, "%s ", r.DetectionFilter)
+	}
+
+	if r.Target != "" {
+		fmt.Fprintf(&s, "target:%s; ", r.Target)
 	}
 
 	if len(r.TLSTags) > 0 {

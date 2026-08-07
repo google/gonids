@@ -408,6 +408,147 @@ func TestParseBase64Decode(t *testing.T) {
 	}
 }
 
+func TestParseThreshold(t *testing.T) {
+	for _, tt := range []struct {
+		name    string
+		input   string
+		want    *Threshold
+		wantErr bool
+	}{
+		{
+			name:  "standard limit by_src",
+			input: "type limit, track by_src, count 1, seconds 60",
+			want: &Threshold{
+				Type:    "limit",
+				Track:   "by_src",
+				Count:   1,
+				Seconds: 60,
+			},
+		},
+		{
+			name:  "standard both by_dst",
+			input: "type both, track by_dst, count 50, seconds 300",
+			want: &Threshold{
+				Type:    "both",
+				Track:   "by_dst",
+				Count:   50,
+				Seconds: 300,
+			},
+		},
+		{
+			name:  "backoff with multiplier",
+			input: "type backoff, track by_flow, count 1, multiplier 10",
+			want: &Threshold{
+				Type:       "backoff",
+				Track:      "by_flow",
+				Count:      1,
+				Multiplier: 10,
+			},
+		},
+		{
+			name:  "case-insensitive limit by_src",
+			input: "TYPE LIMIT, TRACK BY_SRC, COUNT 5, SECONDS 120",
+			want: &Threshold{
+				Type:    "limit",
+				Track:   "by_src",
+				Count:   5,
+				Seconds: 120,
+			},
+		},
+		{
+			name:    "invalid key-value",
+			input:   "type",
+			wantErr: true,
+		},
+		{
+			name:    "invalid type",
+			input:   "type unknown, track by_src, count 1, seconds 60",
+			wantErr: true,
+		},
+		{
+			name:    "invalid track",
+			input:   "type limit, track unknown, count 1, seconds 60",
+			wantErr: true,
+		},
+		{
+			name:    "invalid count not an int",
+			input:   "type limit, track by_src, count abc, seconds 60",
+			wantErr: true,
+		},
+		{
+			name:    "count zero",
+			input:   "type limit, track by_src, count 0, seconds 60",
+			wantErr: true,
+		},
+		{
+			name:    "count negative",
+			input:   "type limit, track by_src, count -1, seconds 60",
+			wantErr: true,
+		},
+		{
+			name:    "seconds zero",
+			input:   "type limit, track by_src, count 1, seconds 0",
+			wantErr: true,
+		},
+		{
+			name:    "seconds negative",
+			input:   "type limit, track by_src, count 1, seconds -60",
+			wantErr: true,
+		},
+		{
+			name:    "multiplier zero",
+			input:   "type backoff, track by_flow, count 1, multiplier 0",
+			wantErr: true,
+		},
+		{
+			name:    "multiplier negative",
+			input:   "type backoff, track by_flow, count 1, multiplier -10",
+			wantErr: true,
+		},
+		{
+			name:    "missing type",
+			input:   "track by_src, count 1, seconds 60",
+			wantErr: true,
+		},
+		{
+			name:    "missing track",
+			input:   "type limit, count 1, seconds 60",
+			wantErr: true,
+		},
+		{
+			name:    "missing count",
+			input:   "type limit, track by_src, seconds 60",
+			wantErr: true,
+		},
+		{
+			name:    "backoff invalid track",
+			input:   "type backoff, track by_src, count 1, multiplier 10",
+			wantErr: true,
+		},
+		{
+			name:    "backoff missing multiplier",
+			input:   "type backoff, track by_flow, count 1",
+			wantErr: true,
+		},
+		{
+			name:    "backoff with seconds",
+			input:   "type backoff, track by_flow, count 1, multiplier 10, seconds 60",
+			wantErr: true,
+		},
+		{
+			name:    "limit with multiplier",
+			input:   "type limit, track by_src, count 1, seconds 60, multiplier 10",
+			wantErr: true,
+		},
+	} {
+		got, err := parseThreshold(tt.input)
+		diff := pretty.Compare(got, tt.want)
+		if diff != "" || (err != nil) != tt.wantErr {
+			t.Fatalf("%s: gotErr:%#v, wantErr:%#v\n diff (-got +want):\n%s", tt.name, err, tt.wantErr, diff)
+		}
+	}
+}
+
 func TestParseFlowbit(t *testing.T) {
 	for _, tt := range []struct {
 		name    string
@@ -3453,6 +3594,31 @@ func TestParseRule(t *testing.T) {
 				Tags: map[string]string{
 					"luajit": "script.lua",
 					"lua":    "other.lua",
+				},
+			},
+		},
+		{
+			name: "test threshold",
+			rule: `alert tcp $HOME_NET any -> any any (msg:"test threshold"; threshold:type limit, track by_src, count 1, seconds 60; sid:20; rev:1;)`,
+			want: &Rule{
+				Action:   "alert",
+				Protocol: "tcp",
+				Source: Network{
+					Nets:  []string{"$HOME_NET"},
+					Ports: []string{"any"},
+				},
+				Destination: Network{
+					Nets:  []string{"any"},
+					Ports: []string{"any"},
+				},
+				SID:         20,
+				Revision:    1,
+				Description: "test threshold",
+				Threshold: &Threshold{
+					Type:    "limit",
+					Track:   "by_src",
+					Count:   1,
+					Seconds: 60,
 				},
 			},
 		},

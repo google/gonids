@@ -53,6 +53,8 @@ type Rule struct {
 	TLSTags []*TLSTag
 	// StreamMatch holds stream_size parameters.
 	StreamMatch *StreamCmp
+	// Threshold holds threshold parameters.
+	Threshold *Threshold
 	// Metas is a slice of Metadata.
 	Metas Metadatas
 	// Flowbits is a slice of Flowbit.
@@ -915,6 +917,36 @@ func (s *StreamCmp) String() string {
 	return fmt.Sprintf("stream_size:%s,%s,%d;", s.Direction, s.Operator, s.Number)
 }
 
+// Threshold describes a rule threshold option.
+type Threshold struct {
+	Type       string
+	Track      string
+	Count      int
+	Seconds    int
+	Multiplier int
+}
+
+// String returns a string for a Threshold.
+func (t *Threshold) String() string {
+	var parts []string
+	if t.Type != "" {
+		parts = append(parts, fmt.Sprintf("type %s", t.Type))
+	}
+	if t.Track != "" {
+		parts = append(parts, fmt.Sprintf("track %s", t.Track))
+	}
+	if t.Count > 0 {
+		parts = append(parts, fmt.Sprintf("count %d", t.Count))
+	}
+	if t.Seconds > 0 {
+		parts = append(parts, fmt.Sprintf("seconds %d", t.Seconds))
+	}
+	if t.Multiplier > 0 {
+		parts = append(parts, fmt.Sprintf("multiplier %d", t.Multiplier))
+	}
+	return fmt.Sprintf("threshold:%s;", strings.Join(parts, ", "))
+}
+
 // String returns a string for a PCRE.
 func (p PCRE) String() string {
 	pattern := p.Pattern
@@ -1029,6 +1061,10 @@ func (r Rule) String() string {
 
 	if r.StreamMatch != nil {
 		fmt.Fprintf(&s, "%s ", r.StreamMatch)
+	}
+
+	if r.Threshold != nil {
+		fmt.Fprintf(&s, "%s ", r.Threshold)
 	}
 
 	if len(r.TLSTags) > 0 {

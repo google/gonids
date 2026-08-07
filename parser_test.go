@@ -17,6 +17,7 @@ package gonids
 
 import (
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/kylelemons/godebug/pretty"
@@ -4149,3 +4150,21 @@ func TestValidNetworks(t *testing.T) {
 		}
 	}
 }
+
+func TestParseRules(t *testing.T) {
+	input := `# Rules file
+alert tcp any any -> any any (msg:"rule 1"; sid:1; rev:1;)
+alert udp any any -> any any (msg:"rule 2"; sid:2; rev:1;)
+`
+	rules, err := ParseRules(strings.NewReader(input))
+	if err != nil {
+		t.Fatalf("ParseRules unexpected error: %v", err)
+	}
+	if len(rules) != 2 {
+		t.Fatalf("ParseRules got %d rules, expected 2", len(rules))
+	}
+	if rules[0].SID != 1 || rules[1].SID != 2 {
+		t.Errorf("rules SIDs mismatch: %d, %d", rules[0].SID, rules[1].SID)
+	}
+}
+

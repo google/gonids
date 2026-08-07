@@ -3411,6 +3411,51 @@ func TestParseRule(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "test whitespace around options",
+			rule: `alert tcp $HOME_NET any -> any any ( msg:"test whitespace"; priority:3; sid:62000014; rev:1; )`,
+			want: &Rule{
+				Action:   "alert",
+				Protocol: "tcp",
+				Source: Network{
+					Nets:  []string{"$HOME_NET"},
+					Ports: []string{"any"},
+				},
+				Destination: Network{
+					Nets:  []string{"any"},
+					Ports: []string{"any"},
+				},
+				SID:         62000014,
+				Revision:    1,
+				Description: "test whitespace",
+				Tags: map[string]string{
+					"priority": "3",
+				},
+			},
+		},
+		{
+			name: "test lua and luajit keywords",
+			rule: `alert tcp $HOME_NET any -> any any (msg:"test lua"; luajit:script.lua; lua:other.lua; sid:19; rev:1;)`,
+			want: &Rule{
+				Action:   "alert",
+				Protocol: "tcp",
+				Source: Network{
+					Nets:  []string{"$HOME_NET"},
+					Ports: []string{"any"},
+				},
+				Destination: Network{
+					Nets:  []string{"any"},
+					Ports: []string{"any"},
+				},
+				SID:         19,
+				Revision:    1,
+				Description: "test lua",
+				Tags: map[string]string{
+					"luajit": "script.lua",
+					"lua":    "other.lua",
+				},
+			},
+		},
 	} {
 		got, err := ParseRule(tt.rule)
 		diff := pretty.Compare(got, tt.want)

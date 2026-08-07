@@ -792,6 +792,39 @@ func TestThresholdString(t *testing.T) {
 	}
 }
 
+func TestDetectionFilterString(t *testing.T) {
+	for _, tt := range []struct {
+		name  string
+		input DetectionFilter
+		want  string
+	}{
+		{
+			name: "standard detection_filter",
+			input: DetectionFilter{
+				Track:   "by_src",
+				Count:   10,
+				Seconds: 60,
+			},
+			want: "detection_filter:track by_src, count 10, seconds 60;",
+		},
+		{
+			name: "with unique_on",
+			input: DetectionFilter{
+				Track:    "by_dst",
+				Count:    5,
+				Seconds:  30,
+				UniqueOn: "dst_port",
+			},
+			want: "detection_filter:track by_dst, count 5, seconds 30, unique_on dst_port;",
+		},
+	} {
+		got := tt.input.String()
+		if got != tt.want {
+			t.Fatalf("%s: got %v -- expected %v", tt.name, got, tt.want)
+		}
+	}
+}
+
 func TestFlowbitsString(t *testing.T) {
 	for _, tt := range []struct {
 		name  string

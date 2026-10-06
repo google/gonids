@@ -793,11 +793,16 @@ func (r *Rule) direction(key item) error {
 	return nil
 }
 
-var dataPosition = pktData
-var activeTransforms []*Transform
+// parseState holds the state carried between the options of a single rule.
+type parseState struct {
+	// dataPosition is the sticky buffer applied to the matchers that follow.
+	dataPosition DataPos
+	// activeTransforms are the transforms applied to the matchers that follow.
+	activeTransforms []*Transform
+}
 
 // option decodes an IDS rule option based on its key.
-func (r *Rule) option(key item, l *lexer) error {
+func (r *Rule) option(key item, l *lexer, st *parseState) error {
 	if key.typ != itemOptionKey {
 		panic("item is not an option key")
 	}
@@ -929,22 +934,22 @@ func (r *Rule) option(key item, l *lexer) error {
 		}
 		r.Description = nextItem.value
 	case isStickyBuffer(key.value):
-		activeTransforms = nil
+		st.activeTransforms = nil
 		var d DataPos
 		var err error
 		if d, err = StickyBuffer(key.value); err != nil {
 			return err
 		}
-		dataPosition = d
+		st.dataPosition = d
 	case inSlice(key.value, []string{"dotprefix", "to_lowercase", "to_uppercase", "header_lowercase", "url_decode", "strip_whitespace", "compress_whitespace", "strip_pseudo_headers", "to_sha1", "to_sha256", "to_md5"}):
-		activeTransforms = append(activeTransforms, &Transform{Name: key.value})
+		st.activeTransforms = append(st.activeTransforms, &Transform{Name: key.value})
 	case inSlice(key.value, []string{"pcrexform", "xor"}):
 		nextItem := l.nextItem()
 		val := nextItem.value
 		if nextItem.typ == itemOptionValueString {
 			val = `"` + val + `"`
 		}
-		activeTransforms = append(activeTransforms, &Transform{Name: key.value, Value: val})
+		st.activeTransforms = append(st.activeTransforms, &Transform{Name: key.value, Value: val})
 	case inSlice(key.value, []string{"content", "uricontent"}):
 		nextItem := l.nextItem()
 		negate := false
@@ -962,11 +967,11 @@ func (r *Rule) option(key item, l *lexer) error {
 				options = append(options, &ContentOption{Name: "http_uri"})
 			}
 			con := &Content{
-				DataPosition: dataPosition,
+				DataPosition: st.dataPosition,
 				Pattern:      c,
 				Negate:       negate,
 				Options:      options,
-				Transforms:   activeTransforms,
+				Transforms:   st.activeTransforms,
 			}
 			r.Matchers = append(r.Matchers, con)
 		} else {
@@ -1035,9 +1040,9 @@ func (r *Rule) option(key item, l *lexer) error {
 			if err != nil {
 				return err
 			}
-			p.DataPosition = dataPosition
+			p.DataPosition = st.dataPosition
 			p.Negate = negate
-			p.Transforms = activeTransforms
+			p.Transforms = st.activeTransforms
 			r.Matchers = append(r.Matchers, p)
 		} else {
 			return fmt.Errorf("invalid type %q for option content", nextItem.typ)
@@ -1094,7 +1099,7 @@ func (r *Rule) option(key item, l *lexer) error {
 		}
 
 		b.Negate = negate
-		b.DataPosition = dataPosition
+		b.DataPosition = st.dataPosition
 
 		r.Matchers = append(r.Matchers, b)
 	case inSlice(key.value, allLenMatchTypeNames()):
@@ -1107,7 +1112,7 @@ func (r *Rule) option(key item, l *lexer) error {
 		if err != nil {
 			return fmt.Errorf("could not parse LenMatch: %v", err)
 		}
-		m.DataPosition = dataPosition
+		m.DataPosition = st.dataPosition
 		r.Matchers = append(r.Matchers, m)
 	case key.value == "flowbits":
 		nextItem := l.nextItem()
@@ -1157,8 +1162,7 @@ func parseRuleAux(rule string, commented bool) (*Rule, error) {
 		return nil, err
 	}
 	defer l.close()
-	dataPosition = pktData
-	activeTransforms = nil
+	st := &parseState{dataPosition: pktData}
 	r := &Rule{}
 	var unsupportedOptions = make([]string, 0, 3)
 	for item := l.nextItem(); item.typ != itemEOR && item.typ != itemEOF && err == nil; item = l.nextItem() {
@@ -1185,7 +1189,7 @@ func parseRuleAux(rule string, commented bool) (*Rule, error) {
 		case itemDirection:
 			err = r.direction(item)
 		case itemOptionKey:
-			err = r.option(item, l)
+			err = r.option(item, l, st)
 			// We will continue to parse a rule with unsupported options.
 			if uerr, ok := err.(*UnsupportedOptionError); ok {
 				unsupportedOptions = append(unsupportedOptions, uerr.Options...)

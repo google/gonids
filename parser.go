@@ -801,6 +801,20 @@ type parseState struct {
 	activeTransforms []*Transform
 }
 
+// cloneTransforms returns a deep copy of the active transforms slice so that
+// matchers do not share underlying backing arrays or Transform pointers.
+func (st *parseState) cloneTransforms() []*Transform {
+	if len(st.activeTransforms) == 0 {
+		return nil
+	}
+	dst := make([]*Transform, len(st.activeTransforms))
+	for i, t := range st.activeTransforms {
+		cp := *t
+		dst[i] = &cp
+	}
+	return dst
+}
+
 // option decodes an IDS rule option based on its key.
 func (r *Rule) option(key item, l *lexer, st *parseState) error {
 	if key.typ != itemOptionKey {
@@ -971,7 +985,7 @@ func (r *Rule) option(key item, l *lexer, st *parseState) error {
 				Pattern:      c,
 				Negate:       negate,
 				Options:      options,
-				Transforms:   st.activeTransforms,
+				Transforms:   st.cloneTransforms(),
 			}
 			r.Matchers = append(r.Matchers, con)
 		} else {
@@ -1042,7 +1056,7 @@ func (r *Rule) option(key item, l *lexer, st *parseState) error {
 			}
 			p.DataPosition = st.dataPosition
 			p.Negate = negate
-			p.Transforms = st.activeTransforms
+			p.Transforms = st.cloneTransforms()
 			r.Matchers = append(r.Matchers, p)
 		} else {
 			return fmt.Errorf("invalid type %q for option content", nextItem.typ)

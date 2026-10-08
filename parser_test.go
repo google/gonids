@@ -18,6 +18,7 @@ package gonids
 import (
 	"reflect"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/kylelemons/godebug/pretty"
@@ -4166,5 +4167,45 @@ alert udp any any -> any any (msg:"rule 2"; sid:2; rev:1;)
 	if rules[0].SID != 1 || rules[1].SID != 2 {
 		t.Errorf("rules SIDs mismatch: %d, %d", rules[0].SID, rules[1].SID)
 	}
+}
+
+func TestParseRuleConcurrent(t *testing.T) {
+	rules := []struct {
+		rule       string
+		want       DataPos
+		transforms int
+	}{
+		{
+			rule:       `alert http any any -> any any (msg:"sticky buffer"; http.uri; to_lowercase; content:"a"; sid:1; rev:1;)`,
+			want:       httpURI,
+			transforms: 1,
+		},
+		{
+			rule: `alert tcp any any -> any any (msg:"pkt data"; content:"b"; sid:2; rev:1;)`,
+			want: pktData,
+		},
+	}
+	var wg sync.WaitGroup
+	for _, tt := range rules {
+		for g := 0; g < 8; g++ {
+			wg.Add(1)
+			go func(rule string, want DataPos, transforms int) {
+				defer wg.Done()
+				for i := 0; i < 100; i++ {
+					r, err := ParseRule(rule)
+					if err != nil {
+						t.Errorf("ParseRule unexpected error: %v", err)
+						return
+					}
+					c := r.Contents()[0]
+					if c.DataPosition != want || len(c.Transforms) != transforms {
+						t.Errorf("got DataPosition=%v with %d transforms; want %v with %d", c.DataPosition, len(c.Transforms), want, transforms)
+						return
+					}
+				}
+			}(tt.rule, tt.want, tt.transforms)
+		}
+	}
+	wg.Wait()
 }
 

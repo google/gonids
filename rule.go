@@ -615,7 +615,7 @@ type StreamCmp struct {
 
 // escape escapes special char used in regexp.
 func escape(r string) string {
-	return escapeRE.ReplaceAllString(r, `\$1`)
+	return regexp.QuoteMeta(r)
 }
 
 // within returns the within value for a specific content.

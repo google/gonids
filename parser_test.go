@@ -4209,3 +4209,38 @@ func TestParseRuleConcurrent(t *testing.T) {
 	wg.Wait()
 }
 
+func TestParseRuleTransformsNoAliasing(t *testing.T) {
+	ruleStr := `alert http any any -> any any (msg:"aliasing test"; http.uri; to_lowercase; url_decode; content:"a"; dotprefix; content:"b"; pcre:"/c/"; sid:1; rev:1;)`
+	r, err := ParseRule(ruleStr)
+	if err != nil {
+		t.Fatalf("ParseRule unexpected error: %v", err)
+	}
+
+	contents := r.Contents()
+	if len(contents) != 2 {
+		t.Fatalf("got %d contents; want 2", len(contents))
+	}
+	pcres := r.PCREs()
+	if len(pcres) != 1 {
+		t.Fatalf("got %d pcres; want 1", len(pcres))
+	}
+
+	// Verify mutating a Transform struct on the first Content does not mutate sibling Content or PCRE matchers.
+	contents[0].Transforms[0].Name = "to_uppercase"
+	if got := contents[1].Transforms[0].Name; got != "to_lowercase" {
+		t.Errorf("contents[1].Transforms[0].Name = %q; want %q (pointer aliasing detected)", got, "to_lowercase")
+	}
+	if got := pcres[0].Transforms[0].Name; got != "to_lowercase" {
+		t.Errorf("pcres[0].Transforms[0].Name = %q; want %q (pointer aliasing detected)", got, "to_lowercase")
+	}
+
+	// Verify appending to the first Content's Transforms slice does not overwrite the backing array of sibling matchers.
+	contents[0].Transforms = append(contents[0].Transforms, &Transform{Name: "strip_whitespace"})
+	if got := contents[1].Transforms[2].Name; got != "dotprefix" {
+		t.Errorf("contents[1].Transforms[2].Name = %q; want %q (slice backing array aliasing detected)", got, "dotprefix")
+	}
+	if got := pcres[0].Transforms[2].Name; got != "dotprefix" {
+		t.Errorf("pcres[0].Transforms[2].Name = %q; want %q (slice backing array aliasing detected)", got, "dotprefix")
+	}
+}
+

@@ -112,3 +112,59 @@ alert tcp any any -> any any (msg:"broken rule"; sid:not_a_number; rev:1;)
 		t.Errorf("expected error message to mention line 2, got: %v", err)
 	}
 }
+
+func TestRuleScannerIncludeComments(t *testing.T) {
+	input := `# Header comment
+
+alert tcp any any -> any any (msg:"test"; sid:1; rev:1;)
+
+# Footer comment
+`
+	scanner := NewRuleScanner(strings.NewReader(input))
+	scanner.IncludeComments = true
+
+	// Item 1: # Header comment
+	if !scanner.Scan() {
+		t.Fatalf("expected item 1, got error: %v", scanner.Err())
+	}
+	if scanner.Rule() != nil || scanner.Raw() != "# Header comment" || scanner.LineNumber() != 1 {
+		t.Errorf("item 1 mismatch: rule=%v, raw=%q, line=%d", scanner.Rule(), scanner.Raw(), scanner.LineNumber())
+	}
+
+	// Item 2: Blank line
+	if !scanner.Scan() {
+		t.Fatalf("expected item 2, got error: %v", scanner.Err())
+	}
+	if scanner.Rule() != nil || scanner.Raw() != "" || scanner.LineNumber() != 2 {
+		t.Errorf("item 2 mismatch: rule=%v, raw=%q, line=%d", scanner.Rule(), scanner.Raw(), scanner.LineNumber())
+	}
+
+	// Item 3: Rule
+	if !scanner.Scan() {
+		t.Fatalf("expected item 3, got error: %v", scanner.Err())
+	}
+	if scanner.Rule() == nil || scanner.Rule().SID != 1 || scanner.LineNumber() != 3 {
+		t.Errorf("item 3 mismatch: rule=%v, raw=%q, line=%d", scanner.Rule(), scanner.Raw(), scanner.LineNumber())
+	}
+
+	// Item 4: Blank line
+	if !scanner.Scan() {
+		t.Fatalf("expected item 4, got error: %v", scanner.Err())
+	}
+	if scanner.Rule() != nil || scanner.Raw() != "" || scanner.LineNumber() != 4 {
+		t.Errorf("item 4 mismatch: rule=%v, raw=%q, line=%d", scanner.Rule(), scanner.Raw(), scanner.LineNumber())
+	}
+
+	// Item 5: # Footer comment
+	if !scanner.Scan() {
+		t.Fatalf("expected item 5, got error: %v", scanner.Err())
+	}
+	if scanner.Rule() != nil || scanner.Raw() != "# Footer comment" || scanner.LineNumber() != 5 {
+		t.Errorf("item 5 mismatch: rule=%v, raw=%q, line=%d", scanner.Rule(), scanner.Raw(), scanner.LineNumber())
+	}
+
+	// EOF
+	if scanner.Scan() {
+		t.Errorf("expected EOF, got extra item: rule=%v, raw=%q", scanner.Rule(), scanner.Raw())
+	}
+}

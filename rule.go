@@ -613,11 +613,6 @@ type StreamCmp struct {
 	Number int
 }
 
-// escape escapes special char used in regexp.
-func escape(r string) string {
-	return regexp.QuoteMeta(r)
-}
-
 // within returns the within value for a specific content.
 func within(options []*ContentOption) string {
 	for _, o := range options {
@@ -638,7 +633,7 @@ func (r *Rule) RE() string {
 		} else {
 			re += ".*"
 		}
-		re += escape(string(c.Pattern))
+		re += regexp.QuoteMeta(string(c.Pattern))
 	}
 	return re
 }

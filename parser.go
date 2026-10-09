@@ -33,9 +33,6 @@ import (
 // hexRE matches on hexadecimal content like |41 41 41| for example.
 var hexRE = regexp.MustCompile(`(?i)(\|(?:\s*[a-f0-9]{2}\s*)+\|)`)
 
-// escapeRE matches char that needs to escaped in regexp.
-var escapeRE = regexp.MustCompile(`([()+.'\\])`)
-
 // escapeContent matches escaped special characters.
 var escapeContent = regexp.MustCompile(`\\([\\;":|\[\]+ .])`)
 

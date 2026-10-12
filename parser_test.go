@@ -251,6 +251,18 @@ func TestParseByteMatch(t *testing.T) {
 			},
 		},
 		{
+			name:  "byte_extract trims whitespace around variable name",
+			input: "4, 0, Certs.len, relative",
+			kind:  bExtract,
+			want: &ByteMatch{
+				Kind:     bExtract,
+				NumBytes: "4",
+				Offset:   "0",
+				Variable: "Certs.len",
+				Options:  []string{"relative"},
+			},
+		},
+		{
 			name:  "basic byte_jump",
 			input: "3,0",
 			kind:  bJump,
@@ -332,6 +344,26 @@ func TestParseByteMatch(t *testing.T) {
 		diff := pretty.Compare(got, tt.want)
 		if diff != "" || (err != nil) != tt.wantErr {
 			t.Fatalf("%s: gotErr:%#v, wantErr:%#v\n diff (-got +want):\n%s", tt.name, err, tt.wantErr, diff)
+		}
+	}
+}
+
+// TestByteExtractVariableWhitespace ensures a byte_extract variable defined with
+// the common comma-space spacing still resolves when referenced by a later byte
+// matcher. The variable name is stored trimmed, matching the trimmed references.
+func TestByteExtractVariableWhitespace(t *testing.T) {
+	for _, rule := range []string{
+		`alert tcp any any -> any any (msg:"a"; byte_extract:4, 0, var1; byte_jump:var1, 0; sid:1; rev:1;)`,
+		`alert tcp any any -> any any (msg:"b"; byte_extract:4, 0, var1; byte_test:var1, >, 5, 0; sid:2; rev:1;)`,
+	} {
+		r, err := ParseRule(rule)
+		if err != nil {
+			t.Fatalf("ParseRule(%q) returned error: %v", rule, err)
+		}
+		for _, b := range r.ByteMatchers() {
+			if b.Kind == bExtract && b.Variable != "var1" {
+				t.Fatalf("byte_extract variable = %q, want %q", b.Variable, "var1")
+			}
 		}
 	}
 }

@@ -17,6 +17,7 @@ package gonids
 
 import (
 	"reflect"
+	"regexp"
 	"testing"
 
 	"github.com/kylelemons/godebug/pretty"
@@ -1375,13 +1376,24 @@ func TestRE(t *testing.T) {
 			rule: `alert udp $HOME_NET any -> $EXTERNAL_NET any (sid:1337; msg:"foo"; content:"|28|foo"; content:".AA"; within:40;)`,
 			want: `.*\(foo.{0,40}\.AA`,
 		},
+		{
+			// Content holding regexp metacharacters must be escaped so RE()
+			// treats them literally rather than as alternation, character
+			// classes or quantifiers.
+			rule: `alert udp $HOME_NET any -> $EXTERNAL_NET any (sid:1337; msg:"foo"; content:"a|7C|b|5B|c|2A|d";)`,
+			want: `.*a\|b\[c\*d`,
+		},
 	} {
 		r, err := ParseRule(tt.rule)
 		if err != nil {
 			t.Fatalf("re: parse rule failed: %v", err)
 		}
-		if got := r.RE(); got != tt.want {
+		got := r.RE()
+		if got != tt.want {
 			t.Fatalf("re: got=%v; want=%v", got, tt.want)
+		}
+		if _, err := regexp.Compile(got); err != nil {
+			t.Fatalf("re: result does not compile: %v", err)
 		}
 	}
 }

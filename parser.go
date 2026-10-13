@@ -1079,10 +1079,12 @@ func (r *Rule) option(key item, l *lexer, st *parseState) error {
 				return fmt.Errorf("could not parse base64Decode: %v", err)
 			}
 			// base64_decode allows NumBytes to be empty, an int or a variable.
-			if i, err := strconv.Atoi(b.NumBytes); err != nil && b.NumBytes != "" {
-				// NumBytes is not an int, check if it is a variable from byte_extract.
-				if !r.HasVar(b.NumBytes) {
-					return fmt.Errorf("number of bytes is not an int, or an extracted variable: %s; %s", b.NumBytes, err)
+			if b.NumBytes != "" {
+				if i, err := strconv.Atoi(b.NumBytes); err != nil {
+					// NumBytes is not an int, check if it is a variable from byte_extract.
+					if !r.HasVar(b.NumBytes) {
+						return fmt.Errorf("number of bytes is not an int, or an extracted variable: %s; %s", b.NumBytes, err)
+					}
 				} else if i < 1 {
 					return fmt.Errorf("bytes must be positive, non-zero values only: %d", i)
 				}

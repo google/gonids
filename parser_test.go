@@ -442,6 +442,40 @@ func TestParseBase64Decode(t *testing.T) {
 	}
 }
 
+func TestBase64DecodeBytesValidation(t *testing.T) {
+	for _, tt := range []struct {
+		name    string
+		rule    string
+		wantErr bool
+	}{
+		{
+			name:    "bytes references byte_extract variable",
+			rule:    `alert tcp any any -> any any (msg:"a"; byte_extract:4,0,mybytes; base64_decode:bytes mybytes; base64_data; content:"x"; sid:1; rev:1;)`,
+			wantErr: false,
+		},
+		{
+			name:    "bytes literal zero",
+			rule:    `alert tcp any any -> any any (msg:"b"; base64_decode:bytes 0; sid:2; rev:1;)`,
+			wantErr: true,
+		},
+		{
+			name:    "bytes literal negative",
+			rule:    `alert tcp any any -> any any (msg:"c"; base64_decode:bytes -5; sid:3; rev:1;)`,
+			wantErr: true,
+		},
+		{
+			name:    "bytes unknown variable",
+			rule:    `alert tcp any any -> any any (msg:"d"; base64_decode:bytes nope; sid:4; rev:1;)`,
+			wantErr: true,
+		},
+	} {
+		_, err := ParseRule(tt.rule)
+		if (err != nil) != tt.wantErr {
+			t.Fatalf("%s: ParseRule(%q) err = %v, wantErr = %v", tt.name, tt.rule, err, tt.wantErr)
+		}
+	}
+}
+
 func TestParseThreshold(t *testing.T) {
 	for _, tt := range []struct {
 		name    string

@@ -289,8 +289,7 @@ func parseByteMatch(k byteMatchType, s string) (*ByteMatch, error) {
 
 	if k == bExtract {
 		// Parse variable name.
-		name := parts[2]
-		b.Variable = name
+		b.Variable = strings.TrimSpace(parts[2])
 	}
 
 	if k == bTest {
@@ -891,8 +890,8 @@ func (r *Rule) option(key item, l *lexer, st *parseState) error {
 			return fmt.Errorf("comparison number is not an integer: %v", parts[2])
 		}
 		r.StreamMatch = &StreamCmp{
-			Direction: parts[0],
-			Operator:  parts[1],
+			Direction: strings.TrimSpace(parts[0]),
+			Operator:  strings.TrimSpace(parts[1]),
 			Number:    num,
 		}
 	case key.value == "reference":

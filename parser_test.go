@@ -454,6 +454,16 @@ func TestBase64DecodeBytesValidation(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			name:    "bytes literal positive one",
+			rule:    `alert tcp any any -> any any (msg:"e"; base64_decode:bytes 1; sid:5; rev:1;)`,
+			wantErr: false,
+		},
+		{
+			name:    "bytes literal positive integer",
+			rule:    `alert tcp any any -> any any (msg:"f"; base64_decode:bytes 8; sid:6; rev:1;)`,
+			wantErr: false,
+		},
+		{
 			name:    "bytes literal zero",
 			rule:    `alert tcp any any -> any any (msg:"b"; base64_decode:bytes 0; sid:2; rev:1;)`,
 			wantErr: true,

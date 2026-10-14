@@ -627,6 +627,13 @@ func within(options []*ContentOption) string {
 func (r *Rule) RE() string {
 	var re string
 	for _, c := range r.Contents() {
+		// A negated content requires the pattern to be absent. A simple regexp
+		// cannot express absence, and emitting it as a positive match inverts the
+		// rule: the result misses traffic the rule alerts on and matches traffic it
+		// does not. Skip negated contents so RE stays a superset of the positive matches.
+		if c.Negate {
+			continue
+		}
 		// TODO: handle pcre, depth, offset, distance.
 		if d, err := strconv.Atoi(within(c.Options)); err == nil && d > 0 {
 			re += fmt.Sprintf(".{0,%d}", d)

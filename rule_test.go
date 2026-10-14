@@ -1383,6 +1383,12 @@ func TestRE(t *testing.T) {
 			rule: `alert udp $HOME_NET any -> $EXTERNAL_NET any (sid:1337; msg:"foo"; content:"a|7C|b|5B|c|2A|d";)`,
 			want: `.*a\|b\[c\*d`,
 		},
+		{
+			// A negated content requires the pattern to be absent, so it must not
+			// become a positive match in the regexp (that would invert the rule).
+			rule: `alert udp $HOME_NET any -> $EXTERNAL_NET any (sid:1337; msg:"foo"; content:"evil"; content:!"safe";)`,
+			want: `.*evil`,
+		},
 	} {
 		r, err := ParseRule(tt.rule)
 		if err != nil {

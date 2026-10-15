@@ -47,6 +47,21 @@ func TestParseContent(t *testing.T) {
 			want:  []byte("A|B"),
 		},
 		{
+			name:  "escaped pipes around hex-looking content",
+			input: `a\|41 41\|b`,
+			want:  []byte(`a|41 41|b`),
+		},
+		{
+			name:  "escaped pipes around valid hex",
+			input: `\|dead\|`,
+			want:  []byte(`|dead|`),
+		},
+		{
+			name:  "hex block adjacent to escaped pipe",
+			input: `\||41|`,
+			want:  []byte("|A"),
+		},
+		{
 			name:  "contains escaped backslash",
 			input: `A\\B`,
 			want:  []byte(`A\B`),
@@ -3226,6 +3241,25 @@ func TestParseRule(t *testing.T) {
 					&Content{
 						DataPosition: pktData,
 						Pattern:      []byte("|test| [abc] + .  "),
+					},
+				},
+			},
+		},
+		{
+			name: "escaped pipe wrapping hex-looking content stays literal",
+			rule: `alert tcp any any -> any any (msg:"test"; content:"a\|41 41\|b"; sid:1; rev:1;)`,
+			want: &Rule{
+				Action:      "alert",
+				Protocol:    "tcp",
+				Source:      Network{Nets: []string{"any"}, Ports: []string{"any"}},
+				Destination: Network{Nets: []string{"any"}, Ports: []string{"any"}},
+				SID:         1,
+				Revision:    1,
+				Description: "test",
+				Matchers: []orderedMatcher{
+					&Content{
+						DataPosition: pktData,
+						Pattern:      []byte("a|41 41|b"),
 					},
 				},
 			},

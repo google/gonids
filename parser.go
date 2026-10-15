@@ -33,9 +33,6 @@ import (
 // hexRE matches on hexadecimal content like |41 41 41| for example.
 var hexRE = regexp.MustCompile(`(?i)(\|(?:\s*[a-f0-9]{2}\s*)+\|)`)
 
-// escapeContent matches escaped special characters.
-var escapeContent = regexp.MustCompile(`\\([\\;":|\[\]+ .])`)
-
 // metaSplitRE matches string in metadata.
 var metaSplitRE = regexp.MustCompile(`,\s*`)
 
@@ -103,30 +100,44 @@ var appLayerProtocols = []string{
 // parseContent decodes rule content match. For now it only takes care of escaped and hex
 // encoded content.
 func parseContent(content string) ([]byte, error) {
-	// Decode and replace all occurrences of hexadecimal content.
-	var errpanic error
-	defer func() {
-		r := recover()
-		if r != nil {
-			errpanic = fmt.Errorf("recovered from panic: %v", r)
-		}
-	}()
-
 	if containsUnescaped(content) {
 		return nil, fmt.Errorf("invalid special characters escaping")
 	}
 
-	b := escapeContent.ReplaceAllString(content, "$1")
-
-	b = hexRE.ReplaceAllStringFunc(b,
-		func(h string) string {
-			r, err := hex.DecodeString(strings.ReplaceAll(strings.Trim(h, "|"), " ", ""))
-			if err != nil {
-				panic("invalid hexRE regexp")
+	// Walk the content once so that escaped characters and hex blocks are
+	// resolved in a single pass. An escaped pipe (\|) is literal data and must
+	// not open a hex block: decoding hex before resolving escapes would turn
+	// e.g. content:"\|41 41\|" into "AA" instead of the literal "|41 41|".
+	var b []byte
+	for i := 0; i < len(content); {
+		switch content[i] {
+		case '\\':
+			// containsUnescaped guarantees a valid escapable byte follows, so
+			// emit it literally without interpreting it further.
+			if i+1 < len(content) {
+				b = append(b, content[i+1])
 			}
-			return string(r)
-		})
-	return []byte(b), errpanic
+			i += 2
+		case '|':
+			// A hex block only starts at an unescaped pipe. Match the same
+			// shape hexRE accepts, anchored here; anything else is a literal pipe.
+			if loc := hexRE.FindStringIndex(content[i:]); loc != nil && loc[0] == 0 {
+				r, err := hex.DecodeString(strings.ReplaceAll(strings.Trim(content[i:i+loc[1]], "|"), " ", ""))
+				if err != nil {
+					return nil, fmt.Errorf("invalid hex content %q: %v", content[i:i+loc[1]], err)
+				}
+				b = append(b, r...)
+				i += loc[1]
+			} else {
+				b = append(b, content[i])
+				i++
+			}
+		default:
+			b = append(b, content[i])
+			i++
+		}
+	}
+	return b, nil
 }
 
 // parsePCRE parses the components of a PCRE. Returns PCRE struct.

@@ -30,8 +30,10 @@ import (
 	"strings"
 )
 
-// hexRE matches on hexadecimal content like |41 41 41| for example.
-var hexRE = regexp.MustCompile(`(?i)(\|(?:\s*[a-f0-9]{2}\s*)+\|)`)
+// hexRE matches on hexadecimal content like |41 41 41| for example. It is
+// anchored so parseContent only tries a match at the current pipe instead of
+// scanning the rest of the content.
+var hexRE = regexp.MustCompile(`(?i)^(\|(?:\s*[a-f0-9]{2}\s*)+\|)`)
 
 // metaSplitRE matches string in metadata.
 var metaSplitRE = regexp.MustCompile(`,\s*`)
@@ -119,9 +121,9 @@ func parseContent(content string) ([]byte, error) {
 			}
 			i += 2
 		case '|':
-			// A hex block only starts at an unescaped pipe. Match the same
-			// shape hexRE accepts, anchored here; anything else is a literal pipe.
-			if loc := hexRE.FindStringIndex(content[i:]); loc != nil && loc[0] == 0 {
+			// A hex block only starts at an unescaped pipe; anything that
+			// doesn't match hexRE here is a literal pipe.
+			if loc := hexRE.FindStringIndex(content[i:]); loc != nil {
 				r, err := hex.DecodeString(strings.ReplaceAll(strings.Trim(content[i:i+loc[1]], "|"), " ", ""))
 				if err != nil {
 					return nil, fmt.Errorf("invalid hex content %q: %v", content[i:i+loc[1]], err)

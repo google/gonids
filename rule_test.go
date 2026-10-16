@@ -1331,6 +1331,45 @@ func TestRuleString(t *testing.T) {
 			want: `alert http $HOME_NET any -> $EXTERNAL_NET any (msg:"pcre new sticky buffer"; http.method; content:"POST"; pkt_data; pcre:"/foo.*bar/i"; sid:1234; rev:2;)`,
 		},
 		{
+			name: "rule with sticky buffer before byte matchers",
+			input: Rule{
+				Action:   "alert",
+				Protocol: "http",
+				Source: Network{
+					Nets:  []string{"$HOME_NET"},
+					Ports: []string{"any"},
+				},
+				Destination: Network{
+					Nets:  []string{"$EXTERNAL_NET"},
+					Ports: []string{"any"},
+				},
+				SID:         1234,
+				Revision:    2,
+				Description: "byte matcher sticky buffer",
+				Matchers: []orderedMatcher{
+					&ByteMatch{
+						DataPosition: fileData,
+						Kind:         isDataAt,
+						Negate:       true,
+						NumBytes:     "1",
+					},
+					&Content{
+						DataPosition: httpURI,
+						Pattern:      []byte("foo"),
+					},
+					&ByteMatch{
+						DataPosition: pktData,
+						Kind:         bTest,
+						NumBytes:     "1",
+						Operator:     "=",
+						Value:        "65",
+						Offset:       "0",
+					},
+				},
+			},
+			want: `alert http $HOME_NET any -> $EXTERNAL_NET any (msg:"byte matcher sticky buffer"; file_data; isdataat:!1; http.uri; content:"foo"; pkt_data; byte_test:1,=,65,0; sid:1234; rev:2;)`,
+		},
+		{
 			name: "rule with sticky buffer and chained transforms",
 			input: Rule{
 				Action:   "alert",

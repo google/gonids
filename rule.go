@@ -1078,6 +1078,12 @@ func (r Rule) String() string {
 					fmt.Fprintf(&s, "%s; ", d)
 				}
 			}
+			if c, ok := m.(*ByteMatch); ok {
+				if d != c.DataPosition {
+					d = c.DataPosition
+					fmt.Fprintf(&s, "%s; ", d)
+				}
+			}
 			if c, ok := m.(*PCRE); ok {
 				if d != c.DataPosition {
 					d = c.DataPosition

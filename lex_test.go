@@ -235,6 +235,11 @@ func TestLexer(t *testing.T) {
 			wantErr: true,
 		},
 		{
+			name:    "protocol EOF",
+			input:   "alert udp",
+			wantErr: true,
+		},
+		{
 			name:    "source address EOF",
 			input:   "alert udp incomplet",
 			wantErr: true,

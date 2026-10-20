@@ -233,6 +233,7 @@ const (
 	ipv4Hdr
 	ipv6Hdr
 	dceStubData
+	dcerpcStubData
 	//
 	// Suricata 8.x Sticky Buffers
 	//
@@ -371,6 +372,7 @@ var stickyBuffers = map[DataPos]string{
 	ipv4Hdr:            "ipv4.hdr",
 	ipv6Hdr:            "ipv6.hdr",
 	dceStubData:        "dce_stub_data",
+	dcerpcStubData:     "dcerpc.stub_data",
 	// Suricata 8.x Sticky Buffers
 	// QUIC Sticky Buffers
 	quicSNI:       "quic.sni",

@@ -1001,7 +1001,7 @@ func (r *Rule) option(key item, l *lexer, st *parseState) error {
 		"dnp3_func", "dnp3_ind", "krb5_err_code", "dns.opcode",
 		"ipv4-csum", "tcpv4-csum", "udpv4-csum", "icmpv4-csum", "tcpv6-csum", "udpv6-csum", "icmpv6-csum", "igmp-csum",
 		"filemagic", "fileext", "filemd5", "filesha1", "filesha256", "filename", "ftpdata_command",
-		"dce_iface", "dce_opnum",
+		"dce_iface", "dce_opnum", "dcerpc.iface", "dcerpc.opnum",
 		"lua", "luajit",
 		"asn1", "entropy"}):
 		nextItem := l.nextItem()
@@ -1053,7 +1053,7 @@ func (r *Rule) option(key item, l *lexer, st *parseState) error {
 		}
 		r.Requires = req
 	case inSlice(key.value, []string{"sameip", "tls.store", "ftpbounce", "noalert", "filestore",
-		"tls_cert_expired", "tls_cert_valid", "tls.cert_expired", "tls.cert_valid"}):
+		"tls_cert_expired", "tls_cert_valid", "tls.cert_expired", "tls.cert_valid", "prefilter"}):
 		r.Statements = append(r.Statements, key.value)
 	case inSlice(key.value, tlsTags):
 		t := &TLSTag{

@@ -4734,3 +4734,33 @@ func TestParseSuri8LenMatchersAndTLS(t *testing.T) {
 		})
 	}
 }
+
+func TestParseDCERPCAndPrefilter(t *testing.T) {
+	t.Run("dcerpc.iface, dcerpc.opnum, and dcerpc.stub_data", func(t *testing.T) {
+		ruleStr := `alert smb any any -> $HOME_NET any (msg:"test dcerpc"; flow:to_server, established; dcerpc.stub_data; content:"foo"; dcerpc.iface:367abb81-9844-35f1-ad32-98f038001003; dcerpc.opnum:12; sid:3115102; rev:4;)`
+		got, err := ParseRule(ruleStr)
+		if err != nil {
+			t.Fatalf("ParseRule(%q) unexpected error: %v", ruleStr, err)
+		}
+		if got.Tags["dcerpc.iface"] != "367abb81-9844-35f1-ad32-98f038001003" {
+			t.Errorf("got dcerpc.iface = %q; want %q", got.Tags["dcerpc.iface"], "367abb81-9844-35f1-ad32-98f038001003")
+		}
+		if got.Tags["dcerpc.opnum"] != "12" {
+			t.Errorf("got dcerpc.opnum = %q; want %q", got.Tags["dcerpc.opnum"], "12")
+		}
+		if len(got.Contents()) != 1 || got.Contents()[0].DataPosition.String() != "dcerpc.stub_data" {
+			t.Errorf("got DataPosition = %v; want dcerpc.stub_data", got.Contents())
+		}
+	})
+
+	t.Run("prefilter statement", func(t *testing.T) {
+		ruleStr := `alert udp $HOME_NET any -> $EXTERNAL_NET any (msg:"test prefilter"; dsize:>512; content:"foo"; prefilter; sid:2610454; rev:1;)`
+		got, err := ParseRule(ruleStr)
+		if err != nil {
+			t.Fatalf("ParseRule(%q) unexpected error: %v", ruleStr, err)
+		}
+		if gotStr := got.String(); gotStr != ruleStr {
+			t.Errorf("got.String() = %q; want %q", gotStr, ruleStr)
+		}
+	})
+}

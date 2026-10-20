@@ -4524,3 +4524,52 @@ func TestParseSuri8Transforms(t *testing.T) {
 		})
 	}
 }
+
+func TestParseSuri8StickyBuffers(t *testing.T) {
+	buffers := []string{
+		"quic.sni",
+		"quic.version",
+		"quic.cyu.hash",
+		"quic.cyu.string",
+		"quic.ua",
+		"ja4.hash",
+		"ja4.raw",
+		"ja4s.hash",
+		"ja4s.raw",
+		"ssh.hassh",
+		"ssh.hassh.string",
+		"ssh.hassh.server",
+		"ssh.hassh.server.string",
+		"snmp.community",
+		"snmp.pdu_type",
+		"ip.src",
+		"ip.dst",
+		"http2.frametype",
+		"http2.errorcode",
+		"http2.priority",
+		"http2.window",
+		"http2.size_update",
+		"http2.settings",
+		"http2.header",
+		"http2.header_name",
+		"http2.header_value",
+	}
+	for _, buf := range buffers {
+		t.Run(buf, func(t *testing.T) {
+			ruleStr := `alert ip any any -> any any (msg:"test ` + buf + `"; ` + buf + `; content:"test"; sid:1; rev:1;)`
+			got, err := ParseRule(ruleStr)
+			if err != nil {
+				t.Fatalf("ParseRule(%q) unexpected error: %v", ruleStr, err)
+			}
+			if len(got.Contents()) != 1 {
+				t.Fatalf("got %d contents; want 1", len(got.Contents()))
+			}
+			if gotBuf := got.Contents()[0].DataPosition.String(); gotBuf != buf {
+				t.Errorf("got DataPosition.String() = %q; want %q", gotBuf, buf)
+			}
+			if gotStr := got.String(); gotStr != ruleStr {
+				t.Errorf("got.String() = %q; want %q", gotStr, ruleStr)
+			}
+		})
+	}
+}

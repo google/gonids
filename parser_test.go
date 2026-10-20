@@ -3641,12 +3641,12 @@ func TestParseRule(t *testing.T) {
 				Description: "test ipv4.hdr",
 				Matchers: []orderedMatcher{
 					&ByteMatch{
-						Kind:     bTest,
-						NumBytes: "2",
-						Operator: "!&",
-						Value:    "0x1FFF",
-						Offset:   "6",
-						Options:  []string{"relative"},
+						Kind:         bTest,
+						NumBytes:     "2",
+						Operator:     "!&",
+						Value:        "0x1FFF",
+						Offset:       "6",
+						Options:      []string{"relative"},
 						DataPosition: ipv4Hdr,
 					},
 				},
@@ -4354,3 +4354,120 @@ func TestParseRuleTransformsNoAliasing(t *testing.T) {
 	}
 }
 
+func TestParseDatasetAndDataRep(t *testing.T) {
+	for _, tt := range []struct {
+		name    string
+		rule    string
+		want    *Rule
+		wantErr bool
+	}{
+		{
+			name: "dataset with sticky buffer and transform (no content)",
+			rule: `alert dns any any -> any any (msg:"blocked dns"; dns.query; to_lowercase; dataset:isset,malware,type string,load datasets/malware.txt; sid:12001201; rev:1;)`,
+			want: &Rule{
+				Action:      "alert",
+				Protocol:    "dns",
+				Source:      Network{Nets: []string{"any"}, Ports: []string{"any"}},
+				Destination: Network{Nets: []string{"any"}, Ports: []string{"any"}},
+				Description: "blocked dns",
+				Matchers: []orderedMatcher{
+					&Dataset{
+						DataPosition: dnsQuery5,
+						Transforms: []*Transform{
+							{Name: "to_lowercase"},
+						},
+						Cmd:     "isset",
+						Name:    "malware",
+						Options: []string{"type string", "load datasets/malware.txt"},
+					},
+				},
+				SID:      12001201,
+				Revision: 1,
+			},
+		},
+		{
+			name: "dataset following content on sticky buffer",
+			rule: `alert http $HOME_NET any -> $EXTERNAL_NET any (msg:"chrome version"; http.user_agent; content:"Chrome/"; dataset:isnotset,pawpatrules_chrome_l,type string,load pawpatrules_chrome_l.lst; sid:3321369; rev:2;)`,
+			want: &Rule{
+				Action:      "alert",
+				Protocol:    "http",
+				Source:      Network{Nets: []string{"$HOME_NET"}, Ports: []string{"any"}},
+				Destination: Network{Nets: []string{"$EXTERNAL_NET"}, Ports: []string{"any"}},
+				Description: "chrome version",
+				Matchers: []orderedMatcher{
+					&Content{
+						DataPosition: httpUserAgent,
+						Pattern:      []byte("Chrome/"),
+					},
+					&Dataset{
+						DataPosition: httpUserAgent,
+						Cmd:          "isnotset",
+						Name:         "pawpatrules_chrome_l",
+						Options:      []string{"type string", "load pawpatrules_chrome_l.lst"},
+					},
+				},
+				SID:      3321369,
+				Revision: 2,
+			},
+		},
+		{
+			name: "datarep with sticky buffer",
+			rule: `alert dns any any -> any any (msg:"datarep dns"; dns.query; datarep:bad_domains,>,10,load bad_domains.rep,type string; sid:12001202; rev:1;)`,
+			want: &Rule{
+				Action:      "alert",
+				Protocol:    "dns",
+				Source:      Network{Nets: []string{"any"}, Ports: []string{"any"}},
+				Destination: Network{Nets: []string{"any"}, Ports: []string{"any"}},
+				Description: "datarep dns",
+				Matchers: []orderedMatcher{
+					&DataRep{
+						DataPosition: dnsQuery5,
+						Name:         "bad_domains",
+						Operator:     ">",
+						Value:        10,
+						Options:      []string{"load bad_domains.rep", "type string"},
+					},
+				},
+				SID:      12001202,
+				Revision: 1,
+			},
+		},
+		{
+			name:    "dataset invalid command",
+			rule:    `alert dns any any -> any any (msg:"bad cmd"; dns.query; dataset:invalidcmd,malware; sid:1; rev:1;)`,
+			wantErr: true,
+		},
+		{
+			name:    "dataset missing name",
+			rule:    `alert dns any any -> any any (msg:"missing name"; dns.query; dataset:isset; sid:1; rev:1;)`,
+			wantErr: true,
+		},
+		{
+			name:    "dataset empty name",
+			rule:    `alert dns any any -> any any (msg:"empty name"; dns.query; dataset:isset,; sid:1; rev:1;)`,
+			wantErr: true,
+		},
+		{
+			name:    "datarep invalid operator",
+			rule:    `alert dns any any -> any any (msg:"bad op"; dns.query; datarep:bad_domains,~,10; sid:1; rev:1;)`,
+			wantErr: true,
+		},
+		{
+			name:    "datarep non-integer value",
+			rule:    `alert dns any any -> any any (msg:"bad val"; dns.query; datarep:bad_domains,>,abc; sid:1; rev:1;)`,
+			wantErr: true,
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := ParseRule(tt.rule)
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("ParseRule(%q) error = %v, wantErr %v", tt.rule, err, tt.wantErr)
+			}
+			if !tt.wantErr {
+				if diff := pretty.Compare(got, tt.want); diff != "" {
+					t.Errorf("ParseRule(%q) diff (-got +want):\n%s", tt.rule, diff)
+				}
+			}
+		})
+	}
+}

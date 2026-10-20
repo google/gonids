@@ -2040,3 +2040,43 @@ func TestRuleGetSidMsg(t *testing.T) {
 		}
 	}
 }
+
+func TestDatasetAndDataRepString(t *testing.T) {
+	r := Rule{
+		Action:      "alert",
+		Protocol:    "dns",
+		Source:      Network{Nets: []string{"any"}, Ports: []string{"any"}},
+		Destination: Network{Nets: []string{"any"}, Ports: []string{"any"}},
+		Description: "dataset and datarep test",
+		Matchers: []orderedMatcher{
+			&Dataset{
+				DataPosition: dnsQuery5,
+				Transforms: []*Transform{
+					{Name: "to_lowercase"},
+				},
+				Cmd:     "isset",
+				Name:    "malware",
+				Options: []string{"type string", "load datasets/malware.txt"},
+			},
+			&DataRep{
+				DataPosition: dnsQuery5,
+				Name:         "bad_domains",
+				Operator:     ">",
+				Value:        10,
+				Options:      []string{"load bad_domains.rep", "type string"},
+			},
+		},
+		SID:      12001201,
+		Revision: 1,
+	}
+	want := `alert dns any any -> any any (msg:"dataset and datarep test"; dns.query; to_lowercase; dataset:isset,malware,type string,load datasets/malware.txt; datarep:bad_domains,>,10,load bad_domains.rep,type string; sid:12001201; rev:1;)`
+	if got := r.String(); got != want {
+		t.Errorf("r.String() = %q; want %q", got, want)
+	}
+	if len(r.Datasets()) != 1 {
+		t.Errorf("len(r.Datasets()) = %d; want 1", len(r.Datasets()))
+	}
+	if len(r.DataReps()) != 1 {
+		t.Errorf("len(r.DataReps()) = %d; want 1", len(r.DataReps()))
+	}
+}

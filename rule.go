@@ -562,6 +562,25 @@ type PCRE struct {
 	Transforms   []*Transform
 }
 
+// Dataset describes a Suricata dataset rule option.
+type Dataset struct {
+	DataPosition DataPos
+	Transforms   []*Transform
+	Cmd          string
+	Name         string
+	Options      []string
+}
+
+// DataRep describes a Suricata datarep rule option.
+type DataRep struct {
+	DataPosition DataPos
+	Transforms   []*Transform
+	Name         string
+	Operator     string
+	Value        int
+	Options      []string
+}
+
 // FastPattern describes various properties of a fast_pattern value for a content.
 type FastPattern struct {
 	Enabled bool
@@ -707,6 +726,50 @@ func (r *Rule) PCREs() []*PCRE {
 		}
 	}
 	return ps
+}
+
+// Datasets returns all *Dataset for a rule.
+func (r *Rule) Datasets() []*Dataset {
+	var ds []*Dataset
+	for _, m := range r.Matchers {
+		if d, ok := m.(*Dataset); ok {
+			ds = append(ds, d)
+		}
+	}
+	return ds
+}
+
+// DataReps returns all *DataRep for a rule.
+func (r *Rule) DataReps() []*DataRep {
+	var drs []*DataRep
+	for _, m := range r.Matchers {
+		if d, ok := m.(*DataRep); ok {
+			drs = append(drs, d)
+		}
+	}
+	return drs
+}
+
+// String returns a string for a Dataset.
+func (d Dataset) String() string {
+	var s strings.Builder
+	fmt.Fprintf(&s, "dataset:%s,%s", d.Cmd, d.Name)
+	for _, o := range d.Options {
+		fmt.Fprintf(&s, ",%s", o)
+	}
+	fmt.Fprintf(&s, ";")
+	return s.String()
+}
+
+// String returns a string for a DataRep.
+func (d DataRep) String() string {
+	var s strings.Builder
+	fmt.Fprintf(&s, "datarep:%s,%s,%d", d.Name, d.Operator, d.Value)
+	for _, o := range d.Options {
+		fmt.Fprintf(&s, ",%s", o)
+	}
+	fmt.Fprintf(&s, ";")
+	return s.String()
 }
 
 func netString(netPart []string) string {
@@ -1085,6 +1148,24 @@ func (r Rule) String() string {
 				}
 			}
 			if c, ok := m.(*PCRE); ok {
+				if d != c.DataPosition {
+					d = c.DataPosition
+					fmt.Fprintf(&s, "%s; ", d)
+					for _, t := range c.Transforms {
+						fmt.Fprintf(&s, "%s ", t)
+					}
+				}
+			}
+			if c, ok := m.(*Dataset); ok {
+				if d != c.DataPosition {
+					d = c.DataPosition
+					fmt.Fprintf(&s, "%s; ", d)
+					for _, t := range c.Transforms {
+						fmt.Fprintf(&s, "%s ", t)
+					}
+				}
+			}
+			if c, ok := m.(*DataRep); ok {
 				if d != c.DataPosition {
 					d = c.DataPosition
 					fmt.Fprintf(&s, "%s; ", d)

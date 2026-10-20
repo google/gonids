@@ -420,6 +420,67 @@ func parseFlowint(s string) (*Flowint, error) {
 	return fi, nil
 }
 
+// parseDataset parses a dataset option.
+func parseDataset(s string) (*Dataset, error) {
+	parts := strings.Split(s, ",")
+	if len(parts) < 2 {
+		return nil, fmt.Errorf("not enough parts for dataset: %s", s)
+	}
+	cmd := strings.ToLower(strings.TrimSpace(parts[0]))
+	if !inSlice(cmd, []string{"isset", "isnotset", "set", "unset"}) {
+		return nil, fmt.Errorf("invalid command for dataset: %s", cmd)
+	}
+	name := strings.TrimSpace(parts[1])
+	if name == "" {
+		return nil, fmt.Errorf("dataset requires a name: %s", s)
+	}
+	ds := &Dataset{
+		Cmd:  cmd,
+		Name: name,
+	}
+	for _, opt := range parts[2:] {
+		opt = strings.TrimSpace(opt)
+		if opt == "" {
+			return nil, fmt.Errorf("empty option in dataset: %s", s)
+		}
+		ds.Options = append(ds.Options, opt)
+	}
+	return ds, nil
+}
+
+// parseDataRep parses a datarep option.
+func parseDataRep(s string) (*DataRep, error) {
+	parts := strings.Split(s, ",")
+	if len(parts) < 3 {
+		return nil, fmt.Errorf("not enough parts for datarep: %s", s)
+	}
+	name := strings.TrimSpace(parts[0])
+	if name == "" {
+		return nil, fmt.Errorf("datarep requires a name: %s", s)
+	}
+	op := strings.TrimSpace(parts[1])
+	if !inSlice(op, []string{">", "<", ">=", "<=", "==", "!="}) {
+		return nil, fmt.Errorf("invalid operator for datarep: %s", op)
+	}
+	val, err := strconv.Atoi(strings.TrimSpace(parts[2]))
+	if err != nil {
+		return nil, fmt.Errorf("invalid value for datarep: %v", err)
+	}
+	dr := &DataRep{
+		Name:     name,
+		Operator: op,
+		Value:    val,
+	}
+	for _, opt := range parts[3:] {
+		opt = strings.TrimSpace(opt)
+		if opt == "" {
+			return nil, fmt.Errorf("empty option in datarep: %s", s)
+		}
+		dr.Options = append(dr.Options, opt)
+	}
+	return dr, nil
+}
+
 // parseThreshold parses a threshold option.
 func parseThreshold(s string) (*Threshold, error) {
 	t := &Threshold{}
@@ -1160,6 +1221,30 @@ func (r *Rule) option(key item, l *lexer, st *parseState) error {
 			return fmt.Errorf("error parsing flowint: %v", err)
 		}
 		r.Flowints = append(r.Flowints, fi)
+	case key.value == "dataset":
+		nextItem := l.nextItem()
+		if nextItem.typ != itemOptionValue {
+			return errors.New("no valid value for dataset")
+		}
+		ds, err := parseDataset(nextItem.value)
+		if err != nil {
+			return fmt.Errorf("error parsing dataset: %v", err)
+		}
+		ds.DataPosition = st.dataPosition
+		ds.Transforms = st.cloneTransforms()
+		r.Matchers = append(r.Matchers, ds)
+	case key.value == "datarep":
+		nextItem := l.nextItem()
+		if nextItem.typ != itemOptionValue {
+			return errors.New("no valid value for datarep")
+		}
+		dr, err := parseDataRep(nextItem.value)
+		if err != nil {
+			return fmt.Errorf("error parsing datarep: %v", err)
+		}
+		dr.DataPosition = st.dataPosition
+		dr.Transforms = st.cloneTransforms()
+		r.Matchers = append(r.Matchers, dr)
 	default:
 		return &UnsupportedOptionError{
 			Options: []string{key.value},
@@ -1258,4 +1343,3 @@ func ParseRules(r io.Reader) ([]*Rule, error) {
 	}
 	return rules, nil
 }
-

@@ -131,15 +131,19 @@ func (r *Rule) SnortHTTPHeaderFix() bool {
 	if !r.SnortHTTPHeader() {
 		return false
 	}
-	for i, m := range r.Matchers {
+	// Index r.Matchers directly: InsertMatcher grows the slice, so a range
+	// over it would keep using stale indexes and a stale backing array.
+	for i := 0; i < len(r.Matchers); i++ {
 		// If this is a content, check it out.
-		if c, ok := m.(*Content); ok {
+		if c, ok := r.Matchers[i].(*Content); ok {
 			if c.SnortHTTPHeader() {
 				modified = true
 				c.Pattern = bytes.TrimSuffix(c.Pattern, []byte("\r\n"))
 				if err := r.InsertMatcher(&ByteMatch{Kind: isDataAt, Negate: true, NumBytes: "1"}, i+1); err != nil {
 					return false
 				}
+				// Skip the isdataat we just inserted.
+				i++
 			}
 		}
 	}
@@ -154,21 +158,21 @@ func (r *Rule) SnortHTTPHeaderFix() bool {
 func (r *Rule) UpgradeToSuri5() bool {
 	var modified bool
 	for _, c := range r.Contents() {
-		for i, opt := range c.Options {
+		// Filter the old modifiers out in place. Removing them while ranging
+		// over c.Options skips the following option and reads the nil'd tail.
+		opts := c.Options[:0]
+		for _, opt := range c.Options {
 			if sticky, ok := cOptToStickyBuffer[opt.Name]; ok {
-				// Remove the old modifier.
-				// TODO(duane): Find a better way to handle this. If I break this into another function I need
-				// to iterate again across everything.
-				if i < len(c.Options)-1 {
-					copy(c.Options[i:], c.Options[i+1:])
-				}
-				c.Options[len(c.Options)-1] = nil // or the zero value of T
-				c.Options = c.Options[:len(c.Options)-1]
-
 				c.DataPosition = sticky
 				modified = true
+				continue
 			}
+			opts = append(opts, opt)
 		}
+		for i := len(opts); i < len(c.Options); i++ {
+			c.Options[i] = nil
+		}
+		c.Options = opts
 		// old sticky buffer to new sticky buffer
 		if sticky, ok := suri4StickyTo5Sticky[c.DataPosition]; ok {
 			c.DataPosition = sticky

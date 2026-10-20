@@ -4764,3 +4764,76 @@ func TestParseDCERPCAndPrefilter(t *testing.T) {
 		}
 	})
 }
+
+func TestParseSuricataActions(t *testing.T) {
+	actions := []string{
+		"alert",
+		"drop",
+		"pass",
+		"reject",
+		"rejectsrc",
+		"rejectdst",
+		"rejectboth",
+		"config",
+	}
+	for _, action := range actions {
+		t.Run("action_"+action, func(t *testing.T) {
+			ruleStr := action + ` dns any any -> any any (msg:"test ` + action + `"; dns.query; content:"suricata"; sid:1; rev:1;)`
+			got, err := ParseRule(ruleStr)
+			if err != nil {
+				t.Fatalf("ParseRule(%q) unexpected error: %v", ruleStr, err)
+			}
+			if got.Action != action {
+				t.Errorf("got.Action = %q; want %q", got.Action, action)
+			}
+			if gotStr := got.String(); gotStr != ruleStr {
+				t.Errorf("got.String() = %q; want %q", gotStr, ruleStr)
+			}
+		})
+	}
+
+	t.Run("invalid_action", func(t *testing.T) {
+		ruleStr := `accept dns any any -> any any (msg:"invalid action"; sid:1; rev:1;)`
+		if _, err := ParseRule(ruleStr); err == nil {
+			t.Fatalf("ParseRule(%q) expected error, got nil", ruleStr)
+		}
+	})
+}
+
+func TestParseSuricataDirections(t *testing.T) {
+	for _, tt := range []struct {
+		dir               string
+		wantBidirectional bool
+		wantTransactional bool
+	}{
+		{dir: "->", wantBidirectional: false, wantTransactional: false},
+		{dir: "<>", wantBidirectional: true, wantTransactional: false},
+		{dir: "=>", wantBidirectional: false, wantTransactional: true},
+	} {
+		t.Run("direction_"+tt.dir, func(t *testing.T) {
+			ruleStr := `alert http any any ` + tt.dir + ` 5.6.7.8 80 (msg:"matching both uri and status"; http.uri; content:"/download"; http.stat_code; content:"200"; sid:1; rev:1;)`
+			got, err := ParseRule(ruleStr)
+			if err != nil {
+				t.Fatalf("ParseRule(%q) unexpected error: %v", ruleStr, err)
+			}
+			if got.Bidirectional != tt.wantBidirectional {
+				t.Errorf("got.Bidirectional = %v; want %v", got.Bidirectional, tt.wantBidirectional)
+			}
+			if got.Transactional != tt.wantTransactional {
+				t.Errorf("got.Transactional = %v; want %v", got.Transactional, tt.wantTransactional)
+			}
+			if gotStr := got.String(); gotStr != ruleStr {
+				t.Errorf("got.String() = %q; want %q", gotStr, ruleStr)
+			}
+		})
+	}
+
+	for _, badDir := range []string{"<-", "<=", "==>"} {
+		t.Run("invalid_direction_"+badDir, func(t *testing.T) {
+			ruleStr := `alert http any any ` + badDir + ` 5.6.7.8 80 (msg:"bad dir"; sid:1; rev:1;)`
+			if _, err := ParseRule(ruleStr); err == nil {
+				t.Fatalf("ParseRule(%q) expected error, got nil", ruleStr)
+			}
+		})
+	}
+}

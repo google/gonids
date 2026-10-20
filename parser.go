@@ -800,7 +800,7 @@ func (r *Rule) action(key item) error {
 	if key.typ != itemAction {
 		panic("item is not an action")
 	}
-	if !inSlice(key.value, []string{"alert", "drop", "pass"}) {
+	if !inSlice(key.value, []string{"alert", "drop", "pass", "reject", "rejectsrc", "rejectdst", "rejectboth", "config"}) {
 		return fmt.Errorf("invalid action: %v", key.value)
 	}
 	r.Action = key.value
@@ -957,8 +957,13 @@ func (r *Rule) direction(key item) error {
 	switch key.value {
 	case "->":
 		r.Bidirectional = false
+		r.Transactional = false
 	case "<>":
 		r.Bidirectional = true
+		r.Transactional = false
+	case "=>":
+		r.Bidirectional = false
+		r.Transactional = true
 	default:
 		return fmt.Errorf("invalid direction operator %q", key.value)
 	}

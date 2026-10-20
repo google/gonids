@@ -37,6 +37,8 @@ type Rule struct {
 	Destination Network
 	// Bidirectional indicates the directionality of a rule (-> or <>).
 	Bidirectional bool
+	// Transactional indicates the rule uses the transactional direction operator (=>).
+	Transactional bool
 	// SID is the identifier of the rule.
 	SID int
 	// Revision is the revision of the rule.
@@ -1263,10 +1265,13 @@ func (r Rule) String() string {
 		fmt.Fprintf(&s, "#")
 	}
 	fmt.Fprintf(&s, "%s %s %s ", r.Action, r.Protocol, r.Source)
-	if !r.Bidirectional {
-		fmt.Fprintf(&s, "-> ")
-	} else {
+	switch {
+	case r.Transactional:
+		fmt.Fprintf(&s, "=> ")
+	case r.Bidirectional:
 		fmt.Fprintf(&s, "<> ")
+	default:
+		fmt.Fprintf(&s, "-> ")
 	}
 
 	fmt.Fprintf(&s, `%s (msg:"%s"; `, r.Destination, r.Description)

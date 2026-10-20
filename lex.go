@@ -319,7 +319,7 @@ func lexSourcePort(l *lexer) stateFn {
 // lexDirection consumes a rule direction.
 func lexDirection(l *lexer) stateFn {
 	l.ignoreSpaces()
-	l.acceptRun("<->")
+	l.acceptRun("<->=")
 	if r := l.next(); r != ' ' {
 		return l.errorf("invalid character %q for a rule direction", r)
 	}

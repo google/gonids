@@ -231,6 +231,41 @@ const (
 	ipv4Hdr
 	ipv6Hdr
 	dceStubData
+	//
+	// Suricata 8.x Sticky Buffers
+	//
+	// QUIC Sticky Buffers
+	quicSNI
+	quicVersion
+	quicCyuHash
+	quicCyuString
+	quicUA
+	// JA4 Sticky Buffers
+	ja4Hash
+	ja4Raw
+	ja4sHash
+	ja4sRaw
+	// SSH HASSH Sticky Buffers
+	sshHassh
+	sshHasshString
+	sshHasshServer
+	sshHasshServerString
+	// SNMP Sticky Buffers
+	snmpCommunity
+	snmpPDUType
+	// IP Sticky Buffers
+	ipSrc
+	ipDst
+	// HTTP/2 Sticky Buffers
+	http2Frametype
+	http2Errorcode
+	http2Priority
+	http2Window
+	http2SizeUpdate
+	http2Settings
+	http2Header
+	http2HeaderName
+	http2HeaderValue
 )
 
 // Contains both Suricata 4.x and 5.0 buffers. Some day we'll deprecate the 4.x ones.
@@ -334,6 +369,39 @@ var stickyBuffers = map[DataPos]string{
 	ipv4Hdr:            "ipv4.hdr",
 	ipv6Hdr:            "ipv6.hdr",
 	dceStubData:        "dce_stub_data",
+	// Suricata 8.x Sticky Buffers
+	// QUIC Sticky Buffers
+	quicSNI:       "quic.sni",
+	quicVersion:   "quic.version",
+	quicCyuHash:   "quic.cyu.hash",
+	quicCyuString: "quic.cyu.string",
+	quicUA:        "quic.ua",
+	// JA4 Sticky Buffers
+	ja4Hash:  "ja4.hash",
+	ja4Raw:   "ja4.raw",
+	ja4sHash: "ja4s.hash",
+	ja4sRaw:  "ja4s.raw",
+	// SSH HASSH Sticky Buffers
+	sshHassh:             "ssh.hassh",
+	sshHasshString:       "ssh.hassh.string",
+	sshHasshServer:       "ssh.hassh.server",
+	sshHasshServerString: "ssh.hassh.server.string",
+	// SNMP Sticky Buffers
+	snmpCommunity: "snmp.community",
+	snmpPDUType:   "snmp.pdu_type",
+	// IP Sticky Buffers
+	ipSrc: "ip.src",
+	ipDst: "ip.dst",
+	// HTTP/2 Sticky Buffers
+	http2Frametype:   "http2.frametype",
+	http2Errorcode:   "http2.errorcode",
+	http2Priority:    "http2.priority",
+	http2Window:      "http2.window",
+	http2SizeUpdate:  "http2.size_update",
+	http2Settings:    "http2.settings",
+	http2Header:      "http2.header",
+	http2HeaderName:  "http2.header_name",
+	http2HeaderValue: "http2.header_value",
 
 	// SMB - Documentation lacking. Unknown.
 }

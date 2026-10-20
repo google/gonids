@@ -4573,3 +4573,97 @@ func TestParseSuri8StickyBuffers(t *testing.T) {
 		})
 	}
 }
+
+func TestParseRequires(t *testing.T) {
+	for _, tt := range []struct {
+		name     string
+		rule     string
+		want     *Requires
+		wantRule string
+		wantErr  bool
+	}{
+		{
+			name: "simple version",
+			rule: `alert http any any -> any any (msg:"test requires"; content:"foo"; requires:version >= 8; sid:1; rev:1;)`,
+			want: &Requires{
+				Version: [][]VersionConstraint{
+					{
+						{Operator: ">=", Version: "8"},
+					},
+				},
+			},
+			wantRule: `alert http any any -> any any (msg:"test requires"; content:"foo"; requires:version >= 8; sid:1; rev:1;)`,
+		},
+		{
+			name: "ranged AND version",
+			rule: `alert http any any -> any any (msg:"test requires range"; content:"foo"; requires:version >= 7.0.4 < 8; sid:2; rev:1;)`,
+			want: &Requires{
+				Version: [][]VersionConstraint{
+					{
+						{Operator: ">=", Version: "7.0.4"},
+						{Operator: "<", Version: "8"},
+					},
+				},
+			},
+			wantRule: `alert http any any -> any any (msg:"test requires range"; content:"foo"; requires:version >= 7.0.4 < 8; sid:2; rev:1;)`,
+		},
+		{
+			name: "compound OR and AND version with feature and keyword",
+			rule: `alert tls any any -> any any (msg:"test compound requires"; ja4.hash; content:"t13d"; requires:version >= 7.0.4 < 8 | >= 8.0.3, feature geoip, keyword bar; sid:3; rev:1;)`,
+			want: &Requires{
+				Version: [][]VersionConstraint{
+					{
+						{Operator: ">=", Version: "7.0.4"},
+						{Operator: "<", Version: "8"},
+					},
+					{
+						{Operator: ">=", Version: "8.0.3"},
+					},
+				},
+				Features: []string{"geoip"},
+				Keywords: []string{"bar"},
+			},
+			wantRule: `alert tls any any -> any any (msg:"test compound requires"; ja4.hash; content:"t13d"; requires:version >= 7.0.4 < 8 | >= 8.0.3, feature geoip, keyword bar; sid:3; rev:1;)`,
+		},
+		{
+			name:    "duplicate version error",
+			rule:    `alert http any any -> any any (msg:"dup version"; content:"foo"; requires:version >= 7, version >= 8; sid:4; rev:1;)`,
+			wantErr: true,
+		},
+		{
+			name:    "invalid version operator",
+			rule:    `alert http any any -> any any (msg:"bad op"; content:"foo"; requires:version ~= 8; sid:5; rev:1;)`,
+			wantErr: true,
+		},
+		{
+			name:    "invalid version number",
+			rule:    `alert http any any -> any any (msg:"bad ver"; content:"foo"; requires:version >= 8.x.1; sid:6; rev:1;)`,
+			wantErr: true,
+		},
+		{
+			name:    "unknown requires sub-key",
+			rule:    `alert http any any -> any any (msg:"bad key"; content:"foo"; requires:unknown foo; sid:7; rev:1;)`,
+			wantErr: true,
+		},
+		{
+			name:    "empty feature value",
+			rule:    `alert http any any -> any any (msg:"empty feature"; content:"foo"; requires:feature; sid:8; rev:1;)`,
+			wantErr: true,
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := ParseRule(tt.rule)
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("ParseRule(%q) error = %v, wantErr %v", tt.rule, err, tt.wantErr)
+			}
+			if !tt.wantErr {
+				if diff := pretty.Compare(got.Requires, tt.want); diff != "" {
+					t.Errorf("Requires diff (-got +want):\n%s", diff)
+				}
+				if gotStr := got.String(); gotStr != tt.wantRule {
+					t.Errorf("got.String() = %q; want %q", gotStr, tt.wantRule)
+				}
+			}
+		})
+	}
+}

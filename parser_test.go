@@ -4837,3 +4837,144 @@ func TestParseSuricataDirections(t *testing.T) {
 		})
 	}
 }
+
+func TestParseDecompressionTransforms(t *testing.T) {
+	for _, tt := range []struct {
+		name     string
+		rule     string
+		wantName string
+		wantVal  string
+	}{
+		{
+			name:     "gunzip_bare",
+			rule:     `alert http any any -> any any (msg:"test gunzip"; file.data; gunzip; content:"test"; sid:1; rev:1;)`,
+			wantName: "gunzip",
+			wantVal:  "",
+		},
+		{
+			name:     "gunzip_max_size",
+			rule:     `alert http any any -> any any (msg:"test gunzip max-size"; file.data; gunzip:max-size 1024; content:"test"; sid:2; rev:1;)`,
+			wantName: "gunzip",
+			wantVal:  "max-size 1024",
+		},
+		{
+			name:     "zlib_deflate_bare",
+			rule:     `alert http any any -> any any (msg:"test zlib_deflate"; file.data; zlib_deflate; content:"test"; sid:3; rev:1;)`,
+			wantName: "zlib_deflate",
+			wantVal:  "",
+		},
+		{
+			name:     "zlib_deflate_max_size",
+			rule:     `alert http any any -> any any (msg:"test zlib_deflate max-size"; file.data; zlib_deflate:max-size 1024; content:"test"; sid:4; rev:1;)`,
+			wantName: "zlib_deflate",
+			wantVal:  "max-size 1024",
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := ParseRule(tt.rule)
+			if err != nil {
+				t.Fatalf("ParseRule(%q) unexpected error: %v", tt.rule, err)
+			}
+			if len(got.Contents()) != 1 || len(got.Contents()[0].Transforms) != 1 {
+				t.Fatalf("got Transforms = %v; want 1 transform", got.Contents())
+			}
+			tr := got.Contents()[0].Transforms[0]
+			if tr.Name != tt.wantName || tr.Value != tt.wantVal {
+				t.Errorf("got Transform = %+v; want Name=%q Value=%q", tr, tt.wantName, tt.wantVal)
+			}
+			if gotStr := got.String(); gotStr != tt.rule {
+				t.Errorf("got.String() = %q; want %q", gotStr, tt.rule)
+			}
+		})
+	}
+}
+
+func TestParseFrameStickyBuffers(t *testing.T) {
+	for _, frameName := range []string{
+		"dns.pdu",
+		"ssh.record.hdr",
+		"smtp.command_line",
+		"smtp.response_line",
+		"smtp.data",
+		"smtp.stream",
+		"http2.hdr",
+		"future.custom_frame",
+	} {
+		t.Run("frame_"+frameName, func(t *testing.T) {
+			ruleStr := `alert tcp any any -> any any (msg:"test frame ` + frameName + `"; frame:` + frameName + `; content:"foo"; sid:1; rev:1;)`
+			got, err := ParseRule(ruleStr)
+			if err != nil {
+				t.Fatalf("ParseRule(%q) unexpected error: %v", ruleStr, err)
+			}
+			if len(got.Contents()) != 1 {
+				t.Fatalf("got %d contents; want 1", len(got.Contents()))
+			}
+			if got.Contents()[0].DataPosition.String() != "frame" {
+				t.Errorf("got DataPosition = %q; want %q", got.Contents()[0].DataPosition.String(), "frame")
+			}
+			if gotStr := got.String(); gotStr != ruleStr {
+				t.Errorf("got.String() = %q; want %q", gotStr, ruleStr)
+			}
+		})
+	}
+
+	t.Run("multiple_frames_in_one_rule", func(t *testing.T) {
+		ruleStr := `alert smtp any any => any any (msg:"multiple frames"; frame:smtp.command_line; content:"MAIL FROM"; bsize:>10; frame:smtp.response_line; pcre:"/^250 /"; sid:10; rev:1;)`
+		got, err := ParseRule(ruleStr)
+		if err != nil {
+			t.Fatalf("ParseRule(%q) unexpected error: %v", ruleStr, err)
+		}
+		if gotStr := got.String(); gotStr != ruleStr {
+			t.Errorf("got.String() = %q; want %q", gotStr, ruleStr)
+		}
+	})
+
+	t.Run("empty_frame_error", func(t *testing.T) {
+		for _, ruleStr := range []string{
+			`alert tcp any any -> any any (msg:"empty frame"; frame; content:"foo"; sid:11; rev:1;)`,
+			`alert tcp any any -> any any (msg:"empty string frame"; frame:""; content:"foo"; sid:12; rev:1;)`,
+		} {
+			_, err := ParseRule(ruleStr)
+			if err == nil {
+				t.Fatalf("ParseRule(%q) expected error, got nil", ruleStr)
+			}
+			if _, ok := err.(*UnsupportedOptionError); ok {
+				t.Fatalf("ParseRule(%q) returned UnsupportedOptionError %v, expected validation error", ruleStr, err)
+			}
+		}
+	})
+}
+
+func TestParseDirectionalStickyBuffers(t *testing.T) {
+	for _, tt := range []struct {
+		name    string
+		rule    string
+		wantErr bool
+	}{
+		{
+			name: "http_content_type_to_server_and_to_client",
+			rule: `alert http any any => 5.6.7.8 80 (msg:"matching json to server and xml to client"; http.content_type:to_server; content:"json"; http.content_type:to_client; content:"xml"; sid:1; rev:1;)`,
+		},
+		{
+			name: "file_data_to_server",
+			rule: `alert smb any any => any any (msg:"directional file.data"; file.data:to_server; content:"MZ"; sid:2; rev:1;)`,
+		},
+		{
+			name:    "invalid_sticky_direction",
+			rule:    `alert http any any => any any (msg:"bad sticky dir"; http.uri:invalid_dir; content:"/test"; sid:3; rev:1;)`,
+			wantErr: true,
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := ParseRule(tt.rule)
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("ParseRule(%q) error = %v, wantErr %v", tt.rule, err, tt.wantErr)
+			}
+			if !tt.wantErr {
+				if gotStr := got.String(); gotStr != tt.rule {
+					t.Errorf("got.String() = %q; want %q", gotStr, tt.rule)
+				}
+			}
+		})
+	}
+}

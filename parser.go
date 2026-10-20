@@ -974,6 +974,10 @@ func (r *Rule) direction(key item) error {
 type parseState struct {
 	// dataPosition is the sticky buffer applied to the matchers that follow.
 	dataPosition DataPos
+	// frameName is the frame name when dataPosition is framePos.
+	frameName string
+	// dataDirection is the optional direction modifier ("to_server" or "to_client") on a sticky buffer.
+	dataDirection string
 	// activeTransforms are the transforms applied to the matchers that follow.
 	activeTransforms []*Transform
 }
@@ -1135,17 +1139,36 @@ func (r *Rule) option(key item, l *lexer, st *parseState) error {
 			return errors.New("no value for option msg")
 		}
 		r.Description = nextItem.value
+	case key.value == "frame":
+		nextItem := l.nextItem()
+		if nextItem.typ != itemOptionValue || strings.TrimSpace(nextItem.value) == "" {
+			return errors.New("no valid value for frame")
+		}
+		st.activeTransforms = nil
+		st.dataPosition = framePos
+		st.frameName = strings.TrimSpace(nextItem.value)
+		st.dataDirection = ""
 	case isStickyBuffer(key.value):
 		st.activeTransforms = nil
+		st.frameName = ""
+		st.dataDirection = ""
 		var d DataPos
 		var err error
 		if d, err = StickyBuffer(key.value); err != nil {
 			return err
 		}
 		st.dataPosition = d
+		nextItem := l.nextItem()
+		if nextItem.typ == itemOptionValue {
+			dir := strings.ToLower(strings.TrimSpace(nextItem.value))
+			if dir != "to_server" && dir != "to_client" {
+				return fmt.Errorf("invalid direction %q for sticky buffer %s", nextItem.value, key.value)
+			}
+			st.dataDirection = dir
+		}
 	case inSlice(key.value, []string{"dotprefix", "to_lowercase", "to_uppercase", "header_lowercase", "url_decode", "strip_whitespace", "compress_whitespace", "strip_pseudo_headers", "to_sha1", "to_sha256", "to_md5", "domain", "tld"}):
 		st.activeTransforms = append(st.activeTransforms, &Transform{Name: key.value})
-	case key.value == "from_base64":
+	case inSlice(key.value, []string{"from_base64", "gunzip", "zlib_deflate"}):
 		nextItem := l.nextItem()
 		var val string
 		if nextItem.typ == itemOptionValue || nextItem.typ == itemOptionValueString {
@@ -1176,11 +1199,13 @@ func (r *Rule) option(key item, l *lexer, st *parseState) error {
 				options = append(options, &ContentOption{Name: "http_uri"})
 			}
 			con := &Content{
-				DataPosition: st.dataPosition,
-				Pattern:      c,
-				Negate:       negate,
-				Options:      options,
-				Transforms:   st.cloneTransforms(),
+				DataPosition:  st.dataPosition,
+				FrameName:     st.frameName,
+				DataDirection: st.dataDirection,
+				Pattern:       c,
+				Negate:        negate,
+				Options:       options,
+				Transforms:    st.cloneTransforms(),
 			}
 			r.Matchers = append(r.Matchers, con)
 		} else {
@@ -1250,6 +1275,8 @@ func (r *Rule) option(key item, l *lexer, st *parseState) error {
 				return err
 			}
 			p.DataPosition = st.dataPosition
+			p.FrameName = st.frameName
+			p.DataDirection = st.dataDirection
 			p.Negate = negate
 			p.Transforms = st.cloneTransforms()
 			r.Matchers = append(r.Matchers, p)
@@ -1311,6 +1338,8 @@ func (r *Rule) option(key item, l *lexer, st *parseState) error {
 
 		b.Negate = negate
 		b.DataPosition = st.dataPosition
+		b.FrameName = st.frameName
+		b.DataDirection = st.dataDirection
 
 		r.Matchers = append(r.Matchers, b)
 	case inSlice(key.value, allLenMatchTypeNames()):
@@ -1324,6 +1353,8 @@ func (r *Rule) option(key item, l *lexer, st *parseState) error {
 			return fmt.Errorf("could not parse LenMatch: %v", err)
 		}
 		m.DataPosition = st.dataPosition
+		m.FrameName = st.frameName
+		m.DataDirection = st.dataDirection
 		r.Matchers = append(r.Matchers, m)
 	case key.value == "flowbits":
 		nextItem := l.nextItem()
@@ -1356,6 +1387,8 @@ func (r *Rule) option(key item, l *lexer, st *parseState) error {
 			return fmt.Errorf("error parsing dataset: %v", err)
 		}
 		ds.DataPosition = st.dataPosition
+		ds.FrameName = st.frameName
+		ds.DataDirection = st.dataDirection
 		ds.Transforms = st.cloneTransforms()
 		r.Matchers = append(r.Matchers, ds)
 	case key.value == "datarep":
@@ -1368,6 +1401,8 @@ func (r *Rule) option(key item, l *lexer, st *parseState) error {
 			return fmt.Errorf("error parsing datarep: %v", err)
 		}
 		dr.DataPosition = st.dataPosition
+		dr.FrameName = st.frameName
+		dr.DataDirection = st.dataDirection
 		dr.Transforms = st.cloneTransforms()
 		r.Matchers = append(r.Matchers, dr)
 	default:

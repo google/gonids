@@ -628,6 +628,108 @@ func parseDetectionFilter(s string) (*DetectionFilter, error) {
 	return d, nil
 }
 
+var versionOperators = []string{">=", "<=", "!=", "==", "=", ">", "<"}
+
+func validVersionString(v string) bool {
+	parts := strings.Split(v, ".")
+	if len(parts) < 1 || len(parts) > 3 {
+		return false
+	}
+	for _, p := range parts {
+		if p == "" {
+			return false
+		}
+		n, err := strconv.Atoi(p)
+		if err != nil || n < 0 {
+			return false
+		}
+	}
+	return true
+}
+
+func parseVersionConstraints(s string) ([][]VersionConstraint, error) {
+	orParts := strings.Split(s, "|")
+	var result [][]VersionConstraint
+	for _, orPart := range orParts {
+		rem := strings.TrimSpace(orPart)
+		if rem == "" {
+			return nil, fmt.Errorf("empty version constraint in %q", s)
+		}
+		var andGroup []VersionConstraint
+		for rem != "" {
+			var op string
+			for _, candidate := range versionOperators {
+				if strings.HasPrefix(rem, candidate) {
+					op = candidate
+					rem = strings.TrimSpace(rem[len(candidate):])
+					break
+				}
+			}
+			if op == "" {
+				return nil, fmt.Errorf("invalid version operator in %q", s)
+			}
+			fields := strings.Fields(rem)
+			if len(fields) == 0 {
+				return nil, fmt.Errorf("missing version number after %q in %q", op, s)
+			}
+			ver := fields[0]
+			if !validVersionString(ver) {
+				return nil, fmt.Errorf("invalid version %q in %q", ver, s)
+			}
+			andGroup = append(andGroup, VersionConstraint{
+				Operator: op,
+				Version:  ver,
+			})
+			rem = strings.TrimSpace(rem[len(ver):])
+		}
+		result = append(result, andGroup)
+	}
+	return result, nil
+}
+
+// parseRequires parses a requires option.
+func parseRequires(req *Requires, s string) (*Requires, error) {
+	if req == nil {
+		req = &Requires{}
+	}
+	for _, part := range strings.Split(s, ",") {
+		part = strings.TrimSpace(part)
+		kv := strings.SplitN(part, " ", 2)
+		if len(kv) != 2 {
+			return nil, fmt.Errorf("invalid requires parameter: %q", part)
+		}
+		key := strings.ToLower(strings.TrimSpace(kv[0]))
+		val := strings.TrimSpace(kv[1])
+		if val == "" {
+			return nil, fmt.Errorf("empty value for requires %s", key)
+		}
+		switch key {
+		case "version":
+			if len(req.Version) > 0 {
+				return nil, fmt.Errorf("requires version specified multiple times")
+			}
+			vc, err := parseVersionConstraints(val)
+			if err != nil {
+				return nil, err
+			}
+			req.Version = vc
+		case "feature":
+			if len(strings.Fields(val)) != 1 {
+				return nil, fmt.Errorf("invalid requires feature %q", val)
+			}
+			req.Features = append(req.Features, val)
+		case "keyword":
+			if len(strings.Fields(val)) != 1 {
+				return nil, fmt.Errorf("invalid requires keyword %q", val)
+			}
+			req.Keywords = append(req.Keywords, val)
+		default:
+			return nil, fmt.Errorf("unknown requires key: %s", key)
+		}
+	}
+	return req, nil
+}
+
 // containsUnescaped checks content whether special characters are properly escaped.
 func containsUnescaped(s string) bool {
 	esc := false
@@ -940,6 +1042,16 @@ func (r *Rule) option(key item, l *lexer, st *parseState) error {
 			return fmt.Errorf("error parsing detection_filter: %v", err)
 		}
 		r.DetectionFilter = df
+	case key.value == "requires":
+		nextItem := l.nextItem()
+		if nextItem.typ != itemOptionValue {
+			return errors.New("no valid value for requires")
+		}
+		req, err := parseRequires(r.Requires, nextItem.value)
+		if err != nil {
+			return fmt.Errorf("error parsing requires: %v", err)
+		}
+		r.Requires = req
 	case inSlice(key.value, []string{"sameip", "tls.store", "ftpbounce", "noalert", "filestore"}):
 		r.Statements = append(r.Statements, key.value)
 	case inSlice(key.value, tlsTags):

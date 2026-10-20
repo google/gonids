@@ -59,6 +59,8 @@ type Rule struct {
 	Threshold *Threshold
 	// DetectionFilter holds detection_filter parameters.
 	DetectionFilter *DetectionFilter
+	// Requires holds Suricata engine/feature/keyword requirements.
+	Requires *Requires
 	// Metas is a slice of Metadata.
 	Metas Metadatas
 	// Flowbits is a slice of Flowbit.
@@ -1110,6 +1112,60 @@ func (d *DetectionFilter) String() string {
 	return fmt.Sprintf("detection_filter:%s;", strings.Join(parts, ", "))
 }
 
+// VersionConstraint describes a single version comparison within a Suricata requires option
+// (e.g. ">= 8" or "< 8.0.3").
+type VersionConstraint struct {
+	Operator string
+	Version  string
+}
+
+// String returns the string representation of a single VersionConstraint.
+func (vc VersionConstraint) String() string {
+	return fmt.Sprintf("%s %s", vc.Operator, vc.Version)
+}
+
+// Requires describes a Suricata requires rule option.
+// Version is a slice of OR-separated branches, where each branch is a slice of
+// AND-combined VersionConstraints (e.g. "version >= 7.0.4 < 8 | >= 8.0.3").
+type Requires struct {
+	Version  [][]VersionConstraint
+	Features []string
+	Keywords []string
+}
+
+// String returns a string for a Requires option.
+func (req *Requires) String() string {
+	if req == nil {
+		return ""
+	}
+	var parts []string
+	if len(req.Version) > 0 {
+		var orBranches []string
+		for _, andGroup := range req.Version {
+			var andParts []string
+			for _, vc := range andGroup {
+				andParts = append(andParts, vc.String())
+			}
+			if len(andParts) > 0 {
+				orBranches = append(orBranches, strings.Join(andParts, " "))
+			}
+		}
+		if len(orBranches) > 0 {
+			parts = append(parts, "version "+strings.Join(orBranches, " | "))
+		}
+	}
+	for _, f := range req.Features {
+		parts = append(parts, fmt.Sprintf("feature %s", f))
+	}
+	for _, k := range req.Keywords {
+		parts = append(parts, fmt.Sprintf("keyword %s", k))
+	}
+	if len(parts) == 0 {
+		return ""
+	}
+	return fmt.Sprintf("requires:%s;", strings.Join(parts, ", "))
+}
+
 // String returns a string for a PCRE.
 func (p PCRE) String() string {
 	pattern := p.Pattern
@@ -1256,6 +1312,10 @@ func (r Rule) String() string {
 
 	if r.DetectionFilter != nil {
 		fmt.Fprintf(&s, "%s ", r.DetectionFilter)
+	}
+
+	if r.Requires != nil {
+		fmt.Fprintf(&s, "%s ", r.Requires)
 	}
 
 	if r.Target != "" {

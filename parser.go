@@ -1025,9 +1025,16 @@ func (r *Rule) option(key item, l *lexer, st *parseState) error {
 			return err
 		}
 		st.dataPosition = d
-	case inSlice(key.value, []string{"dotprefix", "to_lowercase", "to_uppercase", "header_lowercase", "url_decode", "strip_whitespace", "compress_whitespace", "strip_pseudo_headers", "to_sha1", "to_sha256", "to_md5"}):
+	case inSlice(key.value, []string{"dotprefix", "to_lowercase", "to_uppercase", "header_lowercase", "url_decode", "strip_whitespace", "compress_whitespace", "strip_pseudo_headers", "to_sha1", "to_sha256", "to_md5", "domain", "tld"}):
 		st.activeTransforms = append(st.activeTransforms, &Transform{Name: key.value})
-	case inSlice(key.value, []string{"pcrexform", "xor"}):
+	case key.value == "from_base64":
+		nextItem := l.nextItem()
+		var val string
+		if nextItem.typ == itemOptionValue || nextItem.typ == itemOptionValueString {
+			val = nextItem.value
+		}
+		st.activeTransforms = append(st.activeTransforms, &Transform{Name: key.value, Value: val})
+	case inSlice(key.value, []string{"pcrexform", "xor", "luaxform"}):
 		nextItem := l.nextItem()
 		val := nextItem.value
 		if nextItem.typ == itemOptionValueString {

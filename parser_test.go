@@ -4471,3 +4471,56 @@ func TestParseDatasetAndDataRep(t *testing.T) {
 		})
 	}
 }
+
+func TestParseSuri8Transforms(t *testing.T) {
+	for _, tt := range []struct {
+		name string
+		rule string
+		want []*Transform
+	}{
+		{
+			name: "domain transform",
+			rule: `alert dns any any -> any any (msg:"domain transform"; dns.query; domain; dataset:isset,malware,type string,load datasets/malware.txt; sid:12001201; rev:1;)`,
+			want: []*Transform{{Name: "domain"}},
+		},
+		{
+			name: "tld transform",
+			rule: `alert dns any any -> any any (msg:"tld transform"; dns.query; tld; content:"com"; sid:12001202; rev:1;)`,
+			want: []*Transform{{Name: "tld"}},
+		},
+		{
+			name: "from_base64 bare transform",
+			rule: `alert http any any -> any any (msg:"from_base64 bare"; http.uri; from_base64; content:"admin"; sid:12001203; rev:1;)`,
+			want: []*Transform{{Name: "from_base64"}},
+		},
+		{
+			name: "from_base64 parameterized transform",
+			rule: `alert http any any -> any any (msg:"from_base64 params"; http.uri; from_base64:bytes 4, offset 2, mode rfc4648; content:"admin"; sid:12001204; rev:1;)`,
+			want: []*Transform{{Name: "from_base64", Value: "bytes 4, offset 2, mode rfc4648"}},
+		},
+		{
+			name: "luaxform transform",
+			rule: `alert http any any -> any any (msg:"luaxform"; http.uri; luaxform:decode.lua, offset 0, bytes 16; content:"admin"; sid:12001205; rev:1;)`,
+			want: []*Transform{{Name: "luaxform", Value: "decode.lua, offset 0, bytes 16"}},
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := ParseRule(tt.rule)
+			if err != nil {
+				t.Fatalf("ParseRule(%q) unexpected error: %v", tt.rule, err)
+			}
+			var gotTransforms []*Transform
+			if len(got.Contents()) > 0 {
+				gotTransforms = got.Contents()[0].Transforms
+			} else if len(got.Datasets()) > 0 {
+				gotTransforms = got.Datasets()[0].Transforms
+			}
+			if diff := pretty.Compare(gotTransforms, tt.want); diff != "" {
+				t.Errorf("transforms diff (-got +want):\n%s", diff)
+			}
+			if gotStr := got.String(); gotStr != tt.rule {
+				t.Errorf("got.String() = %q; want %q", gotStr, tt.rule)
+			}
+		})
+	}
+}

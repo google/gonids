@@ -574,22 +574,40 @@ const (
 	tcpACK
 	bSize
 	fileSize
+	flowBytesToServer
+	flowBytesToClient
+	flowPktsToServer
+	flowPktsToClient
+	flowAge
+	flowPkts
+	flowBytes
+	tcpMSS
+	tcpWScale
 )
 
 // lenMatchTypeVals map len types to string representations.
 var lenMatchTypeVals = map[lenMatchType]string{
-	iType:    "itype",
-	iCode:    "icode",
-	iID:      "icmp_id",
-	iSeq:     "icmp_seq",
-	uriLen:   "urilen",
-	dSize:    "dsize",
-	ipTTL:    "ttl",
-	ipID:     "id",
-	tcpSeq:   "seq",
-	tcpACK:   "ack",
-	bSize:    "bsize",
-	fileSize: "filesize",
+	iType:             "itype",
+	iCode:             "icode",
+	iID:               "icmp_id",
+	iSeq:              "icmp_seq",
+	uriLen:            "urilen",
+	dSize:             "dsize",
+	ipTTL:             "ttl",
+	ipID:              "id",
+	tcpSeq:            "seq",
+	tcpACK:            "ack",
+	bSize:             "bsize",
+	fileSize:          "filesize",
+	flowBytesToServer: "flow.bytes_toserver",
+	flowBytesToClient: "flow.bytes_toclient",
+	flowPktsToServer:  "flow.pkts_toserver",
+	flowPktsToClient:  "flow.pkts_toclient",
+	flowAge:           "flow.age",
+	flowPkts:          "flow.pkts",
+	flowBytes:         "flow.bytes",
+	tcpMSS:            "tcp.mss",
+	tcpWScale:         "tcp.wscale",
 }
 
 // allLenMatchTypeNames returns a slice of string containing all length match keywords.
@@ -675,9 +693,19 @@ type Reference struct {
 	Value string
 }
 
-// TODO: Add support for tls_cert_nobefore, tls_cert_notafter, tls_cert_expired, tls_cert_valid.
 // Valid keywords for extracting TLS matches. Does not include tls.store, or sticky buffers.
-var tlsTags = []string{"ssl_version", "ssl_state", "tls.version", "tls.subject", "tls.issuerdn", "tls.fingerprint"}
+var tlsTags = []string{
+	"ssl_version",
+	"ssl_state",
+	"tls.version",
+	"tls.subject",
+	"tls.issuerdn",
+	"tls.fingerprint",
+	"tls_cert_notbefore",
+	"tls_cert_notafter",
+	"tls.cert_notbefore",
+	"tls.cert_notafter",
+}
 
 // TLSTag describes a TLS specific match (non-sticky buffer based).
 type TLSTag struct {

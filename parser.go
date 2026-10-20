@@ -1003,7 +1003,7 @@ func (r *Rule) option(key item, l *lexer, st *parseState) error {
 		"filemagic", "fileext", "filemd5", "filesha1", "filesha256", "filename", "ftpdata_command",
 		"dce_iface", "dce_opnum",
 		"lua", "luajit",
-		"asn1"}):
+		"asn1", "entropy"}):
 		nextItem := l.nextItem()
 		negate := false
 		if nextItem.typ == itemNot {
@@ -1052,7 +1052,8 @@ func (r *Rule) option(key item, l *lexer, st *parseState) error {
 			return fmt.Errorf("error parsing requires: %v", err)
 		}
 		r.Requires = req
-	case inSlice(key.value, []string{"sameip", "tls.store", "ftpbounce", "noalert", "filestore"}):
+	case inSlice(key.value, []string{"sameip", "tls.store", "ftpbounce", "noalert", "filestore",
+		"tls_cert_expired", "tls_cert_valid", "tls.cert_expired", "tls.cert_valid"}):
 		r.Statements = append(r.Statements, key.value)
 	case inSlice(key.value, tlsTags):
 		t := &TLSTag{

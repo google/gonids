@@ -4667,3 +4667,70 @@ func TestParseRequires(t *testing.T) {
 		})
 	}
 }
+
+func TestParseSuri8LenMatchersAndTLS(t *testing.T) {
+	lenKeywords := []string{
+		"flow.bytes_toserver",
+		"flow.bytes_toclient",
+		"flow.pkts_toserver",
+		"flow.pkts_toclient",
+		"flow.age",
+		"flow.pkts",
+		"flow.bytes",
+		"tcp.mss",
+		"tcp.wscale",
+	}
+	for _, kw := range lenKeywords {
+		t.Run(kw, func(t *testing.T) {
+			ruleStr := `alert tcp any any -> any any (msg:"test ` + kw + `"; ` + kw + `:>=1460; sid:1; rev:1;)`
+			got, err := ParseRule(ruleStr)
+			if err != nil {
+				t.Fatalf("ParseRule(%q) unexpected error: %v", ruleStr, err)
+			}
+			if len(got.LenMatchers()) != 1 {
+				t.Fatalf("got %d LenMatchers; want 1", len(got.LenMatchers()))
+			}
+			if gotStr := got.String(); gotStr != ruleStr {
+				t.Errorf("got.String() = %q; want %q", gotStr, ruleStr)
+			}
+		})
+	}
+
+	tlsStmts := []string{
+		"tls_cert_expired",
+		"tls_cert_valid",
+		"tls.cert_expired",
+		"tls.cert_valid",
+	}
+	for _, stmt := range tlsStmts {
+		t.Run(stmt, func(t *testing.T) {
+			ruleStr := `alert tls any any -> any any (msg:"test ` + stmt + `"; ` + stmt + `; sid:2; rev:1;)`
+			got, err := ParseRule(ruleStr)
+			if err != nil {
+				t.Fatalf("ParseRule(%q) unexpected error: %v", ruleStr, err)
+			}
+			if gotStr := got.String(); gotStr != ruleStr {
+				t.Errorf("got.String() = %q; want %q", gotStr, ruleStr)
+			}
+		})
+	}
+
+	tlsCertTags := []string{
+		"tls_cert_notbefore",
+		"tls_cert_notafter",
+		"tls.cert_notbefore",
+		"tls.cert_notafter",
+	}
+	for _, tag := range tlsCertTags {
+		t.Run(tag, func(t *testing.T) {
+			ruleStr := `alert tls any any -> any any (msg:"test ` + tag + `"; ` + tag + `:2025-01-01; sid:3; rev:1;)`
+			got, err := ParseRule(ruleStr)
+			if err != nil {
+				t.Fatalf("ParseRule(%q) unexpected error: %v", ruleStr, err)
+			}
+			if gotStr := got.String(); gotStr != ruleStr {
+				t.Errorf("got.String() = %q; want %q", gotStr, ruleStr)
+			}
+		})
+	}
+}

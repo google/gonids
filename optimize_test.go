@@ -376,6 +376,58 @@ func TestSnortHTTPHeaderFix(t *testing.T) {
 
 			wantMod: true,
 		},
+		{
+			name: "adjacent contents",
+			input: &Rule{
+				Matchers: []orderedMatcher{
+					&Content{
+						Pattern: []byte("foo\r\n\r\n"),
+						Options: []*ContentOption{
+							{"http_header", ""},
+						},
+					},
+					&Content{
+						Pattern: []byte("bar\r\n\r\n"),
+						Options: []*ContentOption{
+							{"http_header", ""},
+						},
+					},
+				},
+			},
+			output: &Rule{
+				Matchers: []orderedMatcher{
+					&Content{
+						Pattern: []byte("foo\r\n"),
+						Options: []*ContentOption{
+							{"http_header", ""},
+						},
+					},
+					&ByteMatch{
+						Kind:     isDataAt,
+						Negate:   true,
+						NumBytes: "1",
+					},
+					&Content{
+						Pattern: []byte("bar\r\n"),
+						Options: []*ContentOption{
+							{"http_header", ""},
+						},
+					},
+					&ByteMatch{
+						Kind:     isDataAt,
+						Negate:   true,
+						NumBytes: "1",
+					},
+				},
+				Metas: Metadatas{
+					&Metadata{
+						Key:   "gonids",
+						Value: "snort_http_header"},
+				},
+			},
+
+			wantMod: true,
+		},
 	} {
 		gotMod := tt.input.SnortHTTPHeaderFix()
 		// Expected modification.
@@ -498,6 +550,54 @@ func TestUpgradeToSuri5(t *testing.T) {
 					&Content{
 						DataPosition: httpURI,
 						Pattern:      []byte("?baz=bop"),
+					},
+				},
+				Metas: Metadatas{
+					&Metadata{
+						Key:   "gonids",
+						Value: "upgrade_to_suri5"},
+				},
+			},
+
+			wantMod: true,
+		},
+		{
+			name: "content modifier with other options",
+			input: &Rule{
+				Matchers: []orderedMatcher{
+					&Content{
+						Pattern: []byte("/foo.php"),
+						Options: []*ContentOption{
+							{"http_uri", ""},
+							{"nocase", ""},
+						},
+					},
+					&Content{
+						Pattern: []byte("?bar=baz"),
+						Options: []*ContentOption{
+							{"nocase", ""},
+							{"http_uri", ""},
+							{"distance", "0"},
+						},
+					},
+				},
+			},
+			output: &Rule{
+				Matchers: []orderedMatcher{
+					&Content{
+						DataPosition: httpURI,
+						Pattern:      []byte("/foo.php"),
+						Options: []*ContentOption{
+							{"nocase", ""},
+						},
+					},
+					&Content{
+						DataPosition: httpURI,
+						Pattern:      []byte("?bar=baz"),
+						Options: []*ContentOption{
+							{"nocase", ""},
+							{"distance", "0"},
+						},
 					},
 				},
 				Metas: Metadatas{

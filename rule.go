@@ -73,11 +73,38 @@ type Rule struct {
 	Flowints []*Flowint
 	// Matchers are internally used to ensure relative matches are printed correctly.
 	// Make this private before checkin?
-	Matchers []orderedMatcher
+	Matchers Matchers
 }
 
 type orderedMatcher interface {
 	String() string
+	stickyPos() stickyPos
+	transforms() Transforms
+}
+
+// Matchers allows for a Stringer on []orderedMatcher.
+type Matchers []orderedMatcher
+
+// stickyPos describes a sticky buffer position, optional frame name, and optional direction.
+type stickyPos struct {
+	pos       DataPos
+	frameName string
+	direction string
+}
+
+// String returns the rule representation of a sticky buffer selector
+// (e.g. "http.uri;", "frame:dns.pdu;", "http.content_type:to_server;").
+func (sp stickyPos) String() string {
+	switch {
+	case sp.pos == framePos && sp.frameName != "" && sp.direction != "":
+		return fmt.Sprintf("frame:%s:%s;", sp.frameName, sp.direction)
+	case sp.pos == framePos && sp.frameName != "":
+		return fmt.Sprintf("frame:%s;", sp.frameName)
+	case sp.direction != "":
+		return fmt.Sprintf("%s:%s;", sp.pos, sp.direction)
+	default:
+		return fmt.Sprintf("%s;", sp.pos)
+	}
 }
 
 // Metadata describes metadata tags in key-value struct.
@@ -271,6 +298,8 @@ const (
 	http2Header
 	http2HeaderName
 	http2HeaderValue
+	// Open-ended Frame Sticky Buffer
+	framePos
 )
 
 // Contains both Suricata 4.x and 5.0 buffers. Some day we'll deprecate the 4.x ones.
@@ -408,6 +437,8 @@ var stickyBuffers = map[DataPos]string{
 	http2Header:      "http2.header",
 	http2HeaderName:  "http2.header_name",
 	http2HeaderValue: "http2.header_value",
+	// Open-ended Frame Sticky Buffer
+	framePos: "frame",
 
 	// SMB - Documentation lacking. Unknown.
 }
@@ -446,11 +477,27 @@ func (t Transform) String() string {
 	return fmt.Sprintf("%s:%s;", t.Name, t.Value)
 }
 
+// Transforms allows for a Stringer on []*Transform.
+type Transforms []*Transform
+
+// String returns a space-separated string for all transforms.
+func (ts Transforms) String() string {
+	var parts []string
+	for _, t := range ts {
+		parts = append(parts, t.String())
+	}
+	return strings.Join(parts, " ")
+}
+
 // Content describes a rule content. A content is composed of a pattern followed by options.
 type Content struct {
 	// DataPosition defaults to pkt_data state, can be modified to apply to file_data, base64_data locations.
 	// This value will apply to all following contents, to reset to default you must reset DataPosition during processing.
 	DataPosition DataPos
+	// FrameName holds the frame name when DataPosition is framePos (e.g. "dns.pdu" for frame:dns.pdu;).
+	FrameName string
+	// DataDirection holds an optional sticky buffer direction modifier ("to_server" or "to_client").
+	DataDirection string
 	// FastPattern settings for the content.
 	FastPattern FastPattern
 	// Pattern is the pattern match of a content (e.g. HTTP in content:"HTTP").
@@ -460,7 +507,7 @@ type Content struct {
 	// Options are the option associated to the content (e.g. http_header).
 	Options []*ContentOption
 	// Transforms is the list of transforms attached to this content (sticky buffer).
-	Transforms []*Transform
+	Transforms Transforms
 }
 
 // byteMatchType describes the kinds of byte matches and comparisons that are supported.
@@ -542,7 +589,9 @@ func (b byteMatchType) minLen() int {
 type ByteMatch struct {
 	// DataPosition defaults to pkt_data state, can be modified to apply to file_data, base64_data locations.
 	// This value will apply to all following contents, to reset to default you must reset DataPosition during processing.
-	DataPosition DataPos
+	DataPosition  DataPos
+	FrameName     string
+	DataDirection string
 	// Kind is a specific operation type we're taking.
 	Kind byteMatchType
 	// Negate indicates negation of a value, currently only used for isdataat.
@@ -634,43 +683,51 @@ func (i lenMatchType) String() string {
 type LenMatch struct {
 	// DataPosition defaults to pkt_data state, can be modified to apply to file_data, base64_data locations.
 	// This value will apply to all following contents, to reset to default you must reset DataPosition during processing.
-	DataPosition DataPos
-	Kind         lenMatchType
-	Min          int
-	Max          int
-	Num          int
-	Operator     string
-	Options      []string
+	DataPosition  DataPos
+	FrameName     string
+	DataDirection string
+	Kind          lenMatchType
+	Min           int
+	Max           int
+	Num           int
+	Operator      string
+	Options       []string
 }
 
 // PCRE describes a PCRE item of a rule.
 type PCRE struct {
 	// DataPosition defaults to pkt_data state, can be modified to apply to file_data, base64_data locations.
 	// This value will apply to all following contents, to reset to default you must reset DataPosition during processing.
-	DataPosition DataPos
-	Pattern      []byte
-	Negate       bool
-	Options      []byte
-	Transforms   []*Transform
+	DataPosition  DataPos
+	FrameName     string
+	DataDirection string
+	Pattern       []byte
+	Negate        bool
+	Options       []byte
+	Transforms    Transforms
 }
 
 // Dataset describes a Suricata dataset rule option.
 type Dataset struct {
-	DataPosition DataPos
-	Transforms   []*Transform
-	Cmd          string
-	Name         string
-	Options      []string
+	DataPosition  DataPos
+	FrameName     string
+	DataDirection string
+	Transforms    Transforms
+	Cmd           string
+	Name          string
+	Options       []string
 }
 
 // DataRep describes a Suricata datarep rule option.
 type DataRep struct {
-	DataPosition DataPos
-	Transforms   []*Transform
-	Name         string
-	Operator     string
-	Value        int
-	Options      []string
+	DataPosition  DataPos
+	FrameName     string
+	DataDirection string
+	Transforms    Transforms
+	Name          string
+	Operator      string
+	Value         int
+	Options       []string
 }
 
 // FastPattern describes various properties of a fast_pattern value for a content.
@@ -863,6 +920,14 @@ func (d Dataset) String() string {
 	return s.String()
 }
 
+func (d Dataset) stickyPos() stickyPos {
+	return stickyPos{pos: d.DataPosition, frameName: d.FrameName, direction: d.DataDirection}
+}
+
+func (d Dataset) transforms() Transforms {
+	return d.Transforms
+}
+
 // String returns a string for a DataRep.
 func (d DataRep) String() string {
 	var s strings.Builder
@@ -872,6 +937,14 @@ func (d DataRep) String() string {
 	}
 	fmt.Fprintf(&s, ";")
 	return s.String()
+}
+
+func (d DataRep) stickyPos() stickyPos {
+	return stickyPos{pos: d.DataPosition, frameName: d.FrameName, direction: d.DataDirection}
+}
+
+func (d DataRep) transforms() Transforms {
+	return d.Transforms
 }
 
 func netString(netPart []string) string {
@@ -962,6 +1035,14 @@ func (c Content) String() string {
 	return s.String()
 }
 
+func (c Content) stickyPos() stickyPos {
+	return stickyPos{pos: c.DataPosition, frameName: c.FrameName, direction: c.DataDirection}
+}
+
+func (c Content) transforms() Transforms {
+	return c.Transforms
+}
+
 // base64DecodeString returns a string for a base64_decode ByteMatch.
 func (b ByteMatch) base64DecodeString() string {
 	var parts []string
@@ -1033,6 +1114,14 @@ func (b ByteMatch) String() string {
 	return s.String()
 }
 
+func (b ByteMatch) stickyPos() stickyPos {
+	return stickyPos{pos: b.DataPosition, frameName: b.FrameName, direction: b.DataDirection}
+}
+
+func (b ByteMatch) transforms() Transforms {
+	return nil
+}
+
 // String returns a string for an length match.
 func (i LenMatch) String() string {
 	var s strings.Builder
@@ -1050,6 +1139,14 @@ func (i LenMatch) String() string {
 	}
 	fmt.Fprintf(&s, ";")
 	return s.String()
+}
+
+func (i LenMatch) stickyPos() stickyPos {
+	return stickyPos{pos: i.DataPosition, frameName: i.FrameName, direction: i.DataDirection}
+}
+
+func (i LenMatch) transforms() Transforms {
+	return nil
 }
 
 // String returns a string for all of the metadata values.
@@ -1219,6 +1316,14 @@ func (p PCRE) String() string {
 	return s.String()
 }
 
+func (p PCRE) stickyPos() stickyPos {
+	return stickyPos{pos: p.DataPosition, frameName: p.FrameName, direction: p.DataDirection}
+}
+
+func (p PCRE) transforms() Transforms {
+	return p.Transforms
+}
+
 // String returns a string for a Flowbit.
 func (fb Flowbit) String() string {
 	if !inSlice(fb.Action, []string{"noalert", "isset", "isnotset", "set", "unset", "toggle", "reset"}) {
@@ -1258,6 +1363,26 @@ func (xb Xbit) String() string {
 	return s.String()
 }
 
+// String returns a string for all ordered matchers in a rule, including sticky buffers and transforms.
+func (ms Matchers) String() string {
+	if len(ms) < 1 {
+		return ""
+	}
+	var parts []string
+	curPos := stickyPos{pos: pktData}
+	for _, m := range ms {
+		if sp := m.stickyPos(); sp != curPos {
+			curPos = sp
+			parts = append(parts, sp.String())
+			if ts := m.transforms(); len(ts) > 0 {
+				parts = append(parts, ts.String())
+			}
+		}
+		parts = append(parts, m.String())
+	}
+	return strings.Join(parts, " ")
+}
+
 // String returns a string for a rule.
 func (r Rule) String() string {
 	var s strings.Builder
@@ -1283,58 +1408,7 @@ func (r Rule) String() string {
 
 	// Write out matchers in order (because things can be relative.)
 	if len(r.Matchers) > 0 {
-		d := pktData
-		for _, m := range r.Matchers {
-			if c, ok := m.(*Content); ok {
-				if d != c.DataPosition {
-					d = c.DataPosition
-					fmt.Fprintf(&s, "%s; ", d)
-					for _, t := range c.Transforms {
-						fmt.Fprintf(&s, "%s ", t)
-					}
-				}
-			}
-			if c, ok := m.(*LenMatch); ok {
-				if d != c.DataPosition {
-					d = c.DataPosition
-					fmt.Fprintf(&s, "%s; ", d)
-				}
-			}
-			if c, ok := m.(*ByteMatch); ok {
-				if d != c.DataPosition {
-					d = c.DataPosition
-					fmt.Fprintf(&s, "%s; ", d)
-				}
-			}
-			if c, ok := m.(*PCRE); ok {
-				if d != c.DataPosition {
-					d = c.DataPosition
-					fmt.Fprintf(&s, "%s; ", d)
-					for _, t := range c.Transforms {
-						fmt.Fprintf(&s, "%s ", t)
-					}
-				}
-			}
-			if c, ok := m.(*Dataset); ok {
-				if d != c.DataPosition {
-					d = c.DataPosition
-					fmt.Fprintf(&s, "%s; ", d)
-					for _, t := range c.Transforms {
-						fmt.Fprintf(&s, "%s ", t)
-					}
-				}
-			}
-			if c, ok := m.(*DataRep); ok {
-				if d != c.DataPosition {
-					d = c.DataPosition
-					fmt.Fprintf(&s, "%s; ", d)
-					for _, t := range c.Transforms {
-						fmt.Fprintf(&s, "%s ", t)
-					}
-				}
-			}
-			fmt.Fprintf(&s, "%s ", m)
-		}
+		fmt.Fprintf(&s, "%s ", r.Matchers)
 	}
 
 	if r.StreamMatch != nil {

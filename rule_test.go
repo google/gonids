@@ -2080,3 +2080,178 @@ func TestDatasetAndDataRepString(t *testing.T) {
 		t.Errorf("len(r.DataReps()) = %d; want 1", len(r.DataReps()))
 	}
 }
+
+func TestStickyPosString(t *testing.T) {
+	for _, tt := range []struct {
+		name  string
+		input stickyPos
+		want  string
+	}{
+		{
+			name:  "standard_sticky_buffer",
+			input: stickyPos{pos: httpURI},
+			want:  "http.uri;",
+		},
+		{
+			name:  "frame_sticky_buffer",
+			input: stickyPos{pos: framePos, frameName: "dns.pdu"},
+			want:  "frame:dns.pdu;",
+		},
+		{
+			name:  "directional_sticky_buffer",
+			input: stickyPos{pos: httpContentType5, direction: "to_server"},
+			want:  "http.content_type:to_server;",
+		},
+		{
+			name:  "frame_with_direction",
+			input: stickyPos{pos: framePos, frameName: "smtp.data", direction: "to_client"},
+			want:  "frame:smtp.data:to_client;",
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.input.String(); got != tt.want {
+				t.Errorf("got %q; want %q", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestTransformString(t *testing.T) {
+	for _, tt := range []struct {
+		name  string
+		input Transform
+		want  string
+	}{
+		{
+			name:  "bare_transform",
+			input: Transform{Name: "gunzip"},
+			want:  "gunzip;",
+		},
+		{
+			name:  "parameterized_transform",
+			input: Transform{Name: "gunzip", Value: "max-size 1024"},
+			want:  "gunzip:max-size 1024;",
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.input.String(); got != tt.want {
+				t.Errorf("got %q; want %q", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestTransformsString(t *testing.T) {
+	for _, tt := range []struct {
+		name  string
+		input Transforms
+		want  string
+	}{
+		{
+			name:  "empty",
+			input: nil,
+			want:  "",
+		},
+		{
+			name: "single_transform",
+			input: Transforms{
+				{Name: "to_lowercase"},
+			},
+			want: "to_lowercase;",
+		},
+		{
+			name: "multiple_transforms",
+			input: Transforms{
+				{Name: "to_lowercase"},
+				{Name: "gunzip", Value: "max-size 1024"},
+			},
+			want: "to_lowercase; gunzip:max-size 1024;",
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.input.String(); got != tt.want {
+				t.Errorf("got %q; want %q", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestMatchersString(t *testing.T) {
+	for _, tt := range []struct {
+		name  string
+		input Matchers
+		want  string
+	}{
+		{
+			name:  "empty",
+			input: nil,
+			want:  "",
+		},
+		{
+			name: "default_pkt_data",
+			input: Matchers{
+				&Content{
+					Pattern: []byte("foo"),
+				},
+			},
+			want: `content:"foo";`,
+		},
+		{
+			name: "sticky_buffer_with_transforms_and_multiple_matchers",
+			input: Matchers{
+				&Content{
+					DataPosition: fileData5,
+					Transforms: Transforms{
+						{Name: "gunzip", Value: "max-size 1024"},
+					},
+					Pattern: []byte("MZ"),
+				},
+				&LenMatch{
+					DataPosition: fileData5,
+					Kind:         bSize,
+					Operator:     ">",
+					Num:          64,
+				},
+			},
+			want: `file.data; gunzip:max-size 1024; content:"MZ"; bsize:>64;`,
+		},
+		{
+			name: "directional_sticky_buffers_switching_direction",
+			input: Matchers{
+				&Content{
+					DataPosition:  httpContentType5,
+					DataDirection: "to_server",
+					Pattern:       []byte("json"),
+				},
+				&Content{
+					DataPosition:  httpContentType5,
+					DataDirection: "to_client",
+					Pattern:       []byte("xml"),
+				},
+			},
+			want: `http.content_type:to_server; content:"json"; http.content_type:to_client; content:"xml";`,
+		},
+		{
+			name: "multiple_frames",
+			input: Matchers{
+				&Content{
+					DataPosition: framePos,
+					FrameName:    "smtp.command_line",
+					Pattern:      []byte("MAIL FROM"),
+				},
+				&PCRE{
+					DataPosition: framePos,
+					FrameName:    "smtp.response_line",
+					Pattern:      []byte("^250 "),
+				},
+			},
+			want: `frame:smtp.command_line; content:"MAIL FROM"; frame:smtp.response_line; pcre:"/^250 /";`,
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.input.String(); got != tt.want {
+				t.Errorf("got %q; want %q", got, tt.want)
+			}
+		})
+	}
+}

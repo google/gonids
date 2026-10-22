@@ -5044,3 +5044,18 @@ func TestParseAbsent(t *testing.T) {
 		})
 	}
 }
+
+func TestParseOptionStringTrailingSpaces(t *testing.T) {
+	ruleStr := `alert http any any -> any any (msg:"test 7"; flow:to_server; http.uri; content:"/admin" ; sid:7; rev:1;)`
+	wantStr := `alert http any any -> any any (msg:"test 7"; flow:to_server; http.uri; content:"/admin"; sid:7; rev:1;)`
+	got, err := ParseRule(ruleStr)
+	if err != nil {
+		t.Fatalf("ParseRule(%q) unexpected error: %v", ruleStr, err)
+	}
+	if len(got.Contents()) != 1 || string(got.Contents()[0].Pattern) != "/admin" {
+		t.Errorf("got Contents = %v; want Pattern %q", got.Contents(), "/admin")
+	}
+	if gotStr := got.String(); gotStr != wantStr {
+		t.Errorf("got.String() = %q; want %q", gotStr, wantStr)
+	}
+}

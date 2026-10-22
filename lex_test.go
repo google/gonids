@@ -1,10 +1,11 @@
-/* Copyright 2016 Google Inc.
+/*
+	Copyright 2016 Google Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
-    http://www.apache.org/licenses/LICENSE-2.0
+	http://www.apache.org/licenses/LICENSE-2.0
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
@@ -142,6 +143,26 @@ func TestLexer(t *testing.T) {
 				{itemOptionValue, "value1"},
 				{itemOptionKey, "key2"},
 				{itemOptionNoValue, ""},
+				{itemEOR, ""},
+			},
+		},
+		{
+			name:  "string value with spaces before semicolon",
+			input: `alert http any any -> any any (msg:"test 7" ; content:" /admin " ; sid:7;)`,
+			items: []item{
+				{itemAction, "alert"},
+				{itemProtocol, "http"},
+				{itemSourceAddress, "any"},
+				{itemSourcePort, "any"},
+				{itemDirection, "->"},
+				{itemDestinationAddress, "any"},
+				{itemDestinationPort, "any"},
+				{itemOptionKey, "msg"},
+				{itemOptionValueString, "test 7"},
+				{itemOptionKey, "content"},
+				{itemOptionValueString, " /admin "},
+				{itemOptionKey, "sid"},
+				{itemOptionValue, "7"},
 				{itemEOR, ""},
 			},
 		},

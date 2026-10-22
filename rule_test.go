@@ -2100,10 +2100,13 @@ func TestDatasetAndDataRepString(t *testing.T) {
 			},
 			&DataRep{
 				DataPosition: dnsQuery5,
-				Name:         "bad_domains",
-				Operator:     ">",
-				Value:        10,
-				Options:      []string{"load bad_domains.rep", "type string"},
+				Transforms: []*Transform{
+					{Name: "to_lowercase"},
+				},
+				Name:     "bad_domains",
+				Operator: ">",
+				Value:    10,
+				Options:  []string{"load bad_domains.rep", "type string"},
 			},
 		},
 		SID:      12001201,
@@ -2254,6 +2257,33 @@ func TestMatchersString(t *testing.T) {
 				},
 			},
 			want: `file.data; gunzip:max-size 1024; content:"MZ"; bsize:>64;`,
+		},
+		{
+			name: "same_sticky_buffer_with_different_transforms",
+			input: Matchers{
+				&Content{
+					DataPosition: httpURI,
+					Pattern:      []byte("/A"),
+				},
+				&Content{
+					DataPosition: httpURI,
+					Transforms: Transforms{
+						{Name: "to_lowercase"},
+					},
+					Pattern: []byte("/admin"),
+				},
+				&LenMatch{
+					DataPosition: httpURI,
+					Kind:         bSize,
+					Operator:     ">",
+					Num:          6,
+				},
+				&Content{
+					DataPosition: httpURI,
+					Pattern:      []byte("/X"),
+				},
+			},
+			want: `http.uri; content:"/A"; http.uri; to_lowercase; content:"/admin"; bsize:>6; http.uri; content:"/X";`,
 		},
 		{
 			name: "directional_sticky_buffers_switching_direction",

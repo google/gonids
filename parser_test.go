@@ -4978,3 +4978,69 @@ func TestParseDirectionalStickyBuffers(t *testing.T) {
 		})
 	}
 }
+
+func TestParseBypassAndAlertStatements(t *testing.T) {
+	for _, stmt := range []string{"bypass", "alert"} {
+		t.Run("statement_"+stmt, func(t *testing.T) {
+			ruleStr := `alert tcp any any -> any any (msg:"test ` + stmt + `"; content:"foo"; ` + stmt + `; sid:1; rev:1;)`
+			got, err := ParseRule(ruleStr)
+			if err != nil {
+				t.Fatalf("ParseRule(%q) unexpected error: %v", ruleStr, err)
+			}
+			if len(got.Statements) != 1 || got.Statements[0] != stmt {
+				t.Errorf("got.Statements = %v; want [%q]", got.Statements, stmt)
+			}
+			if gotStr := got.String(); gotStr != ruleStr {
+				t.Errorf("got.String() = %q; want %q", gotStr, ruleStr)
+			}
+		})
+	}
+}
+
+func TestParseAbsent(t *testing.T) {
+	for _, tt := range []struct {
+		name       string
+		rule       string
+		wantOrElse bool
+		wantErr    bool
+	}{
+		{
+			name:       "absent_bare",
+			rule:       `alert http any any -> any any (msg:"HTTP request without User-Agent"; http.user_agent; absent; sid:1; rev:1;)`,
+			wantOrElse: false,
+		},
+		{
+			name:       "absent_or_else",
+			rule:       `alert http any any -> any any (msg:"HTTP user-agent absent or matching"; http.user_agent; absent:or_else; content:"curl"; sid:2; rev:1;)`,
+			wantOrElse: true,
+		},
+		{
+			name:    "absent_invalid_value",
+			rule:    `alert http any any -> any any (msg:"invalid absent"; http.user_agent; absent:invalid; sid:3; rev:1;)`,
+			wantErr: true,
+		},
+		{
+			name:    "absent_string_value_error",
+			rule:    `alert http any any -> any any (msg:"string absent"; http.user_agent; absent:"or_else"; sid:4; rev:1;)`,
+			wantErr: true,
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := ParseRule(tt.rule)
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("ParseRule(%q) error = %v, wantErr %v", tt.rule, err, tt.wantErr)
+			}
+			if !tt.wantErr {
+				if len(got.Absents()) != 1 {
+					t.Fatalf("len(got.Absents()) = %d; want 1", len(got.Absents()))
+				}
+				if got.Absents()[0].OrElse != tt.wantOrElse {
+					t.Errorf("got.Absents()[0].OrElse = %v; want %v", got.Absents()[0].OrElse, tt.wantOrElse)
+				}
+				if gotStr := got.String(); gotStr != tt.rule {
+					t.Errorf("got.String() = %q; want %q", gotStr, tt.rule)
+				}
+			}
+		})
+	}
+}

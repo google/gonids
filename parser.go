@@ -1061,7 +1061,7 @@ func (r *Rule) option(key item, l *lexer, st *parseState) error {
 			return fmt.Errorf("error parsing requires: %v", err)
 		}
 		r.Requires = req
-	case inSlice(key.value, []string{"sameip", "tls.store", "ftpbounce", "noalert", "filestore",
+	case inSlice(key.value, []string{"sameip", "tls.store", "ftpbounce", "noalert", "alert", "bypass", "filestore",
 		"tls_cert_expired", "tls_cert_valid", "tls.cert_expired", "tls.cert_valid", "prefilter"}):
 		r.Statements = append(r.Statements, key.value)
 	case inSlice(key.value, tlsTags):
@@ -1405,6 +1405,26 @@ func (r *Rule) option(key item, l *lexer, st *parseState) error {
 		dr.DataDirection = st.dataDirection
 		dr.Transforms = st.cloneTransforms()
 		r.Matchers = append(r.Matchers, dr)
+	case key.value == "absent":
+		nextItem := l.nextItem()
+		var orElse bool
+		switch nextItem.typ {
+		case itemOptionNoValue:
+		case itemOptionValue:
+			if strings.TrimSpace(nextItem.value) != "or_else" {
+				return fmt.Errorf("invalid value %q for absent", nextItem.value)
+			}
+			orElse = true
+		default:
+			return fmt.Errorf("invalid value %q for absent", nextItem.value)
+		}
+		r.Matchers = append(r.Matchers, &Absent{
+			DataPosition:  st.dataPosition,
+			FrameName:     st.frameName,
+			DataDirection: st.dataDirection,
+			Transforms:    st.cloneTransforms(),
+			OrElse:        orElse,
+		})
 	default:
 		return &UnsupportedOptionError{
 			Options: []string{key.value},

@@ -2255,3 +2255,28 @@ func TestMatchersString(t *testing.T) {
 		})
 	}
 }
+
+func TestAbsentString(t *testing.T) {
+	for _, tt := range []struct {
+		name  string
+		input Absent
+		want  string
+	}{
+		{
+			name:  "bare_absent",
+			input: Absent{},
+			want:  "absent;",
+		},
+		{
+			name:  "absent_or_else",
+			input: Absent{OrElse: true},
+			want:  "absent:or_else;",
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.input.String(); got != tt.want {
+				t.Errorf("got %q; want %q", got, tt.want)
+			}
+		})
+	}
+}

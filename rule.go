@@ -730,6 +730,15 @@ type DataRep struct {
 	Options       []string
 }
 
+// Absent describes a Suricata absent sticky-buffer rule option (e.g. "absent;" or "absent:or_else;").
+type Absent struct {
+	DataPosition  DataPos
+	FrameName     string
+	DataDirection string
+	Transforms    Transforms
+	OrElse        bool
+}
+
 // FastPattern describes various properties of a fast_pattern value for a content.
 type FastPattern struct {
 	Enabled bool
@@ -909,6 +918,17 @@ func (r *Rule) DataReps() []*DataRep {
 	return drs
 }
 
+// Absents returns all *Absent for a rule.
+func (r *Rule) Absents() []*Absent {
+	var as []*Absent
+	for _, m := range r.Matchers {
+		if a, ok := m.(*Absent); ok {
+			as = append(as, a)
+		}
+	}
+	return as
+}
+
 // String returns a string for a Dataset.
 func (d Dataset) String() string {
 	var s strings.Builder
@@ -945,6 +965,22 @@ func (d DataRep) stickyPos() stickyPos {
 
 func (d DataRep) transforms() Transforms {
 	return d.Transforms
+}
+
+// String returns a string for an Absent matcher.
+func (a Absent) String() string {
+	if a.OrElse {
+		return "absent:or_else;"
+	}
+	return "absent;"
+}
+
+func (a Absent) stickyPos() stickyPos {
+	return stickyPos{pos: a.DataPosition, frameName: a.FrameName, direction: a.DataDirection}
+}
+
+func (a Absent) transforms() Transforms {
+	return a.Transforms
 }
 
 func netString(netPart []string) string {

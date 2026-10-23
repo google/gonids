@@ -451,6 +451,11 @@ func lexOptionValue(l *lexer) stateFn {
 			l.emit(itemOptionValue, true)
 			l.skipNext()
 			return lexOptionKey
+		case '\\':
+			// Like Suricata, a semicolon preceded by a backslash is part of the value.
+			if l.next() != ';' {
+				l.backup()
+			}
 		case eof:
 			return l.unexpectedEOF()
 		}

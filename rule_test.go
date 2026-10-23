@@ -211,6 +211,14 @@ func TestContentOptionString(t *testing.T) {
 			},
 			want: "http_uri;",
 		},
+		{
+			name: "replace string value",
+			input: ContentOption{
+				Name:  "replace",
+				Value: "bar",
+			},
+			want: `replace:"bar";`,
+		},
 	} {
 		got := tt.input.String()
 		if got != tt.want {

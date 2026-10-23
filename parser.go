@@ -1004,7 +1004,7 @@ func (r *Rule) option(key item, l *lexer, st *parseState) error {
 	key.value = strings.ToLower(key.value)
 	switch {
 	// TODO: Many of these simple tags could be factored into nicer structures.
-	case inSlice(key.value, []string{"classtype", "flow", "tag", "priority", "app-layer-protocol",
+	case inSlice(key.value, []string{"classtype", "flow", "tag", "priority", "app-layer-protocol", "app-layer-state",
 		"flags", "ipopts", "ip_proto", "geoip", "fragbits", "fragoffset", "tos",
 		"window", "app-layer-event", "decode-event", "stream-event", "engine-event", "snmp.version",
 		"dnp3_func", "dnp3_ind", "krb5_err_code", "dns.opcode",
@@ -1012,7 +1012,8 @@ func (r *Rule) option(key item, l *lexer, st *parseState) error {
 		"filemagic", "fileext", "filemd5", "filesha1", "filesha256", "filename", "ftpdata_command",
 		"dce_iface", "dce_opnum", "dcerpc.iface", "dcerpc.opnum",
 		"lua", "luajit",
-		"asn1", "entropy"}):
+		"asn1", "entropy",
+		"config", "iprep", "hostbits", "rpc"}):
 		nextItem := l.nextItem()
 		negate := false
 		if nextItem.typ == itemNot {
@@ -1229,6 +1230,17 @@ func (r *Rule) option(key item, l *lexer, st *parseState) error {
 			return fmt.Errorf("no value for content option %s", key.value)
 		}
 
+		lastContent.Options = append(lastContent.Options, &ContentOption{Name: key.value, Value: nextItem.value})
+
+	case key.value == "replace":
+		lastContent := r.LastContent()
+		if lastContent == nil {
+			return fmt.Errorf("invalid content option %q with no content match", key.value)
+		}
+		nextItem := l.nextItem()
+		if nextItem.typ != itemOptionValueString {
+			return fmt.Errorf("no value for content option %s", key.value)
+		}
 		lastContent.Options = append(lastContent.Options, &ContentOption{Name: key.value, Value: nextItem.value})
 
 	case key.value == "fast_pattern":

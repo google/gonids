@@ -300,6 +300,118 @@ const (
 	http2HeaderValue
 	// Open-ended Frame Sticky Buffer
 	framePos
+	// DNS Sticky Buffers
+	dnsQueriesRrname
+	dnsAnswersRrname
+	dnsAuthoritiesRrname
+	dnsAdditionalsRrname
+	dnsResponseRrname
+	dnsQueryName
+	dnsAnswerName
+	// mDNS Sticky Buffers
+	mdnsQueriesRrname
+	mdnsAnswersRrname
+	mdnsAuthoritiesRrname
+	mdnsAdditionalsRrname
+	mdnsResponseRrname
+	// TLS Sticky Buffers
+	tlsSubjectAltName
+	tlsRandomTime
+	tlsRandomBytes
+	tlsALPN
+	// File, Kerberos & SMB Sticky Buffers
+	fileName
+	krb5Cname5
+	krb5Sname5
+	smbNamedPipe5
+	smbShare5
+	smbNtlmsspUser
+	smbNtlmsspDomain
+	// Email Sticky Buffers
+	emailFrom
+	emailSubject
+	emailTo
+	emailCc
+	emailDate
+	emailMessageID
+	emailXMailer
+	emailURL
+	emailReceived
+	// SMTP, FTP & PGSQL Sticky Buffers
+	smtpHelo
+	smtpMailFrom
+	smtpRcptTo
+	ftpCommand
+	ftpCommandData
+	ftpCompletionCode
+	ftpReply
+	pgsqlQuery
+	// LDAP Sticky Buffers
+	ldapRequestDN
+	ldapResponsesDN
+	ldapResponsesMessage
+	ldapRequestAttributeType
+	ldapResponsesAttributeType
+	// SIP Sticky Buffers
+	sipMethod
+	sipURI
+	sipRequestLine
+	sipStatCode
+	sipStatMsg
+	sipResponseLine
+	sipProtocol
+	sipFrom
+	sipTo
+	sipVia
+	sipUserAgent
+	sipContentType
+	sipContentLength
+	// SDP Sticky Buffers
+	sdpOrigin
+	sdpSessionName
+	sdpSessionInfo
+	sdpURI
+	sdpEmail
+	sdpPhoneNumber
+	sdpConnectionData
+	sdpBandwidth
+	sdpTime
+	sdpRepeatTime
+	sdpTimezone
+	sdpEncryptionKey
+	sdpAttribute
+	sdpMediaMedia
+	sdpMediaSessionInfo
+	sdpMediaMediaInfo
+	sdpMediaConnectionData
+	sdpMediaEncryptionKey
+	// WebSocket, NTP, SNMP, RFB Sticky Buffers
+	websocketPayload
+	ntpReferenceID
+	snmpUSM
+	rfbName
+	// IKE Sticky Buffers
+	ikeInitSPI
+	ikeRespSPI
+	ikeVendor
+	ikeKeyExchangePayload
+	ikeNoncePayload
+	// MQTT Sticky Buffers
+	mqttConnectClientID
+	mqttConnectPassword
+	mqttConnectProtocolString
+	mqttConnectUsername
+	mqttConnectWillMessage
+	mqttConnectWillTopic
+	mqttPublishMessage
+	mqttPublishTopic
+	mqttSubscribeTopic
+	mqttUnsubscribeTopic
+	// DNP3 & ENIP Sticky Buffers
+	dnp3Data
+	dnp3Data8
+	enipProductName
+	enipServiceName
 )
 
 // Contains both Suricata 4.x and 5.0 buffers. Some day we'll deprecate the 4.x ones.
@@ -439,8 +551,118 @@ var stickyBuffers = map[DataPos]string{
 	http2HeaderValue: "http2.header_value",
 	// Open-ended Frame Sticky Buffer
 	framePos: "frame",
-
-	// SMB - Documentation lacking. Unknown.
+	// DNS Sticky Buffers
+	dnsQueriesRrname:     "dns.queries.rrname",
+	dnsAnswersRrname:     "dns.answers.rrname",
+	dnsAuthoritiesRrname: "dns.authorities.rrname",
+	dnsAdditionalsRrname: "dns.additionals.rrname",
+	dnsResponseRrname:    "dns.response.rrname",
+	dnsQueryName:         "dns.query.name",
+	dnsAnswerName:        "dns.answer.name",
+	// mDNS Sticky Buffers
+	mdnsQueriesRrname:     "mdns.queries.rrname",
+	mdnsAnswersRrname:     "mdns.answers.rrname",
+	mdnsAuthoritiesRrname: "mdns.authorities.rrname",
+	mdnsAdditionalsRrname: "mdns.additionals.rrname",
+	mdnsResponseRrname:    "mdns.response.rrname",
+	// TLS Sticky Buffers
+	tlsSubjectAltName: "tls.subjectaltname",
+	tlsRandomTime:     "tls.random_time",
+	tlsRandomBytes:    "tls.random_bytes",
+	tlsALPN:           "tls.alpn",
+	// File, Kerberos & SMB Sticky Buffers
+	fileName:         "file.name",
+	krb5Cname5:       "krb5.cname",
+	krb5Sname5:       "krb5.sname",
+	smbNamedPipe5:    "smb.named_pipe",
+	smbShare5:        "smb.share",
+	smbNtlmsspUser:   "smb.ntlmssp_user",
+	smbNtlmsspDomain: "smb.ntlmssp_domain",
+	// Email Sticky Buffers
+	emailFrom:      "email.from",
+	emailSubject:   "email.subject",
+	emailTo:        "email.to",
+	emailCc:        "email.cc",
+	emailDate:      "email.date",
+	emailMessageID: "email.message_id",
+	emailXMailer:   "email.x_mailer",
+	emailURL:       "email.url",
+	emailReceived:  "email.received",
+	// SMTP, FTP & PGSQL Sticky Buffers
+	smtpHelo:          "smtp.helo",
+	smtpMailFrom:      "smtp.mail_from",
+	smtpRcptTo:        "smtp.rcpt_to",
+	ftpCommand:        "ftp.command",
+	ftpCommandData:    "ftp.command_data",
+	ftpCompletionCode: "ftp.completion_code",
+	ftpReply:          "ftp.reply",
+	pgsqlQuery:        "pgsql.query",
+	// LDAP Sticky Buffers
+	ldapRequestDN:              "ldap.request.dn",
+	ldapResponsesDN:            "ldap.responses.dn",
+	ldapResponsesMessage:       "ldap.responses.message",
+	ldapRequestAttributeType:   "ldap.request.attribute_type",
+	ldapResponsesAttributeType: "ldap.responses.attribute_type",
+	// SIP Sticky Buffers
+	sipMethod:        "sip.method",
+	sipURI:           "sip.uri",
+	sipRequestLine:   "sip.request_line",
+	sipStatCode:      "sip.stat_code",
+	sipStatMsg:       "sip.stat_msg",
+	sipResponseLine:  "sip.response_line",
+	sipProtocol:      "sip.protocol",
+	sipFrom:          "sip.from",
+	sipTo:            "sip.to",
+	sipVia:           "sip.via",
+	sipUserAgent:     "sip.user_agent",
+	sipContentType:   "sip.content_type",
+	sipContentLength: "sip.content_length",
+	// SDP Sticky Buffers
+	sdpOrigin:              "sdp.origin",
+	sdpSessionName:         "sdp.session_name",
+	sdpSessionInfo:         "sdp.session_info",
+	sdpURI:                 "sdp.uri",
+	sdpEmail:               "sdp.email",
+	sdpPhoneNumber:         "sdp.phone_number",
+	sdpConnectionData:      "sdp.connection_data",
+	sdpBandwidth:           "sdp.bandwidth",
+	sdpTime:                "sdp.time",
+	sdpRepeatTime:          "sdp.repeat_time",
+	sdpTimezone:            "sdp.timezone",
+	sdpEncryptionKey:       "sdp.encryption_key",
+	sdpAttribute:           "sdp.attribute",
+	sdpMediaMedia:          "sdp.media.media",
+	sdpMediaSessionInfo:    "sdp.media.session_info",
+	sdpMediaMediaInfo:      "sdp.media.media_info",
+	sdpMediaConnectionData: "sdp.media.connection_data",
+	sdpMediaEncryptionKey:  "sdp.media.encryption_key",
+	// WebSocket, NTP, SNMP, RFB Sticky Buffers
+	websocketPayload: "websocket.payload",
+	ntpReferenceID:   "ntp.reference_id",
+	snmpUSM:          "snmp.usm",
+	rfbName:          "rfb.name",
+	// IKE Sticky Buffers
+	ikeInitSPI:            "ike.init_spi",
+	ikeRespSPI:            "ike.resp_spi",
+	ikeVendor:             "ike.vendor",
+	ikeKeyExchangePayload: "ike.key_exchange_payload",
+	ikeNoncePayload:       "ike.nonce_payload",
+	// MQTT Sticky Buffers
+	mqttConnectClientID:       "mqtt.connect.clientid",
+	mqttConnectPassword:       "mqtt.connect.password",
+	mqttConnectProtocolString: "mqtt.connect.protocol_string",
+	mqttConnectUsername:       "mqtt.connect.username",
+	mqttConnectWillMessage:    "mqtt.connect.willmessage",
+	mqttConnectWillTopic:      "mqtt.connect.willtopic",
+	mqttPublishMessage:        "mqtt.publish.message",
+	mqttPublishTopic:          "mqtt.publish.topic",
+	mqttSubscribeTopic:        "mqtt.subscribe.topic",
+	mqttUnsubscribeTopic:      "mqtt.unsubscribe.topic",
+	// DNP3 & ENIP Sticky Buffers
+	dnp3Data:        "dnp3_data",
+	dnp3Data8:       "dnp3.data",
+	enipProductName: "enip.product_name",
+	enipServiceName: "enip.service_name",
 }
 
 func (d DataPos) String() string {

@@ -5150,3 +5150,139 @@ func TestParseReplaceContentOption(t *testing.T) {
 		})
 	}
 }
+
+func TestParseSuricata8ProtocolStickyBuffers(t *testing.T) {
+	buffers := []string{
+		// DNS
+		"dns.queries.rrname",
+		"dns.answers.rrname",
+		"dns.authorities.rrname",
+		"dns.additionals.rrname",
+		"dns.response.rrname",
+		"dns.query.name",
+		"dns.answer.name",
+		// mDNS
+		"mdns.queries.rrname",
+		"mdns.answers.rrname",
+		"mdns.authorities.rrname",
+		"mdns.additionals.rrname",
+		"mdns.response.rrname",
+		// TLS
+		"tls.subjectaltname",
+		"tls.random_time",
+		"tls.random_bytes",
+		"tls.alpn",
+		// File, Kerberos & SMB
+		"file.name",
+		"krb5.cname",
+		"krb5.sname",
+		"smb.named_pipe",
+		"smb.share",
+		"smb.ntlmssp_user",
+		"smb.ntlmssp_domain",
+		// Email
+		"email.from",
+		"email.subject",
+		"email.to",
+		"email.cc",
+		"email.date",
+		"email.message_id",
+		"email.x_mailer",
+		"email.url",
+		"email.received",
+		// SMTP, FTP & PGSQL
+		"smtp.helo",
+		"smtp.mail_from",
+		"smtp.rcpt_to",
+		"ftp.command",
+		"ftp.command_data",
+		"ftp.completion_code",
+		"ftp.reply",
+		"pgsql.query",
+		// LDAP
+		"ldap.request.dn",
+		"ldap.responses.dn",
+		"ldap.responses.message",
+		"ldap.request.attribute_type",
+		"ldap.responses.attribute_type",
+		// SIP
+		"sip.method",
+		"sip.uri",
+		"sip.request_line",
+		"sip.stat_code",
+		"sip.stat_msg",
+		"sip.response_line",
+		"sip.protocol",
+		"sip.from",
+		"sip.to",
+		"sip.via",
+		"sip.user_agent",
+		"sip.content_type",
+		"sip.content_length",
+		// SDP
+		"sdp.origin",
+		"sdp.session_name",
+		"sdp.session_info",
+		"sdp.uri",
+		"sdp.email",
+		"sdp.phone_number",
+		"sdp.connection_data",
+		"sdp.bandwidth",
+		"sdp.time",
+		"sdp.repeat_time",
+		"sdp.timezone",
+		"sdp.encryption_key",
+		"sdp.attribute",
+		"sdp.media.media",
+		"sdp.media.session_info",
+		"sdp.media.media_info",
+		"sdp.media.connection_data",
+		"sdp.media.encryption_key",
+		// WebSocket, NTP, SNMP, RFB
+		"websocket.payload",
+		"ntp.reference_id",
+		"snmp.usm",
+		"rfb.name",
+		// IKE
+		"ike.init_spi",
+		"ike.resp_spi",
+		"ike.vendor",
+		"ike.key_exchange_payload",
+		"ike.nonce_payload",
+		// MQTT
+		"mqtt.connect.clientid",
+		"mqtt.connect.password",
+		"mqtt.connect.protocol_string",
+		"mqtt.connect.username",
+		"mqtt.connect.willmessage",
+		"mqtt.connect.willtopic",
+		"mqtt.publish.message",
+		"mqtt.publish.topic",
+		"mqtt.subscribe.topic",
+		"mqtt.unsubscribe.topic",
+		// DNP3 & ENIP
+		"dnp3_data",
+		"dnp3.data",
+		"enip.product_name",
+		"enip.service_name",
+	}
+
+	for _, buf := range buffers {
+		t.Run(buf, func(t *testing.T) {
+			ruleStr := `alert tcp any any -> any any (msg:"test ` + buf + `"; ` + buf + `; content:"test"; sid:1; rev:1;)`
+			got, err := ParseRule(ruleStr)
+			if err != nil {
+				t.Fatalf("ParseRule(%q) unexpected error: %v", ruleStr, err)
+			}
+			if len(got.Contents()) != 1 {
+				t.Fatalf("len(got.Contents()) = %d; want 1", len(got.Contents()))
+			}
+			if gotBuf := got.Contents()[0].DataPosition.String(); gotBuf != buf {
+				t.Errorf("got DataPosition.String() = %q; want %q", gotBuf, buf)
+			}
+			if gotStr := got.String(); gotStr != ruleStr {
+				t.Errorf("got.String() = %q; want %q", gotStr, ruleStr)
+			}
+		})
+	}
+}

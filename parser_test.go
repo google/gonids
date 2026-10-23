@@ -5059,3 +5059,94 @@ func TestParseOptionStringTrailingSpaces(t *testing.T) {
 		t.Errorf("got.String() = %q; want %q", gotStr, wantStr)
 	}
 }
+
+func TestParseSuricata8MetaAndCoreTags(t *testing.T) {
+	for _, tt := range []struct {
+		name    string
+		key     string
+		val     string
+		rule    string
+		wantErr bool
+	}{
+		{
+			name: "config_tag",
+			key:  "config",
+			val:  "logging disable, type tx, scope tx",
+			rule: `config dns any any -> any any (msg:"disable dns tx logging"; dns.query; content:"google.com"; config:logging disable, type tx, scope tx; sid:1; rev:1;)`,
+		},
+		{
+			name: "iprep_tag",
+			key:  "iprep",
+			val:  "any,BadHosts,>,1",
+			rule: `alert ip any any -> any any (msg:"IP reputation BadHosts"; iprep:any,BadHosts,>,1; sid:2; rev:1;)`,
+		},
+		{
+			name: "hostbits_tag",
+			key:  "hostbits",
+			val:  "set,attacker,src",
+			rule: `alert tcp any any -> any any (msg:"set hostbits"; content:"attack"; hostbits:set,attacker,src; sid:3; rev:1;)`,
+		},
+		{
+			name: "rpc_tag",
+			key:  "rpc",
+			val:  "100003,*,3",
+			rule: `alert udp any any -> any 111 (msg:"RPC NFSv3"; rpc:100003,*,3; sid:4; rev:1;)`,
+		},
+		{
+			name: "app_layer_state_tag",
+			key:  "app-layer-state",
+			val:  "tls.handshake_done",
+			rule: `alert tls any any -> any any (msg:"TLS handshake done"; app-layer-state:tls.handshake_done; sid:5; rev:1;)`,
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := ParseRule(tt.rule)
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("ParseRule(%q) error = %v, wantErr %v", tt.rule, err, tt.wantErr)
+			}
+			if !tt.wantErr {
+				if got.Tags[tt.key] != tt.val {
+					t.Errorf("got.Tags[%q] = %q; want %q", tt.key, got.Tags[tt.key], tt.val)
+				}
+				if gotStr := got.String(); gotStr != tt.rule {
+					t.Errorf("got.String() = %q; want %q", gotStr, tt.rule)
+				}
+			}
+		})
+	}
+}
+
+func TestParseReplaceContentOption(t *testing.T) {
+	for _, tt := range []struct {
+		name    string
+		rule    string
+		wantErr bool
+	}{
+		{
+			name: "valid_replace",
+			rule: `alert tcp any any -> any 80 (msg:"replace foo with bar"; content:"foo"; replace:"bar"; sid:1; rev:1;)`,
+		},
+		{
+			name:    "replace_without_content",
+			rule:    `alert tcp any any -> any 80 (msg:"replace without content"; replace:"bar"; sid:2; rev:1;)`,
+			wantErr: true,
+		},
+		{
+			name:    "replace_without_quoted_string",
+			rule:    `alert tcp any any -> any 80 (msg:"replace unquoted"; content:"foo"; replace:bar; sid:3; rev:1;)`,
+			wantErr: true,
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := ParseRule(tt.rule)
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("ParseRule(%q) error = %v, wantErr %v", tt.rule, err, tt.wantErr)
+			}
+			if !tt.wantErr {
+				if gotStr := got.String(); gotStr != tt.rule {
+					t.Errorf("got.String() = %q; want %q", gotStr, tt.rule)
+				}
+			}
+		})
+	}
+}

@@ -1043,10 +1043,14 @@ func (f FastPattern) String() string {
 
 // String returns a string for a ContentOption.
 func (co ContentOption) String() string {
-	if inSlice(co.Name, []string{"depth", "distance", "offset", "within"}) {
+	switch {
+	case inSlice(co.Name, []string{"depth", "distance", "offset", "within"}):
 		return fmt.Sprintf("%s:%v;", co.Name, co.Value)
+	case co.Name == "replace":
+		return fmt.Sprintf(`%s:"%s";`, co.Name, co.Value)
+	default:
+		return fmt.Sprintf("%s;", co.Name)
 	}
-	return fmt.Sprintf("%s;", co.Name)
 }
 
 // String returns a string for a Reference.

@@ -1207,7 +1207,11 @@ func (a Absent) transforms() Transforms {
 
 func netString(netPart []string) string {
 	var s strings.Builder
-	if len(netPart) > 1 {
+	// The parser keeps a list like [a,b] as the single item "a,b", so a single
+	// item can still be a list. Bracket it: unbracketed, a leading ! would only
+	// negate the first entry.
+	group := len(netPart) > 1 || (len(netPart) == 1 && strings.Contains(netPart[0], ","))
+	if group {
 		fmt.Fprintf(&s, "[")
 	}
 	for i, n := range netPart {
@@ -1216,7 +1220,7 @@ func netString(netPart []string) string {
 			fmt.Fprintf(&s, ",")
 		}
 	}
-	if len(netPart) > 1 {
+	if group {
 		fmt.Fprintf(&s, "]")
 	}
 	return s.String()

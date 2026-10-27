@@ -1633,11 +1633,23 @@ func (ms Matchers) String() string {
 	}
 	var parts []string
 	curPos := stickyPos{pos: pktData}
+	var curTs string
 	for _, m := range ms {
-		if sp := m.stickyPos(); sp != curPos {
+		sp := m.stickyPos()
+		ts := m.transforms()
+		// Byte and length matchers don't record transforms, they inspect whatever
+		// transform chain is active, so only other matchers can change it.
+		tsChanged := false
+		switch m.(type) {
+		case *ByteMatch, *LenMatch:
+		default:
+			tsChanged = ts.String() != curTs
+		}
+		if sp != curPos || tsChanged {
 			curPos = sp
+			curTs = ts.String()
 			parts = append(parts, sp.String())
-			if ts := m.transforms(); len(ts) > 0 {
+			if len(ts) > 0 {
 				parts = append(parts, ts.String())
 			}
 		}

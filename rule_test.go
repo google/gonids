@@ -1414,6 +1414,38 @@ func TestRuleString(t *testing.T) {
 	}
 }
 
+func TestRuleStringTagOrder(t *testing.T) {
+	r := Rule{
+		Action:   "alert",
+		Protocol: "tcp",
+		Source: Network{
+			Nets:  []string{"$HOME_NET"},
+			Ports: []string{"any"},
+		},
+		Destination: Network{
+			Nets:  []string{"$EXTERNAL_NET"},
+			Ports: []string{"any"},
+		},
+		SID:         1337,
+		Revision:    2,
+		Description: "foo",
+		Tags: map[string]string{
+			"flow":               "to_server",
+			"classtype":          "trojan-activity",
+			"app-layer-protocol": "!tls",
+			"flags":              "S,12",
+			"dsize":              ">11",
+		},
+	}
+	want := `alert tcp $HOME_NET any -> $EXTERNAL_NET any (msg:"foo"; flow:to_server; app-layer-protocol:!tls; classtype:trojan-activity; dsize:>11; flags:S,12; sid:1337; rev:2;)`
+	// Map iteration order is random, so check several times.
+	for i := 0; i < 20; i++ {
+		if got := r.String(); got != want {
+			t.Fatalf("got %v -- expected %v", got, want)
+		}
+	}
+}
+
 func TestRE(t *testing.T) {
 	for _, tt := range []struct {
 		rule string

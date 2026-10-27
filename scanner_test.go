@@ -168,3 +168,23 @@ alert tcp any any -> any any (msg:"test"; sid:1; rev:1;)
 		t.Errorf("expected EOF, got extra item: rule=%v, raw=%q", scanner.Rule(), scanner.Raw())
 	}
 }
+
+func TestRuleScannerSuricataActions(t *testing.T) {
+	input := `rejectsrc tcp any any -> any any (msg:"rejectsrc"; sid:1; rev:1;)
+rejectdst tcp any any -> any any (msg:"rejectdst"; sid:2; rev:1;)
+rejectboth tcp any any -> any any (msg:"rejectboth"; sid:3; rev:1;)
+config dns any any -> any any (msg:"config"; sid:4; rev:1;)
+`
+	rules, err := ParseRules(strings.NewReader(input))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(rules) != 4 {
+		t.Fatalf("got %d rules, expected 4", len(rules))
+	}
+	for i, want := range []string{"rejectsrc", "rejectdst", "rejectboth", "config"} {
+		if rules[i].Action != want || rules[i].SID != i+1 {
+			t.Errorf("rule %d: got action %q sid %d, expected %q sid %d", i, rules[i].Action, rules[i].SID, want, i+1)
+		}
+	}
+}

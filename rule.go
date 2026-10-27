@@ -19,6 +19,7 @@ import (
 	"bytes"
 	"fmt"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 )
@@ -1703,11 +1704,17 @@ func (r Rule) String() string {
 		fmt.Fprintf(&s, "%s ", r.Metas)
 	}
 
-	for k, v := range r.Tags {
+	// Sort the tag names so the output does not depend on map iteration order.
+	tagNames := make([]string, 0, len(r.Tags))
+	for k := range r.Tags {
 		if k == "flow" {
 			continue
 		}
-		fmt.Fprintf(&s, "%s:%s; ", k, v)
+		tagNames = append(tagNames, k)
+	}
+	sort.Strings(tagNames)
+	for _, k := range tagNames {
+		fmt.Fprintf(&s, "%s:%s; ", k, r.Tags[k])
 	}
 
 	for _, v := range r.Statements {

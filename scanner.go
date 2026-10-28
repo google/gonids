@@ -54,7 +54,7 @@ func isRuleCandidate(line string) bool {
 		return false
 	}
 	action := strings.ToLower(fields[0])
-	if !inSlice(action, []string{"alert", "drop", "pass", "reject", "sdrop", "log"}) {
+	if !inSlice(action, []string{"alert", "drop", "pass", "reject", "rejectsrc", "rejectdst", "rejectboth", "config", "sdrop", "log"}) {
 		return false
 	}
 	protocol := strings.ToLower(fields[1])

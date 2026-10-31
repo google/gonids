@@ -1406,6 +1406,25 @@ func TestRuleString(t *testing.T) {
 			},
 			want: `alert http $HOME_NET any -> $EXTERNAL_NET any (msg:"chained transforms test"; http.uri; to_lowercase; url_decode; content:"foo"; sid:1234; rev:2;)`,
 		},
+		{
+			name: "rule with quotes and semicolons in msg",
+			input: Rule{
+				Action:   "alert",
+				Protocol: "dns",
+				Source: Network{
+					Nets:  []string{"any"},
+					Ports: []string{"any"},
+				},
+				Destination: Network{
+					Nets:  []string{"any"},
+					Ports: []string{"any"},
+				},
+				SID:         1337,
+				Revision:    2,
+				Description: `DNS query for evil"; flowbits:noalert; reference:url,x`,
+			},
+			want: `alert dns any any -> any any (msg:"DNS query for evil\"\; flowbits:noalert\; reference:url,x"; sid:1337; rev:2;)`,
+		},
 	} {
 		got := tt.input.String()
 		if got != tt.want {

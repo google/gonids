@@ -1662,7 +1662,7 @@ func (r Rule) String() string {
 		fmt.Fprintf(&s, "-> ")
 	}
 
-	fmt.Fprintf(&s, `%s (msg:"%s"; `, r.Destination, r.Description)
+	fmt.Fprintf(&s, `%s (msg:"%s"; `, r.Destination, escapeMsg(r.Description))
 
 	// Pull flow out of tags if it exists, we like flow at the beginning of rules.
 	if v, ok := r.Tags["flow"]; ok {

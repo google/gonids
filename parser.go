@@ -762,6 +762,28 @@ func unquote(s string) string {
 	return strings.ReplaceAll(s, `\"`, `"`)
 }
 
+// unescapeMsg resolves the escaped quotes and semicolons of a msg value, like
+// Suricata does, so Description holds the message text itself.
+func unescapeMsg(s string) string {
+	if strings.IndexByte(s, '\\') < 0 {
+		return s
+	}
+	var b strings.Builder
+	for i := 0; i < len(s); i++ {
+		if s[i] == '\\' && i+1 < len(s) && (s[i+1] == '"' || s[i+1] == ';') {
+			i++
+		}
+		b.WriteByte(s[i])
+	}
+	return b.String()
+}
+
+// escapeMsg escapes the quotes and semicolons of a Description so they cannot
+// end the msg string or the option when the rule is parsed again.
+func escapeMsg(s string) string {
+	return strings.NewReplacer(`"`, `\"`, `;`, `\;`).Replace(s)
+}
+
 func inSlice(str string, strings []string) bool {
 	for _, k := range strings {
 		if str == k {
@@ -1139,7 +1161,7 @@ func (r *Rule) option(key item, l *lexer, st *parseState) error {
 		if nextItem.typ != itemOptionValueString {
 			return errors.New("no value for option msg")
 		}
-		r.Description = nextItem.value
+		r.Description = unescapeMsg(nextItem.value)
 	case key.value == "frame":
 		nextItem := l.nextItem()
 		if nextItem.typ != itemOptionValue || strings.TrimSpace(nextItem.value) == "" {

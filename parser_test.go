@@ -4022,6 +4022,25 @@ func TestParseRule(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "test msg with escaped quotes and semicolon",
+			rule: `alert tcp $HOME_NET any -> any any (msg:"say \"hi\"\; C\\dir"; sid:27; rev:1;)`,
+			want: &Rule{
+				Action:   "alert",
+				Protocol: "tcp",
+				Source: Network{
+					Nets:  []string{"$HOME_NET"},
+					Ports: []string{"any"},
+				},
+				Destination: Network{
+					Nets:  []string{"any"},
+					Ports: []string{"any"},
+				},
+				SID:         27,
+				Revision:    1,
+				Description: `say "hi"; C\\dir`,
+			},
+		},
 	} {
 		got, err := ParseRule(tt.rule)
 		diff := pretty.Compare(got, tt.want)

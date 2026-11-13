@@ -962,6 +962,17 @@ type Absent struct {
 	OrElse        bool
 }
 
+// Entropy describes a Suricata entropy rule option (e.g. "entropy:bytes 16, value > 5;").
+// It is evaluated on the active sticky buffer, so it is kept as an ordered matcher.
+type Entropy struct {
+	DataPosition  DataPos
+	FrameName     string
+	DataDirection string
+	Transforms    Transforms
+	// Value is the option value as written in the rule (e.g. "bytes 16, value > 5").
+	Value string
+}
+
 // FastPattern describes various properties of a fast_pattern value for a content.
 type FastPattern struct {
 	Enabled bool
@@ -1152,6 +1163,17 @@ func (r *Rule) Absents() []*Absent {
 	return as
 }
 
+// Entropies returns all *Entropy for a rule.
+func (r *Rule) Entropies() []*Entropy {
+	var es []*Entropy
+	for _, m := range r.Matchers {
+		if e, ok := m.(*Entropy); ok {
+			es = append(es, e)
+		}
+	}
+	return es
+}
+
 // String returns a string for a Dataset.
 func (d Dataset) String() string {
 	var s strings.Builder
@@ -1204,6 +1226,19 @@ func (a Absent) stickyPos() stickyPos {
 
 func (a Absent) transforms() Transforms {
 	return a.Transforms
+}
+
+// String returns a string for an Entropy matcher.
+func (e Entropy) String() string {
+	return fmt.Sprintf("entropy:%s;", e.Value)
+}
+
+func (e Entropy) stickyPos() stickyPos {
+	return stickyPos{pos: e.DataPosition, frameName: e.FrameName, direction: e.DataDirection}
+}
+
+func (e Entropy) transforms() Transforms {
+	return e.Transforms
 }
 
 func netString(netPart []string) string {

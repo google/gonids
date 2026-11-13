@@ -1034,7 +1034,7 @@ func (r *Rule) option(key item, l *lexer, st *parseState) error {
 		"filemagic", "fileext", "filemd5", "filesha1", "filesha256", "filename", "ftpdata_command",
 		"dce_iface", "dce_opnum", "dcerpc.iface", "dcerpc.opnum",
 		"lua", "luajit",
-		"asn1", "entropy",
+		"asn1",
 		"config", "iprep", "hostbits", "rpc"}):
 		nextItem := l.nextItem()
 		negate := false
@@ -1439,6 +1439,18 @@ func (r *Rule) option(key item, l *lexer, st *parseState) error {
 		dr.DataDirection = st.dataDirection
 		dr.Transforms = st.cloneTransforms()
 		r.Matchers = append(r.Matchers, dr)
+	case key.value == "entropy":
+		nextItem := l.nextItem()
+		if nextItem.typ != itemOptionValue || strings.TrimSpace(nextItem.value) == "" {
+			return errors.New("no valid value for entropy")
+		}
+		r.Matchers = append(r.Matchers, &Entropy{
+			DataPosition:  st.dataPosition,
+			FrameName:     st.frameName,
+			DataDirection: st.dataDirection,
+			Transforms:    st.cloneTransforms(),
+			Value:         strings.TrimSpace(nextItem.value),
+		})
 	case key.value == "absent":
 		nextItem := l.nextItem()
 		var orElse bool

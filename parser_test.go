@@ -5305,3 +5305,59 @@ func TestParseSuricata8ProtocolStickyBuffers(t *testing.T) {
 		})
 	}
 }
+
+func TestParseEntropy(t *testing.T) {
+	for _, tt := range []struct {
+		name    string
+		rule    string
+		want    string
+		wantPos DataPos
+		wantErr bool
+	}{
+		{
+			name:    "entropy_file_data",
+			rule:    `alert http any any -> any any (msg:"entropy simple test"; file_data; entropy:value <= 4.037; sid:1; rev:1;)`,
+			want:    `alert http any any -> any any (msg:"entropy simple test"; file_data; entropy:value <= 4.037; sid:1; rev:1;)`,
+			wantPos: fileData,
+		},
+		{
+			name:    "entropy_before_other_buffer",
+			rule:    `alert http any any -> any any (msg:"entropy"; file_data; entropy:value >= 7.5; http.uri; content:"/a"; sid:2; rev:1;)`,
+			want:    `alert http any any -> any any (msg:"entropy"; file_data; entropy:value >= 7.5; http.uri; content:"/a"; sid:2; rev:1;)`,
+			wantPos: fileData,
+		},
+		{
+			name:    "entropy_with_transform",
+			rule:    `alert http any any -> any any (msg:"entropy"; http.uri; from_base64; entropy:bytes 16, value > 5; http.method; content:"GET"; sid:3; rev:1;)`,
+			want:    `alert http any any -> any any (msg:"entropy"; http.uri; from_base64; entropy:bytes 16, value > 5; http.method; content:"GET"; sid:3; rev:1;)`,
+			wantPos: httpURI,
+		},
+		{
+			name:    "entropy_no_value",
+			rule:    `alert http any any -> any any (msg:"entropy"; file_data; entropy; sid:4; rev:1;)`,
+			wantErr: true,
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := ParseRule(tt.rule)
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("ParseRule(%q) error = %v, wantErr %v", tt.rule, err, tt.wantErr)
+			}
+			if tt.wantErr {
+				return
+			}
+			if len(got.Entropies()) != 1 {
+				t.Fatalf("len(got.Entropies()) = %d; want 1", len(got.Entropies()))
+			}
+			if pos := got.Entropies()[0].DataPosition; pos != tt.wantPos {
+				t.Errorf("got.Entropies()[0].DataPosition = %v; want %v", pos, tt.wantPos)
+			}
+			if _, ok := got.Tags["entropy"]; ok {
+				t.Errorf("entropy should not be stored in Tags")
+			}
+			if gotStr := got.String(); gotStr != tt.want {
+				t.Errorf("got.String() = %q; want %q", gotStr, tt.want)
+			}
+		})
+	}
+}

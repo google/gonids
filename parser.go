@@ -1048,10 +1048,14 @@ func (r *Rule) option(key item, l *lexer, st *parseState) error {
 		if r.Tags == nil {
 			r.Tags = make(map[string]string)
 		}
+		val := nextItem.value
 		if negate {
-			r.Tags[key.value] = "!" + nextItem.value
+			val = "!" + val
+		}
+		if _, ok := r.Tags[key.value]; ok {
+			r.ExtraTags = append(r.ExtraTags, &Tag{Key: key.value, Value: val})
 		} else {
-			r.Tags[key.value] = nextItem.value
+			r.Tags[key.value] = val
 		}
 	case key.value == "target":
 		nextItem := l.nextItem()

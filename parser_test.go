@@ -5135,6 +5135,50 @@ func TestParseSuricata8MetaAndCoreTags(t *testing.T) {
 	}
 }
 
+func TestParseRepeatedTags(t *testing.T) {
+	for _, tt := range []struct {
+		name      string
+		rule      string
+		key       string
+		val       string
+		wantExtra []*Tag
+	}{
+		{
+			name:      "hostbits",
+			rule:      `alert tcp any any -> any any (msg:"repeated hostbits"; hostbits:isset,compromised,track ip_src; hostbits:set,seen,track ip_dst; sid:1; rev:1;)`,
+			key:       "hostbits",
+			val:       "isset,compromised,track ip_src",
+			wantExtra: []*Tag{{Key: "hostbits", Value: "set,seen,track ip_dst"}},
+		},
+		{
+			name: "iprep",
+			rule: `alert ip any any -> any any (msg:"repeated iprep"; iprep:src,CnC,>,30; iprep:dst,Spam,>,10; iprep:any,BadHosts,>,1; sid:2; rev:1;)`,
+			key:  "iprep",
+			val:  "src,CnC,>,30",
+			wantExtra: []*Tag{
+				{Key: "iprep", Value: "dst,Spam,>,10"},
+				{Key: "iprep", Value: "any,BadHosts,>,1"},
+			},
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := ParseRule(tt.rule)
+			if err != nil {
+				t.Fatalf("ParseRule(%q) unexpected error: %v", tt.rule, err)
+			}
+			if got.Tags[tt.key] != tt.val {
+				t.Errorf("got.Tags[%q] = %q; want %q", tt.key, got.Tags[tt.key], tt.val)
+			}
+			if !reflect.DeepEqual(got.ExtraTags, tt.wantExtra) {
+				t.Errorf("got.ExtraTags = %v; want %v", got.ExtraTags, tt.wantExtra)
+			}
+			if gotStr := got.String(); gotStr != tt.rule {
+				t.Errorf("got.String() = %q; want %q", gotStr, tt.rule)
+			}
+		})
+	}
+}
+
 func TestParseReplaceContentOption(t *testing.T) {
 	for _, tt := range []struct {
 		name    string

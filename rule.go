@@ -52,6 +52,9 @@ type Rule struct {
 	References []*Reference
 	// Contents are all the decoded content matches.
 	Tags map[string]string
+	// ExtraTags holds further occurrences of an option already present in Tags
+	// (e.g. a second hostbits or iprep option), in rule order.
+	ExtraTags []*Tag
 	// Statements is a slice of string. These items are similar to Tags, but have no value. (e.g. 'sameip;')
 	Statements []string
 	// TLSTags is a slice of TLS related matches.
@@ -106,6 +109,12 @@ func (sp stickyPos) String() string {
 	default:
 		return fmt.Sprintf("%s;", sp.pos)
 	}
+}
+
+// Tag describes a simple keyword option and its value (e.g. hostbits:set,attacker,src).
+type Tag struct {
+	Key   string
+	Value string
 }
 
 // Metadata describes metadata tags in key-value struct.
@@ -1715,6 +1724,10 @@ func (r Rule) String() string {
 	sort.Strings(tagNames)
 	for _, k := range tagNames {
 		fmt.Fprintf(&s, "%s:%s; ", k, r.Tags[k])
+	}
+
+	for _, t := range r.ExtraTags {
+		fmt.Fprintf(&s, "%s:%s; ", t.Key, t.Value)
 	}
 
 	for _, v := range r.Statements {

@@ -261,6 +261,59 @@ func TestSnortURILenFix(t *testing.T) {
 			},
 			wantMod: true,
 		},
+		{
+			name: "no urilen",
+			input: &Rule{
+				Matchers: []orderedMatcher{
+					&LenMatch{
+						Kind:     dSize,
+						Num:      100,
+						Operator: ">",
+					},
+					&LenMatch{
+						Kind: iType,
+						Num:  8,
+					},
+				},
+			},
+			wantMod: false,
+		},
+		{
+			name: "urilen with dsize",
+			input: &Rule{
+				Matchers: []orderedMatcher{
+					&LenMatch{
+						Kind:     dSize,
+						Num:      100,
+						Operator: ">",
+					},
+					&LenMatch{
+						Kind: uriLen,
+						Num:  3,
+					},
+				},
+			},
+			output: &Rule{
+				Matchers: []orderedMatcher{
+					&LenMatch{
+						Kind:     dSize,
+						Num:      100,
+						Operator: ">",
+					},
+					&LenMatch{
+						Kind:    uriLen,
+						Num:     3,
+						Options: []string{"raw"},
+					},
+				},
+				Metas: Metadatas{
+					&Metadata{
+						Key:   "gonids",
+						Value: "snort_urilen"},
+				},
+			},
+			wantMod: true,
+		},
 	} {
 		gotMod := tt.input.SnortURILenFix()
 		// Expected modification.

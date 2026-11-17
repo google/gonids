@@ -72,6 +72,10 @@ type Rule struct {
 	Xbits []*Xbit
 	// Flowints is a slice of Flowint
 	Flowints []*Flowint
+	// Hostbits is a slice of Hostbit.
+	Hostbits []*Hostbit
+	// IPReps is a slice of IPRep.
+	IPReps []*IPRep
 	// Matchers are internally used to ensure relative matches are printed correctly.
 	// Make this private before checkin?
 	Matchers Matchers
@@ -136,6 +140,24 @@ type Xbit struct {
 	// Expire should be an int, default 0 value makes stringer difficult because this is an
 	// optional parameter. If we can confirm that this must be > 0 we can convert to int.
 	Expire string
+}
+
+// Hostbit describes a hostbit. A hostbit consists of an Action, a Name and an optional Direction.
+type Hostbit struct {
+	Action    string
+	Name      string
+	Direction string
+}
+
+// IPRep describes an iprep option.
+type IPRep struct {
+	// Side is the address to check: any, src, dst or both.
+	Side     string
+	Category string
+	// Operator is a comparison operator (e.g. >) or isset/isnotset.
+	Operator string
+	// Score is empty when Operator is isset or isnotset.
+	Score string
 }
 
 // Metadatas allows for a Stringer on []*Metadata
@@ -1630,6 +1652,31 @@ func (xb Xbit) String() string {
 	return s.String()
 }
 
+// String returns a string for a Hostbit.
+func (hb Hostbit) String() string {
+	var s strings.Builder
+	fmt.Fprintf(&s, "hostbits:%s", hb.Action)
+	if hb.Name != "" {
+		fmt.Fprintf(&s, ",%s", hb.Name)
+	}
+	if hb.Direction != "" {
+		fmt.Fprintf(&s, ",%s", hb.Direction)
+	}
+	fmt.Fprintf(&s, ";")
+	return s.String()
+}
+
+// String returns a string for an IPRep.
+func (ir IPRep) String() string {
+	var s strings.Builder
+	fmt.Fprintf(&s, "iprep:%s,%s,%s", ir.Side, ir.Category, ir.Operator)
+	if ir.Score != "" {
+		fmt.Fprintf(&s, ",%s", ir.Score)
+	}
+	fmt.Fprintf(&s, ";")
+	return s.String()
+}
+
 // String returns a string for all ordered matchers in a rule, including sticky buffers and transforms.
 func (ms Matchers) String() string {
 	if len(ms) < 1 {
@@ -1735,6 +1782,14 @@ func (r Rule) String() string {
 
 	for _, xb := range r.Xbits {
 		fmt.Fprintf(&s, "%s ", xb)
+	}
+
+	for _, hb := range r.Hostbits {
+		fmt.Fprintf(&s, "%s ", hb)
+	}
+
+	for _, ir := range r.IPReps {
+		fmt.Fprintf(&s, "%s ", ir)
 	}
 
 	for _, ref := range r.References {

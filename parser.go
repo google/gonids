@@ -99,6 +99,29 @@ var appLayerProtocols = []string{
 	"websocket",
 }
 
+// multiBuffers are the sticky buffers Suricata 7+ supports multiple buffer
+// matching for: "dns.query; content:A; dns.query; content:B;" lets A and B
+// match in different queries, unlike "dns.query; content:A; content:B;".
+var multiBuffers = []string{
+	"dns.additionals.rrname", "dns.answer.name", "dns.answers.rrname", "dns.authorities.rrname",
+	"dns.queries.rrname", "dns.query", "dns_query", "dns.query.name",
+	"email.received", "email.url",
+	"file.data", "file_data", "file.magic", "file.name",
+	"ftp.completion_code", "ftp.reply",
+	"http.request_header", "http.response_header", "http2.header_name",
+	"ike.vendor",
+	"krb5.cname", "krb5_cname", "krb5.sname", "krb5_sname",
+	"ldap.request.attribute_type", "ldap.responses.attribute_type", "ldap.responses.dn", "ldap.responses.message",
+	"mdns.additionals.rrname", "mdns.answers.rrname", "mdns.authorities.rrname", "mdns.queries.rrname",
+	"mqtt.subscribe.topic", "mqtt.unsubscribe.topic",
+	"quic.cyu.hash", "quic.cyu.string",
+	"sdp.attribute", "sdp.bandwidth", "sdp.media.connection_data", "sdp.media.encryption_key",
+	"sdp.media.media", "sdp.media.media_info", "sdp.repeat_time", "sdp.time",
+	"sip.content_length", "sip.content_type", "sip.from", "sip.to", "sip.user_agent", "sip.via",
+	"smtp.rcpt_to",
+	"tls.alpn", "tls.certs", "tls.subjectaltname",
+}
+
 // parseContent decodes rule content match. For now it only takes care of escaped and hex
 // encoded content.
 func parseContent(content string) ([]byte, error) {
@@ -1162,6 +1185,8 @@ type parseState struct {
 	dataDirection string
 	// activeTransforms are the transforms applied to the matchers that follow.
 	activeTransforms []*Transform
+	// dataInstance counts back to back selections of the same multi-buffer.
+	dataInstance int
 }
 
 // cloneTransforms returns a deep copy of the active transforms slice so that
@@ -1330,7 +1355,9 @@ func (r *Rule) option(key item, l *lexer, st *parseState) error {
 		st.dataPosition = framePos
 		st.frameName = strings.TrimSpace(nextItem.value)
 		st.dataDirection = ""
+		st.dataInstance = 0
 	case isStickyBuffer(key.value):
+		prevPos, prevDir := st.dataPosition, st.dataDirection
 		st.activeTransforms = nil
 		st.frameName = ""
 		st.dataDirection = ""
@@ -1347,6 +1374,13 @@ func (r *Rule) option(key item, l *lexer, st *parseState) error {
 				return fmt.Errorf("invalid direction %q for sticky buffer %s", nextItem.value, key.value)
 			}
 			st.dataDirection = dir
+		}
+		// Suricata 7+ inspects each selection of a multi-buffer as a separate
+		// instance, so selecting the active one again is not a no-op.
+		if inSlice(key.value, multiBuffers) && d == prevPos && st.dataDirection == prevDir {
+			st.dataInstance++
+		} else {
+			st.dataInstance = 0
 		}
 	case inSlice(key.value, []string{"dotprefix", "to_lowercase", "to_uppercase", "header_lowercase", "url_decode", "strip_whitespace", "compress_whitespace", "strip_pseudo_headers", "to_sha1", "to_sha256", "to_md5", "domain", "tld"}):
 		st.activeTransforms = append(st.activeTransforms, &Transform{Name: key.value})
@@ -1384,6 +1418,7 @@ func (r *Rule) option(key item, l *lexer, st *parseState) error {
 				DataPosition:  st.dataPosition,
 				FrameName:     st.frameName,
 				DataDirection: st.dataDirection,
+				DataInstance:  st.dataInstance,
 				Pattern:       c,
 				Negate:        negate,
 				Options:       options,
@@ -1470,6 +1505,7 @@ func (r *Rule) option(key item, l *lexer, st *parseState) error {
 			p.DataPosition = st.dataPosition
 			p.FrameName = st.frameName
 			p.DataDirection = st.dataDirection
+			p.DataInstance = st.dataInstance
 			p.Negate = negate
 			p.Transforms = st.cloneTransforms()
 			r.Matchers = append(r.Matchers, p)
@@ -1533,6 +1569,7 @@ func (r *Rule) option(key item, l *lexer, st *parseState) error {
 		b.DataPosition = st.dataPosition
 		b.FrameName = st.frameName
 		b.DataDirection = st.dataDirection
+		b.DataInstance = st.dataInstance
 
 		r.Matchers = append(r.Matchers, b)
 	case inSlice(key.value, allLenMatchTypeNames()):
@@ -1548,6 +1585,7 @@ func (r *Rule) option(key item, l *lexer, st *parseState) error {
 		m.DataPosition = st.dataPosition
 		m.FrameName = st.frameName
 		m.DataDirection = st.dataDirection
+		m.DataInstance = st.dataInstance
 		r.Matchers = append(r.Matchers, m)
 	case key.value == "flowbits":
 		nextItem := l.nextItem()
@@ -1596,6 +1634,7 @@ func (r *Rule) option(key item, l *lexer, st *parseState) error {
 		ds.DataPosition = st.dataPosition
 		ds.FrameName = st.frameName
 		ds.DataDirection = st.dataDirection
+		ds.DataInstance = st.dataInstance
 		ds.Transforms = st.cloneTransforms()
 		r.Matchers = append(r.Matchers, ds)
 	case key.value == "datarep":
@@ -1610,6 +1649,7 @@ func (r *Rule) option(key item, l *lexer, st *parseState) error {
 		dr.DataPosition = st.dataPosition
 		dr.FrameName = st.frameName
 		dr.DataDirection = st.dataDirection
+		dr.DataInstance = st.dataInstance
 		dr.Transforms = st.cloneTransforms()
 		r.Matchers = append(r.Matchers, dr)
 	case key.value == "entropy":
@@ -1643,6 +1683,7 @@ func (r *Rule) option(key item, l *lexer, st *parseState) error {
 			DataPosition:  st.dataPosition,
 			FrameName:     st.frameName,
 			DataDirection: st.dataDirection,
+			DataInstance:  st.dataInstance,
 			Transforms:    st.cloneTransforms(),
 			OrElse:        orElse,
 		})

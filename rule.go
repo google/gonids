@@ -90,11 +90,13 @@ type orderedMatcher interface {
 // Matchers allows for a Stringer on []orderedMatcher.
 type Matchers []orderedMatcher
 
-// stickyPos describes a sticky buffer position, optional frame name, and optional direction.
+// stickyPos describes a sticky buffer position, optional frame name, optional direction,
+// and which back to back selection of a multi-buffer it is.
 type stickyPos struct {
 	pos       DataPos
 	frameName string
 	direction string
+	instance  int
 }
 
 // String returns the rule representation of a sticky buffer selector
@@ -756,6 +758,9 @@ type Content struct {
 	FrameName string
 	// DataDirection holds an optional sticky buffer direction modifier ("to_server" or "to_client").
 	DataDirection string
+	// DataInstance is incremented each time a multi-buffer (e.g. dns.query) is selected again right
+	// after itself; Suricata 7+ matches each selection against a separate instance of the buffer.
+	DataInstance int
 	// FastPattern settings for the content.
 	FastPattern FastPattern
 	// Pattern is the pattern match of a content (e.g. HTTP in content:"HTTP").
@@ -850,6 +855,7 @@ type ByteMatch struct {
 	DataPosition  DataPos
 	FrameName     string
 	DataDirection string
+	DataInstance  int
 	// Kind is a specific operation type we're taking.
 	Kind byteMatchType
 	// Negate indicates negation of a value, currently only used for isdataat.
@@ -944,6 +950,7 @@ type LenMatch struct {
 	DataPosition  DataPos
 	FrameName     string
 	DataDirection string
+	DataInstance  int
 	Kind          lenMatchType
 	Min           int
 	Max           int
@@ -959,6 +966,7 @@ type PCRE struct {
 	DataPosition  DataPos
 	FrameName     string
 	DataDirection string
+	DataInstance  int
 	Pattern       []byte
 	Negate        bool
 	Options       []byte
@@ -970,6 +978,7 @@ type Dataset struct {
 	DataPosition  DataPos
 	FrameName     string
 	DataDirection string
+	DataInstance  int
 	Transforms    Transforms
 	Cmd           string
 	Name          string
@@ -981,6 +990,7 @@ type DataRep struct {
 	DataPosition  DataPos
 	FrameName     string
 	DataDirection string
+	DataInstance  int
 	Transforms    Transforms
 	Name          string
 	Operator      string
@@ -993,6 +1003,7 @@ type Absent struct {
 	DataPosition  DataPos
 	FrameName     string
 	DataDirection string
+	DataInstance  int
 	Transforms    Transforms
 	OrElse        bool
 }
@@ -1232,7 +1243,7 @@ func (d Dataset) String() string {
 }
 
 func (d Dataset) stickyPos() stickyPos {
-	return stickyPos{pos: d.DataPosition, frameName: d.FrameName, direction: d.DataDirection}
+	return stickyPos{pos: d.DataPosition, frameName: d.FrameName, direction: d.DataDirection, instance: d.DataInstance}
 }
 
 func (d Dataset) transforms() Transforms {
@@ -1251,7 +1262,7 @@ func (d DataRep) String() string {
 }
 
 func (d DataRep) stickyPos() stickyPos {
-	return stickyPos{pos: d.DataPosition, frameName: d.FrameName, direction: d.DataDirection}
+	return stickyPos{pos: d.DataPosition, frameName: d.FrameName, direction: d.DataDirection, instance: d.DataInstance}
 }
 
 func (d DataRep) transforms() Transforms {
@@ -1267,7 +1278,7 @@ func (a Absent) String() string {
 }
 
 func (a Absent) stickyPos() stickyPos {
-	return stickyPos{pos: a.DataPosition, frameName: a.FrameName, direction: a.DataDirection}
+	return stickyPos{pos: a.DataPosition, frameName: a.FrameName, direction: a.DataDirection, instance: a.DataInstance}
 }
 
 func (a Absent) transforms() Transforms {
@@ -1402,7 +1413,7 @@ func (c Content) String() string {
 }
 
 func (c Content) stickyPos() stickyPos {
-	return stickyPos{pos: c.DataPosition, frameName: c.FrameName, direction: c.DataDirection}
+	return stickyPos{pos: c.DataPosition, frameName: c.FrameName, direction: c.DataDirection, instance: c.DataInstance}
 }
 
 func (c Content) transforms() Transforms {
@@ -1481,7 +1492,7 @@ func (b ByteMatch) String() string {
 }
 
 func (b ByteMatch) stickyPos() stickyPos {
-	return stickyPos{pos: b.DataPosition, frameName: b.FrameName, direction: b.DataDirection}
+	return stickyPos{pos: b.DataPosition, frameName: b.FrameName, direction: b.DataDirection, instance: b.DataInstance}
 }
 
 func (b ByteMatch) transforms() Transforms {
@@ -1508,7 +1519,7 @@ func (i LenMatch) String() string {
 }
 
 func (i LenMatch) stickyPos() stickyPos {
-	return stickyPos{pos: i.DataPosition, frameName: i.FrameName, direction: i.DataDirection}
+	return stickyPos{pos: i.DataPosition, frameName: i.FrameName, direction: i.DataDirection, instance: i.DataInstance}
 }
 
 func (i LenMatch) transforms() Transforms {
@@ -1683,7 +1694,7 @@ func (p PCRE) String() string {
 }
 
 func (p PCRE) stickyPos() stickyPos {
-	return stickyPos{pos: p.DataPosition, frameName: p.FrameName, direction: p.DataDirection}
+	return stickyPos{pos: p.DataPosition, frameName: p.FrameName, direction: p.DataDirection, instance: p.DataInstance}
 }
 
 func (p PCRE) transforms() Transforms {

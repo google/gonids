@@ -2341,6 +2341,32 @@ func TestMatchersString(t *testing.T) {
 			want: `http.uri; to_lowercase; content:"/a"; url_decode; content:"/b";`,
 		},
 		{
+			name: "multi_buffer_selected_again",
+			input: Matchers{
+				&Content{
+					DataPosition: httpRequestHeader,
+					Transforms: Transforms{
+						{Name: "header_lowercase"},
+					},
+					Pattern: []byte("x-config: END"),
+				},
+				&LenMatch{
+					DataPosition: httpRequestHeader,
+					Kind:         bSize,
+					Num:          13,
+				},
+				&Content{
+					DataPosition: httpRequestHeader,
+					DataInstance: 1,
+					Transforms: Transforms{
+						{Name: "header_lowercase"},
+					},
+					Pattern: []byte("x-id: "),
+				},
+			},
+			want: `http.request_header; header_lowercase; content:"x-config|3A| END"; bsize:13; http.request_header; header_lowercase; content:"x-id|3A| ";`,
+		},
+		{
 			name: "directional_sticky_buffers_switching_direction",
 			input: Matchers{
 				&Content{

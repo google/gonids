@@ -956,6 +956,172 @@ func TestParseFlowint(t *testing.T) {
 	}
 }
 
+func TestParseHostbit(t *testing.T) {
+	for _, tt := range []struct {
+		name    string
+		input   string
+		want    *Hostbit
+		wantErr bool
+	}{
+		{
+			name:  "no direction",
+			input: "isset,compromised",
+			want: &Hostbit{
+				Action: "isset",
+				Name:   "compromised",
+			},
+		},
+		{
+			name:  "with direction",
+			input: "set,seen,dst",
+			want: &Hostbit{
+				Action:    "set",
+				Name:      "seen",
+				Direction: "dst",
+			},
+		},
+		{
+			name:  "funky spacing",
+			input: "  toggle  ,   foo,   both  ",
+			want: &Hostbit{
+				Action:    "toggle",
+				Name:      "foo",
+				Direction: "both",
+			},
+		},
+		{
+			name:  "noalert",
+			input: "noalert",
+			want: &Hostbit{
+				Action: "noalert",
+			},
+		},
+		// Errors
+		{
+			name:    "not valid action",
+			input:   "zoom,foo",
+			wantErr: true,
+		},
+		{
+			name:    "missing name",
+			input:   "set",
+			wantErr: true,
+		},
+		{
+			name:    "noalert with name",
+			input:   "noalert,foo",
+			wantErr: true,
+		},
+		{
+			name:    "xbits track syntax",
+			input:   "isset,compromised,track ip_src",
+			wantErr: true,
+		},
+		{
+			name:    "too many parts",
+			input:   "set,foo,src,60",
+			wantErr: true,
+		},
+	} {
+		got, err := parseHostbit(tt.input)
+		diff := pretty.Compare(got, tt.want)
+		if diff != "" || (err != nil) != tt.wantErr {
+			t.Fatalf("%s: gotErr:%#v, wantErr:%#v\n diff (-got +want):\n%s", tt.name, err, tt.wantErr, diff)
+		}
+	}
+}
+
+func TestParseIPRep(t *testing.T) {
+	for _, tt := range []struct {
+		name    string
+		input   string
+		want    *IPRep
+		wantErr bool
+	}{
+		{
+			name:  "operator and score",
+			input: "src,CnC,>,30",
+			want: &IPRep{
+				Side:     "src",
+				Category: "CnC",
+				Operator: ">",
+				Score:    "30",
+			},
+		},
+		{
+			name:  "two char operator",
+			input: "any,BadHosts,>=,1",
+			want: &IPRep{
+				Side:     "any",
+				Category: "BadHosts",
+				Operator: ">=",
+				Score:    "1",
+			},
+		},
+		{
+			name:  "isset",
+			input: "dst,CnC,isset",
+			want: &IPRep{
+				Side:     "dst",
+				Category: "CnC",
+				Operator: "isset",
+			},
+		},
+		{
+			name:  "funky spacing",
+			input: " both , Spam , < , 10 ",
+			want: &IPRep{
+				Side:     "both",
+				Category: "Spam",
+				Operator: "<",
+				Score:    "10",
+			},
+		},
+		// Errors
+		{
+			name:    "invalid side",
+			input:   "foo,CnC,>,30",
+			wantErr: true,
+		},
+		{
+			name:    "missing category",
+			input:   "src,,>,30",
+			wantErr: true,
+		},
+		{
+			name:    "invalid operator",
+			input:   "src,CnC,~,30",
+			wantErr: true,
+		},
+		{
+			name:    "missing score",
+			input:   "src,CnC,>",
+			wantErr: true,
+		},
+		{
+			name:    "isset with score",
+			input:   "src,CnC,isset,30",
+			wantErr: true,
+		},
+		{
+			name:    "score out of range",
+			input:   "src,CnC,>,256",
+			wantErr: true,
+		},
+		{
+			name:    "too few parts",
+			input:   "src,CnC",
+			wantErr: true,
+		},
+	} {
+		got, err := parseIPRep(tt.input)
+		diff := pretty.Compare(got, tt.want)
+		if diff != "" || (err != nil) != tt.wantErr {
+			t.Fatalf("%s: gotErr:%#v, wantErr:%#v\n diff (-got +want):\n%s", tt.name, err, tt.wantErr, diff)
+		}
+	}
+}
+
 func TestParseRule(t *testing.T) {
 	for _, tt := range []struct {
 		name    string
@@ -2837,6 +3003,74 @@ func TestParseRule(t *testing.T) {
 					},
 				},
 			},
+		},
+		{
+			name: "hostbits",
+			rule: `alert tcp $HOME_NET any -> $EXTERNAL_NET any (msg:"Hostbits test"; hostbits:isset,compromised,src; hostbits:set,seen,dst; sid:1234; rev:2;)`,
+			want: &Rule{
+				Action:   "alert",
+				Protocol: "tcp",
+				Source: Network{
+					Nets:  []string{"$HOME_NET"},
+					Ports: []string{"any"},
+				},
+				Destination: Network{
+					Nets:  []string{"$EXTERNAL_NET"},
+					Ports: []string{"any"},
+				},
+				SID:         1234,
+				Revision:    2,
+				Description: "Hostbits test",
+				Hostbits: []*Hostbit{
+					{
+						Action:    "isset",
+						Name:      "compromised",
+						Direction: "src",
+					},
+					{
+						Action:    "set",
+						Name:      "seen",
+						Direction: "dst",
+					},
+				},
+			},
+		},
+		{
+			name: "iprep",
+			rule: `alert ip $HOME_NET any -> $EXTERNAL_NET any (msg:"IPRep test"; iprep:src,CnC,>,30; iprep:dst,Spam,isset; sid:1234; rev:2;)`,
+			want: &Rule{
+				Action:   "alert",
+				Protocol: "ip",
+				Source: Network{
+					Nets:  []string{"$HOME_NET"},
+					Ports: []string{"any"},
+				},
+				Destination: Network{
+					Nets:  []string{"$EXTERNAL_NET"},
+					Ports: []string{"any"},
+				},
+				SID:         1234,
+				Revision:    2,
+				Description: "IPRep test",
+				IPReps: []*IPRep{
+					{
+						Side:     "src",
+						Category: "CnC",
+						Operator: ">",
+						Score:    "30",
+					},
+					{
+						Side:     "dst",
+						Category: "Spam",
+						Operator: "isset",
+					},
+				},
+			},
+		},
+		{
+			name:    "hostbits xbits track syntax",
+			rule:    `alert tcp $HOME_NET any -> $EXTERNAL_NET any (msg:"bad hostbits"; hostbits:isset,compromised,track ip_src; sid:1234; rev:2;)`,
+			wantErr: true,
 		},
 		// Begin Suricata 5.0 features.
 		{
@@ -5094,18 +5328,6 @@ func TestParseSuricata8MetaAndCoreTags(t *testing.T) {
 			rule: `config dns any any -> any any (msg:"disable dns tx logging"; dns.query; content:"google.com"; config:logging disable, type tx, scope tx; sid:1; rev:1;)`,
 		},
 		{
-			name: "iprep_tag",
-			key:  "iprep",
-			val:  "any,BadHosts,>,1",
-			rule: `alert ip any any -> any any (msg:"IP reputation BadHosts"; iprep:any,BadHosts,>,1; sid:2; rev:1;)`,
-		},
-		{
-			name: "hostbits_tag",
-			key:  "hostbits",
-			val:  "set,attacker,src",
-			rule: `alert tcp any any -> any any (msg:"set hostbits"; content:"attack"; hostbits:set,attacker,src; sid:3; rev:1;)`,
-		},
-		{
 			name: "rpc_tag",
 			key:  "rpc",
 			val:  "100003,*,3",
@@ -5130,6 +5352,40 @@ func TestParseSuricata8MetaAndCoreTags(t *testing.T) {
 				if gotStr := got.String(); gotStr != tt.rule {
 					t.Errorf("got.String() = %q; want %q", gotStr, tt.rule)
 				}
+			}
+		})
+	}
+}
+
+func TestHostbitsIPRepString(t *testing.T) {
+	for _, tt := range []struct {
+		name string
+		rule string
+	}{
+		{
+			name: "repeated hostbits",
+			rule: `alert tcp any any -> any any (msg:"repeated hostbits"; hostbits:isset,compromised,src; hostbits:set,seen,dst; sid:1; rev:1;)`,
+		},
+		{
+			name: "repeated iprep",
+			rule: `alert ip any any -> any any (msg:"repeated iprep"; iprep:src,CnC,>,30; iprep:dst,Spam,>,10; iprep:any,BadHosts,isset; sid:2; rev:1;)`,
+		},
+		{
+			name: "hostbits after content",
+			rule: `alert tcp any any -> any any (msg:"set hostbits"; content:"attack"; hostbits:set,attacker,src; sid:3; rev:1;)`,
+		},
+		{
+			name: "with tags and flowbits",
+			rule: `alert tcp any any -> any any (msg:"mixed"; priority:1; flowbits:set,foo; hostbits:noalert; hostbits:isset,bar; iprep:src,CnC,>,30; sid:4; rev:1;)`,
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := ParseRule(tt.rule)
+			if err != nil {
+				t.Fatalf("ParseRule(%q) unexpected error: %v", tt.rule, err)
+			}
+			if gotStr := got.String(); gotStr != tt.rule {
+				t.Errorf("got.String() = %q; want %q", gotStr, tt.rule)
 			}
 		})
 	}

@@ -72,6 +72,10 @@ type Rule struct {
 	Xbits []*Xbit
 	// Flowints is a slice of Flowint
 	Flowints []*Flowint
+	// Hostbits is a slice of Hostbit.
+	Hostbits []*Hostbit
+	// IPReps is a slice of IPRep.
+	IPReps []*IPRep
 	// Matchers are internally used to ensure relative matches are printed correctly.
 	// Make this private before checkin?
 	Matchers Matchers
@@ -136,6 +140,24 @@ type Xbit struct {
 	// Expire should be an int, default 0 value makes stringer difficult because this is an
 	// optional parameter. If we can confirm that this must be > 0 we can convert to int.
 	Expire string
+}
+
+// Hostbit describes a hostbit. A hostbit consists of an Action, a Name and an optional Direction.
+type Hostbit struct {
+	Action    string
+	Name      string
+	Direction string
+}
+
+// IPRep describes an iprep option.
+type IPRep struct {
+	// Side is the address to check: any, src, dst or both.
+	Side     string
+	Category string
+	// Operator is a comparison operator (e.g. >) or isset/isnotset.
+	Operator string
+	// Score is empty when Operator is isset or isnotset.
+	Score string
 }
 
 // Metadatas allows for a Stringer on []*Metadata
@@ -712,6 +734,19 @@ func (ts Transforms) String() string {
 	return strings.Join(parts, " ")
 }
 
+// hasPrefix reports whether prefix is the leading part of ts.
+func (ts Transforms) hasPrefix(prefix Transforms) bool {
+	if len(prefix) > len(ts) {
+		return false
+	}
+	for i, t := range prefix {
+		if *t != *ts[i] {
+			return false
+		}
+	}
+	return true
+}
+
 // Content describes a rule content. A content is composed of a pattern followed by options.
 type Content struct {
 	// DataPosition defaults to pkt_data state, can be modified to apply to file_data, base64_data locations.
@@ -1272,7 +1307,11 @@ func (e Entropy) transforms() Transforms {
 
 func netString(netPart []string) string {
 	var s strings.Builder
-	if len(netPart) > 1 {
+	// The parser keeps a list like [a,b] as the single item "a,b", so a single
+	// item can still be a list. Bracket it: unbracketed, a leading ! would only
+	// negate the first entry.
+	group := len(netPart) > 1 || (len(netPart) == 1 && strings.Contains(netPart[0], ","))
+	if group {
 		fmt.Fprintf(&s, "[")
 	}
 	for i, n := range netPart {
@@ -1281,7 +1320,7 @@ func netString(netPart []string) string {
 			fmt.Fprintf(&s, ",")
 		}
 	}
-	if len(netPart) > 1 {
+	if group {
 		fmt.Fprintf(&s, "]")
 	}
 	return s.String()
@@ -1690,6 +1729,31 @@ func (xb Xbit) String() string {
 	return s.String()
 }
 
+// String returns a string for a Hostbit.
+func (hb Hostbit) String() string {
+	var s strings.Builder
+	fmt.Fprintf(&s, "hostbits:%s", hb.Action)
+	if hb.Name != "" {
+		fmt.Fprintf(&s, ",%s", hb.Name)
+	}
+	if hb.Direction != "" {
+		fmt.Fprintf(&s, ",%s", hb.Direction)
+	}
+	fmt.Fprintf(&s, ";")
+	return s.String()
+}
+
+// String returns a string for an IPRep.
+func (ir IPRep) String() string {
+	var s strings.Builder
+	fmt.Fprintf(&s, "iprep:%s,%s,%s", ir.Side, ir.Category, ir.Operator)
+	if ir.Score != "" {
+		fmt.Fprintf(&s, ",%s", ir.Score)
+	}
+	fmt.Fprintf(&s, ";")
+	return s.String()
+}
+
 // String returns a string for all ordered matchers in a rule, including sticky buffers and transforms.
 func (ms Matchers) String() string {
 	if len(ms) < 1 {
@@ -1697,11 +1761,28 @@ func (ms Matchers) String() string {
 	}
 	var parts []string
 	curPos := stickyPos{pos: pktData}
+	var curTs Transforms
 	for _, m := range ms {
-		if sp := m.stickyPos(); sp != curPos {
-			curPos = sp
+		sp := m.stickyPos()
+		ts := m.transforms()
+		// Byte and length matchers don't record transforms, they inspect whatever
+		// chain is active on the buffer, so only a buffer change affects them.
+		_, byteMatch := m.(*ByteMatch)
+		_, lenMatch := m.(*LenMatch)
+		switch {
+		case sp == curPos && (byteMatch || lenMatch):
+		case sp == curPos && ts.hasPrefix(curTs):
+			// Transforms accumulate on the active buffer, so a chain that extends
+			// the current one only needs the newly added transforms.
+			if len(ts) > len(curTs) {
+				parts = append(parts, ts[len(curTs):].String())
+			}
+			curTs = ts
+		default:
+			// A new buffer, or the chain was reset by selecting the buffer again.
+			curPos, curTs = sp, ts
 			parts = append(parts, sp.String())
-			if ts := m.transforms(); len(ts) > 0 {
+			if len(ts) > 0 {
 				parts = append(parts, ts.String())
 			}
 		}
@@ -1795,6 +1876,14 @@ func (r Rule) String() string {
 
 	for _, xb := range r.Xbits {
 		fmt.Fprintf(&s, "%s ", xb)
+	}
+
+	for _, hb := range r.Hostbits {
+		fmt.Fprintf(&s, "%s ", hb)
+	}
+
+	for _, ir := range r.IPReps {
+		fmt.Fprintf(&s, "%s ", ir)
 	}
 
 	for _, ref := range r.References {

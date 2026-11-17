@@ -420,6 +420,78 @@ func parseFlowint(s string) (*Flowint, error) {
 	return fi, nil
 }
 
+// parseHostbit parses a hostbit (hostbits:<action>,<name>[,<direction>]).
+func parseHostbit(s string) (*Hostbit, error) {
+	parts := strings.Split(s, ",")
+	// Ensure all actions are of valid type.
+	a := strings.ToLower(strings.TrimSpace(parts[0]))
+	if !inSlice(a, []string{"noalert", "set", "unset", "toggle", "isset", "isnotset"}) {
+		return nil, fmt.Errorf("invalid action for hostbits: %s", a)
+	}
+	hb := &Hostbit{
+		Action: a,
+	}
+	if hb.Action == "noalert" {
+		if len(parts) > 1 {
+			return nil, fmt.Errorf("noalert shouldn't have a name: %s", s)
+		}
+		return hb, nil
+	}
+	if len(parts) < 2 || strings.TrimSpace(parts[1]) == "" {
+		return nil, fmt.Errorf("%s requires a name", hb.Action)
+	}
+	if len(parts) > 3 {
+		return nil, fmt.Errorf("wrong number of parts for hostbits: %s", s)
+	}
+	hb.Name = strings.TrimSpace(parts[1])
+	if len(parts) == 3 {
+		d := strings.ToLower(strings.TrimSpace(parts[2]))
+		if !inSlice(d, []string{"src", "dst", "both"}) {
+			return nil, fmt.Errorf("invalid direction for hostbits: %s", d)
+		}
+		hb.Direction = d
+	}
+	return hb, nil
+}
+
+// parseIPRep parses an iprep option (iprep:<side>,<category>,<operator>,<score>
+// or iprep:<side>,<category>,<isset|isnotset>).
+func parseIPRep(s string) (*IPRep, error) {
+	parts := strings.Split(s, ",")
+	if len(parts) != 3 && len(parts) != 4 {
+		return nil, fmt.Errorf("wrong number of parts for iprep: %s", s)
+	}
+	side := strings.ToLower(strings.TrimSpace(parts[0]))
+	if !inSlice(side, []string{"any", "src", "dst", "both"}) {
+		return nil, fmt.Errorf("invalid side for iprep: %s", side)
+	}
+	ir := &IPRep{
+		Side:     side,
+		Category: strings.TrimSpace(parts[1]),
+	}
+	if ir.Category == "" {
+		return nil, fmt.Errorf("iprep requires a category: %s", s)
+	}
+	op := strings.ToLower(strings.TrimSpace(parts[2]))
+	if len(parts) == 3 {
+		if !inSlice(op, []string{"isset", "isnotset"}) {
+			return nil, fmt.Errorf("invalid mode for iprep: %s", op)
+		}
+		ir.Operator = op
+		return ir, nil
+	}
+	if !inSlice(op, []string{">=", "<=", ">", "<", "!=", "!", "="}) {
+		return nil, fmt.Errorf("invalid operator for iprep: %s", op)
+	}
+	ir.Operator = op
+	score := strings.TrimSpace(parts[3])
+	if _, err := strconv.ParseUint(score, 10, 8); err != nil {
+		return nil, fmt.Errorf("invalid score for iprep: %s", score)
+	}
+	ir.Score = score
+	return ir, nil
+}
+
 // parseDataset parses a dataset option.
 func parseDataset(s string) (*Dataset, error) {
 	parts := strings.Split(s, ",")
@@ -1122,8 +1194,7 @@ func (r *Rule) option(key item, l *lexer, st *parseState) error {
 		"filemagic", "fileext", "filemd5", "filesha1", "filesha256", "filename", "ftpdata_command",
 		"dce_iface", "dce_opnum", "dcerpc.iface", "dcerpc.opnum",
 		"lua", "luajit",
-		"asn1",
-		"config", "iprep", "hostbits", "rpc"}):
+		"asn1",	"config", "rpc"}):
 		nextItem := l.nextItem()
 		negate := false
 		if nextItem.typ == itemNot {
@@ -1499,6 +1570,20 @@ func (r *Rule) option(key item, l *lexer, st *parseState) error {
 			return fmt.Errorf("error parsing flowint: %v", err)
 		}
 		r.Flowints = append(r.Flowints, fi)
+	case key.value == "hostbits":
+		nextItem := l.nextItem()
+		hb, err := parseHostbit(nextItem.value)
+		if err != nil {
+			return fmt.Errorf("error parsing hostbits: %v", err)
+		}
+		r.Hostbits = append(r.Hostbits, hb)
+	case key.value == "iprep":
+		nextItem := l.nextItem()
+		ir, err := parseIPRep(nextItem.value)
+		if err != nil {
+			return fmt.Errorf("error parsing iprep: %v", err)
+		}
+		r.IPReps = append(r.IPReps, ir)
 	case key.value == "dataset":
 		nextItem := l.nextItem()
 		if nextItem.typ != itemOptionValue {

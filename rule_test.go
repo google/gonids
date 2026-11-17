@@ -325,6 +325,11 @@ func TestNetString(t *testing.T) {
 			input: []string{"192.168.0.0/16", "![192.168.86.0/24,192.168.87.0/24]"},
 			want:  "[192.168.0.0/16,![192.168.86.0/24,192.168.87.0/24]]",
 		},
+		{
+			name:  "single list item",
+			input: []string{"1.1.1.1,1.1.1.2"},
+			want:  "[1.1.1.1,1.1.1.2]",
+		},
 	} {
 		got := netString(tt.input)
 		if got != tt.want {
@@ -379,6 +384,16 @@ func TestNetworkString(t *testing.T) {
 				Ports:      []string{"$HTTP_PORTS", "!53", "$BAR_PORTS"},
 			},
 			want: "![192.168.0.0/16,[192.168.86.0/24,192.168.87.0/24]] [$HTTP_PORTS,!53,$BAR_PORTS]",
+		},
+		{
+			name: "negated list as single item",
+			input: Network{
+				NegateNets:  true,
+				Nets:        []string{"1.1.1.1,1.1.1.2"},
+				NegatePorts: true,
+				Ports:       []string{"80,443"},
+			},
+			want: "![1.1.1.1,1.1.1.2] ![80,443]",
 		},
 	} {
 		got := tt.input.String()
@@ -2119,10 +2134,13 @@ func TestDatasetAndDataRepString(t *testing.T) {
 			},
 			&DataRep{
 				DataPosition: dnsQuery5,
-				Name:         "bad_domains",
-				Operator:     ">",
-				Value:        10,
-				Options:      []string{"load bad_domains.rep", "type string"},
+				Transforms: []*Transform{
+					{Name: "to_lowercase"},
+				},
+				Name:     "bad_domains",
+				Operator: ">",
+				Value:    10,
+				Options:  []string{"load bad_domains.rep", "type string"},
 			},
 		},
 		SID:      12001201,
@@ -2273,6 +2291,54 @@ func TestMatchersString(t *testing.T) {
 				},
 			},
 			want: `file.data; gunzip:max-size 1024; content:"MZ"; bsize:>64;`,
+		},
+		{
+			name: "same_sticky_buffer_with_different_transforms",
+			input: Matchers{
+				&Content{
+					DataPosition: httpURI,
+					Pattern:      []byte("/A"),
+				},
+				&Content{
+					DataPosition: httpURI,
+					Transforms: Transforms{
+						{Name: "to_lowercase"},
+					},
+					Pattern: []byte("/admin"),
+				},
+				&LenMatch{
+					DataPosition: httpURI,
+					Kind:         bSize,
+					Operator:     ">",
+					Num:          6,
+				},
+				&Content{
+					DataPosition: httpURI,
+					Pattern:      []byte("/X"),
+				},
+			},
+			want: `http.uri; content:"/A"; to_lowercase; content:"/admin"; bsize:>6; http.uri; content:"/X";`,
+		},
+		{
+			name: "same_sticky_buffer_with_chained_transforms",
+			input: Matchers{
+				&Content{
+					DataPosition: httpURI,
+					Transforms: Transforms{
+						{Name: "to_lowercase"},
+					},
+					Pattern: []byte("/a"),
+				},
+				&Content{
+					DataPosition: httpURI,
+					Transforms: Transforms{
+						{Name: "to_lowercase"},
+						{Name: "url_decode"},
+					},
+					Pattern: []byte("/b"),
+				},
+			},
+			want: `http.uri; to_lowercase; content:"/a"; url_decode; content:"/b";`,
 		},
 		{
 			name: "directional_sticky_buffers_switching_direction",

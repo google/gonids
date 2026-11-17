@@ -100,7 +100,11 @@ func (r *Rule) SnortURILenFix() bool {
 	var modified bool
 	// Update this once we parse urilen in a better structure.
 	for _, l := range r.LenMatchers() {
-		if l.Kind == uriLen && l.Operator == "<>" {
+		// Only urilen takes the norm and raw options, leave dsize, itype, etc. alone.
+		if l.Kind != uriLen {
+			continue
+		}
+		if l.Operator == "<>" {
 			l.Min--
 			l.Max++
 			modified = true

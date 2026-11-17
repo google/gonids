@@ -2283,7 +2283,28 @@ func TestMatchersString(t *testing.T) {
 					Pattern:      []byte("/X"),
 				},
 			},
-			want: `http.uri; content:"/A"; http.uri; to_lowercase; content:"/admin"; bsize:>6; http.uri; content:"/X";`,
+			want: `http.uri; content:"/A"; to_lowercase; content:"/admin"; bsize:>6; http.uri; content:"/X";`,
+		},
+		{
+			name: "same_sticky_buffer_with_chained_transforms",
+			input: Matchers{
+				&Content{
+					DataPosition: httpURI,
+					Transforms: Transforms{
+						{Name: "to_lowercase"},
+					},
+					Pattern: []byte("/a"),
+				},
+				&Content{
+					DataPosition: httpURI,
+					Transforms: Transforms{
+						{Name: "to_lowercase"},
+						{Name: "url_decode"},
+					},
+					Pattern: []byte("/b"),
+				},
+			},
+			want: `http.uri; to_lowercase; content:"/a"; url_decode; content:"/b";`,
 		},
 		{
 			name: "directional_sticky_buffers_switching_direction",

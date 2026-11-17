@@ -712,6 +712,19 @@ func (ts Transforms) String() string {
 	return strings.Join(parts, " ")
 }
 
+// hasPrefix reports whether prefix is the leading part of ts.
+func (ts Transforms) hasPrefix(prefix Transforms) bool {
+	if len(prefix) > len(ts) {
+		return false
+	}
+	for i, t := range prefix {
+		if *t != *ts[i] {
+			return false
+		}
+	}
+	return true
+}
+
 // Content describes a rule content. A content is composed of a pattern followed by options.
 type Content struct {
 	// DataPosition defaults to pkt_data state, can be modified to apply to file_data, base64_data locations.
@@ -1633,21 +1646,26 @@ func (ms Matchers) String() string {
 	}
 	var parts []string
 	curPos := stickyPos{pos: pktData}
-	var curTs string
+	var curTs Transforms
 	for _, m := range ms {
 		sp := m.stickyPos()
 		ts := m.transforms()
 		// Byte and length matchers don't record transforms, they inspect whatever
-		// transform chain is active, so only other matchers can change it.
-		tsChanged := false
-		switch m.(type) {
-		case *ByteMatch, *LenMatch:
+		// chain is active on the buffer, so only a buffer change affects them.
+		_, byteMatch := m.(*ByteMatch)
+		_, lenMatch := m.(*LenMatch)
+		switch {
+		case sp == curPos && (byteMatch || lenMatch):
+		case sp == curPos && ts.hasPrefix(curTs):
+			// Transforms accumulate on the active buffer, so a chain that extends
+			// the current one only needs the newly added transforms.
+			if len(ts) > len(curTs) {
+				parts = append(parts, ts[len(curTs):].String())
+			}
+			curTs = ts
 		default:
-			tsChanged = ts.String() != curTs
-		}
-		if sp != curPos || tsChanged {
-			curPos = sp
-			curTs = ts.String()
+			// A new buffer, or the chain was reset by selecting the buffer again.
+			curPos, curTs = sp, ts
 			parts = append(parts, sp.String())
 			if len(ts) > 0 {
 				parts = append(parts, ts.String())

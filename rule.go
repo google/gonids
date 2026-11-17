@@ -997,6 +997,28 @@ type Absent struct {
 	OrElse        bool
 }
 
+// Entropy describes a Suricata entropy rule option (e.g. "entropy:bytes 16, offset 4, value > 5;").
+// It is evaluated on the active sticky buffer, so it is kept as an ordered matcher.
+type Entropy struct {
+	DataPosition  DataPos
+	FrameName     string
+	DataDirection string
+	Transforms    Transforms
+	// Bytes is the number of bytes to inspect. 0 inspects the rest of the buffer.
+	Bytes int
+	// Offset is where inspection starts within the buffer.
+	Offset int
+	// Operator compares the calculated entropy with Value: "" (equality, no operator written),
+	// "=", "!=", "<", "<=", ">" or ">=". It is "<>" for a match strictly between Min and Max,
+	// and "!<>" for a match outside of that range.
+	Operator string
+	// Value is the entropy value compared with when Operator is not a range.
+	Value float64
+	// Min and Max are the bounds of a range comparison.
+	Min float64
+	Max float64
+}
+
 // FastPattern describes various properties of a fast_pattern value for a content.
 type FastPattern struct {
 	Enabled bool
@@ -1187,6 +1209,17 @@ func (r *Rule) Absents() []*Absent {
 	return as
 }
 
+// Entropies returns all *Entropy for a rule.
+func (r *Rule) Entropies() []*Entropy {
+	var es []*Entropy
+	for _, m := range r.Matchers {
+		if e, ok := m.(*Entropy); ok {
+			es = append(es, e)
+		}
+	}
+	return es
+}
+
 // String returns a string for a Dataset.
 func (d Dataset) String() string {
 	var s strings.Builder
@@ -1239,6 +1272,37 @@ func (a Absent) stickyPos() stickyPos {
 
 func (a Absent) transforms() Transforms {
 	return a.Transforms
+}
+
+// String returns a string for an Entropy matcher.
+func (e Entropy) String() string {
+	var parts []string
+	if e.Bytes != 0 {
+		parts = append(parts, fmt.Sprintf("bytes %d", e.Bytes))
+	}
+	if e.Offset != 0 {
+		parts = append(parts, fmt.Sprintf("offset %d", e.Offset))
+	}
+	f := func(v float64) string { return strconv.FormatFloat(v, 'f', -1, 64) }
+	switch e.Operator {
+	case "<>":
+		parts = append(parts, fmt.Sprintf("value %s-%s", f(e.Min), f(e.Max)))
+	case "!<>":
+		parts = append(parts, fmt.Sprintf("value !%s-%s", f(e.Min), f(e.Max)))
+	case "":
+		parts = append(parts, fmt.Sprintf("value %s", f(e.Value)))
+	default:
+		parts = append(parts, fmt.Sprintf("value %s %s", e.Operator, f(e.Value)))
+	}
+	return fmt.Sprintf("entropy:%s;", strings.Join(parts, ", "))
+}
+
+func (e Entropy) stickyPos() stickyPos {
+	return stickyPos{pos: e.DataPosition, frameName: e.FrameName, direction: e.DataDirection}
+}
+
+func (e Entropy) transforms() Transforms {
+	return e.Transforms
 }
 
 func netString(netPart []string) string {

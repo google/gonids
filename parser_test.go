@@ -5561,3 +5561,161 @@ func TestParseSuricata8ProtocolStickyBuffers(t *testing.T) {
 		})
 	}
 }
+
+func TestParseEntropyOptions(t *testing.T) {
+	for _, tt := range []struct {
+		name    string
+		input   string
+		want    *Entropy
+		wantErr bool
+	}{
+		{
+			name:  "value only",
+			input: "value 7",
+			want:  &Entropy{Value: 7},
+		},
+		{
+			name:  "explicit equality",
+			input: "value = 4.037",
+			want:  &Entropy{Operator: "=", Value: 4.037},
+		},
+		{
+			name:  "operator without space",
+			input: "value <=4.037",
+			want:  &Entropy{Operator: "<=", Value: 4.037},
+		},
+		{
+			name:  "not equal",
+			input: "value != 7",
+			want:  &Entropy{Operator: "!=", Value: 7},
+		},
+		{
+			name:  "all options",
+			input: "bytes 4, offset 30, value > 7",
+			want:  &Entropy{Bytes: 4, Offset: 30, Operator: ">", Value: 7},
+		},
+		{
+			name:  "any order",
+			input: "value >= 6.5,offset 8 , bytes 4",
+			want:  &Entropy{Bytes: 4, Offset: 8, Operator: ">=", Value: 6.5},
+		},
+		{
+			name:  "documented defaults",
+			input: "bytes 0, offset 0,  value = 4.037",
+			want:  &Entropy{Operator: "=", Value: 4.037},
+		},
+		{
+			name:  "negative offset and leading dot",
+			input: "offset -10, value < .5",
+			want:  &Entropy{Offset: -10, Operator: "<", Value: 0.5},
+		},
+		{
+			name:  "range",
+			input: "value 4-6",
+			want:  &Entropy{Operator: "<>", Min: 4, Max: 6},
+		},
+		{
+			name:  "range with <> and spaces",
+			input: "value 4.5 <> 6",
+			want:  &Entropy{Operator: "<>", Min: 4.5, Max: 6},
+		},
+		{
+			name:  "negated range",
+			input: "value !4-6",
+			want:  &Entropy{Operator: "!<>", Min: 4, Max: 6},
+		},
+		{name: "empty", input: "", wantErr: true},
+		{name: "missing value", input: "bytes 16", wantErr: true},
+		{name: "offset only", input: "offset 100", wantErr: true},
+		{name: "empty value", input: "value", wantErr: true},
+		{name: "bare number", input: "7.01", wantErr: true},
+		{name: "no space after keyword", input: "value>=7", wantErr: true},
+		{name: "bad operator", input: "value ? 7.0", wantErr: true},
+		{name: "double equals", input: "value == 7", wantErr: true},
+		{name: "not a number", input: "value > high", wantErr: true},
+		{name: "trailing junk", input: "value 7 8", wantErr: true},
+		{name: "reversed range", input: "value 6-4", wantErr: true},
+		{name: "empty range", input: "value 4-4", wantErr: true},
+		{name: "duplicate value", input: "value 7, value 8", wantErr: true},
+		{name: "duplicate bytes", input: "bytes 1, bytes 2, value 7", wantErr: true},
+		{name: "non-integer bytes", input: "bytes 4.5, value 7", wantErr: true},
+		{name: "bytes out of range", input: "bytes 2147483648, value 7", wantErr: true},
+		{name: "offset too large", input: "offset 65536, value 7", wantErr: true},
+		{name: "offset too small", input: "offset -65536, value 7", wantErr: true},
+		{name: "unknown option", input: "bytes 1, offset 10, value 7.0, extra", wantErr: true},
+		{name: "empty option", input: "bytes 4,, value 7", wantErr: true},
+	} {
+		got, err := parseEntropy(tt.input)
+		diff := pretty.Compare(got, tt.want)
+		if diff != "" || (err != nil) != tt.wantErr {
+			t.Fatalf("%s: gotErr:%#v, wantErr:%#v\n diff (-got +want):\n%s", tt.name, err, tt.wantErr, diff)
+		}
+	}
+}
+
+func TestParseEntropy(t *testing.T) {
+	for _, tt := range []struct {
+		name    string
+		rule    string
+		want    string
+		wantPos DataPos
+		wantErr bool
+	}{
+		{
+			name:    "entropy_file_data",
+			rule:    `alert http any any -> any any (msg:"entropy simple test"; file_data; entropy:value <= 4.037; sid:1; rev:1;)`,
+			want:    `alert http any any -> any any (msg:"entropy simple test"; file_data; entropy:value <= 4.037; sid:1; rev:1;)`,
+			wantPos: fileData,
+		},
+		{
+			name:    "entropy_before_other_buffer",
+			rule:    `alert http any any -> any any (msg:"entropy"; file_data; entropy:value >= 7.5; http.uri; content:"/a"; sid:2; rev:1;)`,
+			want:    `alert http any any -> any any (msg:"entropy"; file_data; entropy:value >= 7.5; http.uri; content:"/a"; sid:2; rev:1;)`,
+			wantPos: fileData,
+		},
+		{
+			name:    "entropy_with_transform",
+			rule:    `alert http any any -> any any (msg:"entropy"; http.uri; from_base64; entropy:bytes 16, value > 5; http.method; content:"GET"; sid:3; rev:1;)`,
+			want:    `alert http any any -> any any (msg:"entropy"; http.uri; from_base64; entropy:bytes 16, value > 5; http.method; content:"GET"; sid:3; rev:1;)`,
+			wantPos: httpURI,
+		},
+		{
+			name:    "entropy_range_options_reordered",
+			rule:    `alert http any any -> any any (msg:"entropy"; file.data; entropy:value !4-6.5, offset 8, bytes 4; sid:5; rev:1;)`,
+			want:    `alert http any any -> any any (msg:"entropy"; file.data; entropy:bytes 4, offset 8, value !4-6.5; sid:5; rev:1;)`,
+			wantPos: fileData5,
+		},
+		{
+			name:    "entropy_no_value",
+			rule:    `alert http any any -> any any (msg:"entropy"; file_data; entropy; sid:4; rev:1;)`,
+			wantErr: true,
+		},
+		{
+			name:    "entropy_invalid_value",
+			rule:    `alert http any any -> any any (msg:"entropy"; file_data; entropy:value ? 7; sid:6; rev:1;)`,
+			wantErr: true,
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := ParseRule(tt.rule)
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("ParseRule(%q) error = %v, wantErr %v", tt.rule, err, tt.wantErr)
+			}
+			if tt.wantErr {
+				return
+			}
+			if len(got.Entropies()) != 1 {
+				t.Fatalf("len(got.Entropies()) = %d; want 1", len(got.Entropies()))
+			}
+			if pos := got.Entropies()[0].DataPosition; pos != tt.wantPos {
+				t.Errorf("got.Entropies()[0].DataPosition = %v; want %v", pos, tt.wantPos)
+			}
+			if _, ok := got.Tags["entropy"]; ok {
+				t.Errorf("entropy should not be stored in Tags")
+			}
+			if gotStr := got.String(); gotStr != tt.want {
+				t.Errorf("got.String() = %q; want %q", gotStr, tt.want)
+			}
+		})
+	}
+}

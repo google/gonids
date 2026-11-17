@@ -553,6 +553,94 @@ func parseDataRep(s string) (*DataRep, error) {
 	return dr, nil
 }
 
+// entropyFloat matches the numbers accepted for an entropy value (e.g. 7, 4.037, .5, 1e-2).
+const entropyFloat = `[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?`
+
+// entropyRangeRE matches an entropy range value (e.g. 4-6, 4<>6, !4-6).
+var entropyRangeRE = regexp.MustCompile(`^(!?)(` + entropyFloat + `)\s*(?:-|<>)\s*(` + entropyFloat + `)$`)
+
+// entropyCmpRE matches an entropy value with an optional comparison operator (e.g. 7, = 7, <=4.037).
+var entropyCmpRE = regexp.MustCompile(`^(>=|<=|!=|=|>|<)?\s*(` + entropyFloat + `)$`)
+
+// parseEntropy parses an entropy option: [bytes <int>], [offset <int>], value <entropy-spec>.
+// Options are comma separated, may appear in any order, and value is required.
+func parseEntropy(s string) (*Entropy, error) {
+	e := new(Entropy)
+	seen := make(map[string]bool)
+	for _, p := range strings.Split(s, ",") {
+		p = strings.TrimSpace(p)
+		if p == "" {
+			return nil, fmt.Errorf("empty option in entropy: %s", s)
+		}
+		name, val := p, ""
+		if i := strings.IndexAny(p, " \t"); i >= 0 {
+			name, val = p[:i], strings.TrimSpace(p[i:])
+		}
+		if seen[name] {
+			return nil, fmt.Errorf("entropy %s already set: %s", name, s)
+		}
+		seen[name] = true
+		switch name {
+		case "bytes":
+			n, err := strconv.ParseInt(val, 10, 32)
+			if err != nil {
+				return nil, fmt.Errorf("invalid entropy bytes: %q", val)
+			}
+			e.Bytes = int(n)
+		case "offset":
+			n, err := strconv.Atoi(val)
+			if err != nil || n < -65535 || n > 65535 {
+				return nil, fmt.Errorf("invalid entropy offset, must be between -65535 and 65535: %q", val)
+			}
+			e.Offset = n
+		case "value":
+			if err := parseEntropyValue(e, val); err != nil {
+				return nil, err
+			}
+		default:
+			return nil, fmt.Errorf("unknown entropy option: %q", p)
+		}
+	}
+	if !seen["value"] {
+		return nil, fmt.Errorf("entropy requires a value: %s", s)
+	}
+	return e, nil
+}
+
+// parseEntropyValue parses the <entropy-spec> of an entropy value option into e.
+func parseEntropyValue(e *Entropy, s string) error {
+	if m := entropyRangeRE.FindStringSubmatch(s); m != nil {
+		lo, err := strconv.ParseFloat(m[2], 64)
+		if err != nil {
+			return fmt.Errorf("invalid entropy value: %q", s)
+		}
+		hi, err := strconv.ParseFloat(m[3], 64)
+		if err != nil {
+			return fmt.Errorf("invalid entropy value: %q", s)
+		}
+		if hi <= lo {
+			return fmt.Errorf("entropy range upper bound must be greater than lower bound: %q", s)
+		}
+		e.Operator = "<>"
+		if m[1] == "!" {
+			e.Operator = "!<>"
+		}
+		e.Min, e.Max = lo, hi
+		return nil
+	}
+	m := entropyCmpRE.FindStringSubmatch(s)
+	if m == nil {
+		return fmt.Errorf("invalid entropy value: %q", s)
+	}
+	v, err := strconv.ParseFloat(m[2], 64)
+	if err != nil {
+		return fmt.Errorf("invalid entropy value: %q", s)
+	}
+	e.Operator = m[1]
+	e.Value = v
+	return nil
+}
+
 // parseThreshold parses a threshold option.
 func parseThreshold(s string) (*Threshold, error) {
 	t := &Threshold{}
@@ -1106,8 +1194,7 @@ func (r *Rule) option(key item, l *lexer, st *parseState) error {
 		"filemagic", "fileext", "filemd5", "filesha1", "filesha256", "filename", "ftpdata_command",
 		"dce_iface", "dce_opnum", "dcerpc.iface", "dcerpc.opnum",
 		"lua", "luajit",
-		"asn1", "entropy",
-		"config", "rpc"}):
+		"asn1",	"config", "rpc"}):
 		nextItem := l.nextItem()
 		negate := false
 		if nextItem.typ == itemNot {
@@ -1525,6 +1612,20 @@ func (r *Rule) option(key item, l *lexer, st *parseState) error {
 		dr.DataDirection = st.dataDirection
 		dr.Transforms = st.cloneTransforms()
 		r.Matchers = append(r.Matchers, dr)
+	case key.value == "entropy":
+		nextItem := l.nextItem()
+		if nextItem.typ != itemOptionValue {
+			return errors.New("no valid value for entropy")
+		}
+		e, err := parseEntropy(nextItem.value)
+		if err != nil {
+			return fmt.Errorf("error parsing entropy: %v", err)
+		}
+		e.DataPosition = st.dataPosition
+		e.FrameName = st.frameName
+		e.DataDirection = st.dataDirection
+		e.Transforms = st.cloneTransforms()
+		r.Matchers = append(r.Matchers, e)
 	case key.value == "absent":
 		nextItem := l.nextItem()
 		var orElse bool

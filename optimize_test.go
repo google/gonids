@@ -359,6 +359,7 @@ func TestSnortHTTPHeaderFix(t *testing.T) {
 						Kind:     isDataAt,
 						Negate:   true,
 						NumBytes: "1",
+						Options:  []string{"relative"},
 					},
 				},
 				Metas: Metadatas{
@@ -412,6 +413,7 @@ func TestSnortHTTPHeaderFix(t *testing.T) {
 						Kind:     isDataAt,
 						Negate:   true,
 						NumBytes: "1",
+						Options:  []string{"relative"},
 					},
 					&Content{
 						Pattern: []byte("baz"),
@@ -459,6 +461,7 @@ func TestSnortHTTPHeaderFix(t *testing.T) {
 						Kind:     isDataAt,
 						Negate:   true,
 						NumBytes: "1",
+						Options:  []string{"relative"},
 					},
 					&Content{
 						Pattern: []byte("bar\r\n"),
@@ -470,6 +473,7 @@ func TestSnortHTTPHeaderFix(t *testing.T) {
 						Kind:     isDataAt,
 						Negate:   true,
 						NumBytes: "1",
+						Options:  []string{"relative"},
 					},
 				},
 				Metas: Metadatas{
@@ -491,6 +495,36 @@ func TestSnortHTTPHeaderFix(t *testing.T) {
 		diff := pretty.Compare(tt.output, tt.input)
 		if tt.wantMod && diff != "" {
 			t.Fatalf("diff (-got +want):\n%s", diff)
+		}
+	}
+}
+
+func TestSnortHTTPHeaderFixString(t *testing.T) {
+	for _, tt := range []struct {
+		name  string
+		input string
+		want  string
+	}{
+		{
+			name:  "content modifier",
+			input: `alert tcp $EXTERNAL_NET any -> $HOME_NET $HTTP_PORTS (msg:"a"; flow:established,to_server; content:"User-Agent|3a| evil|0d 0a 0d 0a|"; http_header; sid:1; rev:1;)`,
+			want:  `alert tcp $EXTERNAL_NET any -> $HOME_NET $HTTP_PORTS (msg:"a"; flow:established,to_server; content:"User-Agent|3A| evil|0D 0A|"; http_header; isdataat:!1,relative; metadata:gonids snort_http_header; sid:1; rev:1;)`,
+		},
+		{
+			name:  "sticky buffer",
+			input: `alert http $EXTERNAL_NET any -> $HOME_NET any (msg:"a"; file_data; content:"x"; content:"evil|0d 0a 0d 0a|"; http_header; sid:1; rev:1;)`,
+			want:  `alert http $EXTERNAL_NET any -> $HOME_NET any (msg:"a"; file_data; content:"x"; content:"evil|0D 0A|"; http_header; isdataat:!1,relative; metadata:gonids snort_http_header; sid:1; rev:1;)`,
+		},
+	} {
+		r, err := ParseRule(tt.input)
+		if err != nil {
+			t.Fatalf("%s: ParseRule: %v", tt.name, err)
+		}
+		if !r.SnortHTTPHeaderFix() {
+			t.Fatalf("%s: SnortHTTPHeaderFix returned false", tt.name)
+		}
+		if got := r.String(); got != tt.want {
+			t.Fatalf("%s: got:\n%s\nwant:\n%s", tt.name, got, tt.want)
 		}
 	}
 }

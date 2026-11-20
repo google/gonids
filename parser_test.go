@@ -42,6 +42,11 @@ func TestParseContent(t *testing.T) {
 			want:  []byte("ABCDE"),
 		},
 		{
+			name:  "hex digits split by spaces and commas",
+			input: "|4 1|B|43,44|",
+			want:  []byte("ABCD"),
+		},
+		{
 			name:  "contains hex pipe",
 			input: "A|7C|B",
 			want:  []byte("A|B"),

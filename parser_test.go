@@ -3350,6 +3350,30 @@ func TestParseRule(t *testing.T) {
 			},
 		},
 		{
+			name: "unbracketed lists negating the first entry",
+			rule: `pass tcp !10.0.0.1,10.0.0.2 any -> any !80,443 (msg:"unbracketed lists"; content:"123"; sid:1; rev:1;)`,
+			want: &Rule{
+				Action:   "pass",
+				Protocol: "tcp",
+				Source: Network{
+					Nets:  []string{"!10.0.0.1,10.0.0.2"},
+					Ports: []string{"any"},
+				},
+				Destination: Network{
+					Nets:  []string{"any"},
+					Ports: []string{"!80,443"},
+				},
+				Description: "unbracketed lists",
+				Matchers: []orderedMatcher{
+					&Content{
+						Pattern: []byte("123"),
+					},
+				},
+				SID:      1,
+				Revision: 1,
+			},
+		},
+		{
 			name: "negated network list",
 			rule: `alert tcp ![$HOME_NET,192.168.1.1] any -> any $HTTP_PORTS (msg:"negated port list"; content:"123"; sid:1; rev:1;)`,
 			want: &Rule{

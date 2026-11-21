@@ -1194,7 +1194,7 @@ func (r *Rule) option(key item, l *lexer, st *parseState) error {
 		"filemagic", "fileext", "filemd5", "filesha1", "filesha256", "filename", "ftpdata_command",
 		"dce_iface", "dce_opnum", "dcerpc.iface", "dcerpc.opnum",
 		"lua", "luajit",
-		"asn1",	"config", "rpc"}):
+		"asn1", "config", "rpc"}):
 		nextItem := l.nextItem()
 		negate := false
 		if nextItem.typ == itemNot {
@@ -1391,7 +1391,7 @@ func (r *Rule) option(key item, l *lexer, st *parseState) error {
 			}
 			r.Matchers = append(r.Matchers, con)
 		} else {
-			return fmt.Errorf("invalid type %q for option content", nextItem.typ)
+			return fmt.Errorf("invalid type %v for option content", nextItem.typ)
 		}
 	case inSlice(key.value, []string{"http_cookie", "http_raw_cookie", "http_method", "http_header", "http_raw_header",
 		"http_uri", "http_raw_uri", "http_user_agent", "http_stat_code", "http_stat_msg",
@@ -1474,7 +1474,7 @@ func (r *Rule) option(key item, l *lexer, st *parseState) error {
 			p.Transforms = st.cloneTransforms()
 			r.Matchers = append(r.Matchers, p)
 		} else {
-			return fmt.Errorf("invalid type %q for option content", nextItem.typ)
+			return fmt.Errorf("invalid type %v for option pcre", nextItem.typ)
 		}
 	case inSlice(key.value, allbyteMatchTypeNames()):
 		k, err := byteMatcher(key.value)

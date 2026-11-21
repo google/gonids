@@ -37,7 +37,7 @@ func (i item) String() string {
 	case itemError:
 		return i.value
 	}
-	return fmt.Sprintf("%q: %s", i.typ, i.value)
+	return fmt.Sprintf("%v: %s", i.typ, i.value)
 }
 
 type itemType int

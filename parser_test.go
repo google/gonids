@@ -1506,6 +1506,44 @@ func TestParseRule(t *testing.T) {
 			},
 		},
 		{
+			name: "multi-buffer selected again",
+			rule: `alert dns any any -> any any (msg:"multi-buffer"; dns.query; content:"example"; dns.query; content:".com"; http.uri; content:"/a"; http.uri; content:"/b"; sid:6; rev:1;)`,
+			want: &Rule{
+				Action:   "alert",
+				Protocol: "dns",
+				Source: Network{
+					Nets:  []string{"any"},
+					Ports: []string{"any"},
+				},
+				Destination: Network{
+					Nets:  []string{"any"},
+					Ports: []string{"any"},
+				},
+				SID:         6,
+				Revision:    1,
+				Description: "multi-buffer",
+				Matchers: []orderedMatcher{
+					&Content{
+						Pattern:      []byte("example"),
+						DataPosition: dnsQuery5,
+					},
+					&Content{
+						Pattern:      []byte(".com"),
+						DataPosition: dnsQuery5,
+						DataInstance: 1,
+					},
+					&Content{
+						Pattern:      []byte("/a"),
+						DataPosition: httpURI,
+					},
+					&Content{
+						Pattern:      []byte("/b"),
+						DataPosition: httpURI,
+					},
+				},
+			},
+		},
+		{
 			name: "file.magic sticky buffer",
 			rule: `alert http any any -> any any (msg:"test file.magic"; file.magic; content:"PE32 executable"; sid:5; rev:1;)`,
 			want: &Rule{

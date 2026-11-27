@@ -1011,6 +1011,12 @@ func (r *Rule) network(key item) error {
 	// Identify if the whole network component is negated.
 	tmp := strings.TrimPrefix(val, "!")
 	negated := len(tmp) < len(val)
+	// Like Suricata, a leading ! in an unbracketed list such as !1.1.1.1,2.2.2.2
+	// only negates the first entry, so keep it on that entry.
+	if negated && !strings.HasPrefix(tmp, "[") && strings.Contains(tmp, ",") {
+		negated = false
+		tmp = val
+	}
 
 	// This is a hack. We use a regexp to replace the outer `,` with `___`
 	// to give us a discrete string to split on, avoiding the inner `,`.

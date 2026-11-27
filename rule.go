@@ -1859,7 +1859,7 @@ func (r Rule) String() string {
 	}
 	sort.Strings(tagNames)
 	for _, k := range tagNames {
-		fmt.Fprintf(&s, "%s:%s; ", k, r.Tags[k])
+		fmt.Fprintf(&s, "%s:%s; ", k, tagValue(k, r.Tags[k]))
 	}
 
 	for _, v := range r.Statements {
@@ -1893,6 +1893,19 @@ func (r Rule) String() string {
 	fmt.Fprintf(&s, "sid:%d; rev:%d;)", r.SID, r.Revision)
 	return s.String()
 
+}
+
+// tagValue returns the rule text of a tag value. Suricata requires the
+// filemagic value to be double quoted (like tls.subject), so restore the
+// quotes the parser stripped, keeping a leading negation outside them.
+func tagValue(k, v string) string {
+	if k != "filemagic" {
+		return v
+	}
+	if strings.HasPrefix(v, "!") {
+		return `!"` + v[1:] + `"`
+	}
+	return `"` + v + `"`
 }
 
 // ToRegexp returns a string that can be used as a regular expression

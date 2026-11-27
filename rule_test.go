@@ -1440,6 +1440,51 @@ func TestRuleString(t *testing.T) {
 			},
 			want: `alert dns any any -> any any (msg:"DNS query for evil\"\; flowbits:noalert\; reference:url,x"; sid:1337; rev:2;)`,
 		},
+		{
+			name: "rule with filemagic",
+			input: Rule{
+				Action:   "alert",
+				Protocol: "http",
+				Source: Network{
+					Nets:  []string{"any"},
+					Ports: []string{"any"},
+				},
+				Destination: Network{
+					Nets:  []string{"any"},
+					Ports: []string{"any"},
+				},
+				SID:         1337,
+				Revision:    2,
+				Description: "test filemagic",
+				Tags: map[string]string{
+					"fileext":   "jpg",
+					"filemagic": "PE32 executable",
+				},
+			},
+			want: `alert http any any -> any any (msg:"test filemagic"; fileext:jpg; filemagic:"PE32 executable"; sid:1337; rev:2;)`,
+		},
+		{
+			name: "rule with negated filemagic",
+			input: Rule{
+				Action:   "alert",
+				Protocol: "http",
+				Source: Network{
+					Nets:  []string{"any"},
+					Ports: []string{"any"},
+				},
+				Destination: Network{
+					Nets:  []string{"any"},
+					Ports: []string{"any"},
+				},
+				SID:         1337,
+				Revision:    2,
+				Description: "test negated filemagic",
+				Tags: map[string]string{
+					"filemagic": "!PE32 executable",
+				},
+			},
+			want: `alert http any any -> any any (msg:"test negated filemagic"; filemagic:!"PE32 executable"; sid:1337; rev:2;)`,
+		},
 	} {
 		got := tt.input.String()
 		if got != tt.want {

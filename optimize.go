@@ -143,7 +143,18 @@ func (r *Rule) SnortHTTPHeaderFix() bool {
 			if c.SnortHTTPHeader() {
 				modified = true
 				c.Pattern = bytes.TrimSuffix(c.Pattern, []byte("\r\n"))
-				if err := r.InsertMatcher(&ByteMatch{Kind: isDataAt, Negate: true, NumBytes: "1"}, i+1); err != nil {
+				// The isdataat must be relative to this content and stay in its
+				// buffer, otherwise it checks the start of the packet payload.
+				m := &ByteMatch{
+					DataPosition:  c.DataPosition,
+					FrameName:     c.FrameName,
+					DataDirection: c.DataDirection,
+					Kind:          isDataAt,
+					Negate:        true,
+					NumBytes:      "1",
+					Options:       []string{"relative"},
+				}
+				if err := r.InsertMatcher(m, i+1); err != nil {
 					return false
 				}
 				// Skip the isdataat we just inserted.
